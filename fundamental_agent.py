@@ -10,6 +10,7 @@ Run after fetch_data.py:
   python3 fundamental_agent.py
 """
 
+# this is a test
 # ═════════════════════════════════════════════════════════════════════════════
 #  SCORING REVIEW — functions tagged "REVIEW(scoring)" define the fundamental
 #  score bands, the 40/40/20 composite weights, and the rating thresholds.
