@@ -33,6 +33,10 @@ except ImportError:
     os.system(f"{sys.executable} -m pip install numpy --quiet")
     import numpy as np
 
+# ── Schema contract (schemas.py) ─────────────────────────────────────────────
+from pydantic import ValidationError
+from schemas import TickerSignal
+
 # ── Config ───────────────────────────────────────────────────────────────────
 from config import (
     EU_SUFFIXES, JP_SUFFIXES, CA_SUFFIXES, BR_SUFFIXES,
@@ -645,6 +649,23 @@ def main():
             if idx < br_total:
                 time.sleep(BR_BATCH_PAUSE)
 
+    # ── Schema validation — every record must match schemas.TickerSignal ─────
+    # Valid records continue down the pipeline; invalid ones are quarantined
+    # with the ticker name and which field(s) failed, and never reach the JSON.
+    validated = []
+    rejected  = []   # each entry: {"ticker": ..., "error": "field: reason; ..."}
+    for record in results:
+        try:
+            TickerSignal.model_validate(record)
+            validated.append(record)
+        except ValidationError as e:
+            msg = "; ".join(
+                f"{err['loc'][0] if err['loc'] else 'record'}: {err['msg']}"
+                for err in e.errors()
+            )
+            rejected.append({"ticker": record.get("ticker", "?"), "error": msg})
+    results = validated
+
     conviction_order = {"High": 0, "Medium": 1, "Low": 2}
     results.sort(key=lambda x: (conviction_order.get(x["conviction"], 3), x["ticker"]))
 
@@ -670,6 +691,8 @@ def main():
             "rr_ratio":           RR_RATIO,
         },
         "tickers_with_errors": errors[:50],
+        "schema_rejected":     len(rejected),
+        "schema_rejected_details": rejected[:50],
     }
 
     output = {"summary": summary, "signals": results}
@@ -685,6 +708,9 @@ def main():
     print(f"  LONG  — High: {len(high_conv)}  Medium: {len(medium_conv)}")
     print(f"  SHORT — High: {len(short_high_conv)}  Medium: {len(short_medium_conv)}")
     print(f"  Errors : {len(errors)}")
+    print(f"  Schema-rejected : {len(rejected)}")
+    for r in rejected[:10]:
+        print(f"    REJECTED {r['ticker']:<12} {r['error']}")
     print(f"  Output saved to : {OUTPUT_PATH}")
     print(f"{'='*60}")
     print(f"\nTop LONG high-conviction setups:")
