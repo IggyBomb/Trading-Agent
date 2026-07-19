@@ -77,11 +77,11 @@ def score_value(info):
     pb = _safe(info, "priceToBook")
     if pb is not None and pb > 0:
         if pb < 0.75:
-            score += 3
+            score += 2.5
         elif pb < 1.5:
-            score += 2
+            score += 1.5
         elif pb < 3.0:
-            score += 1
+            score += 0.5
 
     ev_ebitda = _safe(info, "enterpriseToEbitda")
     if ev_ebitda is not None and ev_ebitda > 0:
@@ -110,30 +110,30 @@ def score_quality(info):
 
     roe = _safe(info, "returnOnEquity")
     if roe is not None:
-        if roe > 0.25:
+        if roe > 0.3:
             score += 3
         elif roe > 0.15:
             score += 2
-        elif roe > 0.05:
+        elif roe > 0.075:
             score += 1
 
     margin = _safe(info, "profitMargins")
     if margin is not None:
-        if margin > 0.20:
-            score += 2.5
-        elif margin > 0.10:
-            score += 1.5
-        elif margin > 0.05:
-            score += 0.5
+        if margin > 0.25:
+            score += 3
+        elif margin > 0.125:
+            score += 2
+        elif margin > 0.075:
+            score += 1
 
     de = _safe(info, "debtToEquity")
     if de is not None:
         de_ratio = de / 100.0  # yfinance returns as percentage
-        if de_ratio < 0.3:
+        if de_ratio < 0.7:
             score += 2.5
-        elif de_ratio < 0.7:
+        elif de_ratio < 1:
             score += 1.5
-        elif de_ratio < 1.5:
+        elif de_ratio < 2:
             score += 0.5
         else:
             score -= 1
@@ -143,7 +143,7 @@ def score_quality(info):
         if fcf > 0:
             score += 2
         else:
-            score -= 0.5
+            score = 0
 
     return round(min(max(score, 0), 10), 2)
 
@@ -157,20 +157,22 @@ def score_growth(info):
 
     rev_growth = _safe(info, "revenueGrowth")
     if rev_growth is not None:
-        if rev_growth > 0.20:
+        if rev_growth > 0.40:
             score += 3
-        elif rev_growth > 0.10:
+        elif rev_growth > 0.20:
             score += 2
-        elif rev_growth > 0.03:
+        elif rev_growth > 0.15:
             score += 1
+        elif rev_growth > 0.05
+            score += 0.2
 
     earn_growth = _safe(info, "earningsGrowth")
     if earn_growth is not None:
-        if earn_growth > 0.20:
+        if earn_growth > 0.15:
             score += 3
-        elif earn_growth > 0.10:
+        elif earn_growth > 0.1:
             score += 2
-        elif earn_growth > 0.03:
+        elif earn_growth > 0.05:
             score += 1
 
     # Improving earnings: forward P/E lower than trailing P/E
@@ -198,7 +200,7 @@ def fundamental_rating(total_score):
 
 # REVIEW(scoring): pulls yfinance .info for one ticker and combines the three
 # sub-scores into the 0–100 composite HERE: value×4 + quality×4 + growth×2
-# (i.e. the 40/40/20 weighting). Also note the blanket `except: return None` —
+# (i.e. the 33/34/33 weighting). Also note the blanket `except: return None` —
 # it hides whether a failure was a fetch error or a scoring bug (known issue).
 def fetch_fundamentals(ticker):
     """Returns a dict of scored fundamental data for one ticker."""
@@ -299,9 +301,9 @@ def main():
             "fair":          len(fair),
             "overvalued":    len(overvalued),
             "scoring": {
-                "value_weight":   "40%",
-                "quality_weight": "40%",
-                "growth_weight":  "20%",
+                "value_weight":   "33%",
+                "quality_weight": "34%",
+                "growth_weight":  "33%",
                 "undervalued_threshold": "≥ 62",
                 "fair_threshold":        "40–61",
                 "overvalued_threshold":  "< 40",
