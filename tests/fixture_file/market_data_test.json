@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "generated_at": "2026-07-18T20:10:43.902719",
+    "total_processed": 1184,
+    "total_errors": 1055,
+    "high_conviction": 16,
+    "medium_conviction": 277,
+    "short_high_conviction": 0,
+    "short_medium_conviction": 90,
+    "filters": {
+      "us_min_avg_volume": 500000,
+      "us_min_atr_pct": 2.0,
+      "eu_min_avg_volume": 100000,
+      "eu_min_atr_pct": 1.5,
+      "sr_window_days": 10,
+      "rr_ratio": 1.5
+    },
+"signals": [
+    {
+      "ticker": "4502.T",
+      "price": 5480.0,
+      "change_pct": 2.53,
+      "trend": "up",
+      "volume_ratio": 1.34,
+      "avg_volume": 3793805,
+      "atr": 109.6429,
+      "atr_pct": 2.0,
+      "support": 5249.0,
+      "resistance": 5527.0,
+      "dist_support_pct": 4.4,
+      "dist_resist_pct": 0.86,
+      "setup": "breakout",
+      "conviction": "High",
+      "entry": 5480.0,
+      "stop": 5370.3571,
+      "target": 5644.4644,
+      "ma50": 5147.82,
+      "ma200": 4986.7173,
+      "52w_high": 6033.0,
+      "rsi": 68.14,
+      "rr": 1.5,
+      "short_setup": "none",
+      "short_conviction": "None"
+    }]
+}

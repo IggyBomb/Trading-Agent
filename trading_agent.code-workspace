@@ -1,0 +1,104 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    // ── Python ──────────────────────────────────────────────
+    "python.defaultInterpreterPath": "/usr/local/bin/python3",
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    "python.terminal.activateEnvironment": true,
+
+    // ── Editor ──────────────────────────────────────────────
+    "editor.formatOnSave": true,
+    "editor.rulers": [100],
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.wordWrap": "on",
+
+    // ── File nesting — groups related scripts visually ──────
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.expand": false,
+    "explorer.fileNesting.patterns": {
+      "config.py": "RISK.md, ARCHITECTURE.md, run_pipeline.sh",
+      "fetch_data.py": "earnings_calendar.py, build_watchlist.py",
+      "fundamental_agent.py": "sentiment_agent.py, macro_regime_classifier.py, sector_rotation.py, watchlist_ranker.py",
+      "alt_data.py": "fetch_transcript.py",
+      "trade_logger.py": "populate_trades.py, backtest.py",
+      "risk_dashboard.py": "position_monitor.py, correlation_check.py",
+      "pre_market_scanner.py": "price_alert_monitor.py, contrarian_scan.py"
+    },
+
+    // ── Explorer ─────────────────────────────────────────────
+    "explorer.sortOrder": "type",
+
+    // ── Search — exclude noise ───────────────────────────────
+    "search.exclude": {
+      "**/__pycache__": true,
+      "**/*.pyc": true,
+      "**/.env": true
+    },
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/*.pyc": true
+    },
+
+    // ── Terminal ─────────────────────────────────────────────
+    "terminal.integrated.cwd": "${workspaceFolder}"
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.pylance",
+      "ms-python.black-formatter",
+      "ms-python.flake8",
+      "njpwerner.autodocstring",
+      "mechatroner.rainbow-csv",
+      "ms-vscode.vscode-json"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run Pipeline",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder}/fetch_data.py",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Risk Dashboard",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder}/risk_dashboard.py",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Trade Logger",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder}/trade_logger.py",
+        "console": "integratedTerminal",
+        "args": ["open"]
+      },
+      {
+        "name": "Contrarian Scan",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder}/contrarian_scan.py",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Backtest — Validate",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder}/backtest.py",
+        "args": ["validate"],
+        "console": "integratedTerminal"
+      }
+    ]
+  }
+}

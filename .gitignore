@@ -1,0 +1,46 @@
+# NOTE: .gitignore does not support inline comments — a '#' only starts a
+# comment at the start of a line. Keep every comment on its own line.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECRETS — credentials and keys. Never commit, ever.
+# ─────────────────────────────────────────────────────────────────────────────
+.env
+# cert bundles / any private key
+*.pem
+
+# ─────────────────────────────────────────────────────────────────────────────
+# REAL ACCOUNT & TRADE STATE — personal financial data, must stay out of git.
+# ─────────────────────────────────────────────────────────────────────────────
+# real account state (size, positions)
+RISK.local.md
+# trades.jsonl = real trade history; keep the empty folder so the pipeline writes
+logs/*
+!logs/.gitkeep
+# personal trading session notes
+sessions/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GENERATED DATA — rebuilt by run_pipeline.sh, not source. Keep folder, drop contents.
+# ─────────────────────────────────────────────────────────────────────────────
+data/*
+!data/.gitkeep
+# watchlist is curated input, not generated data — keep it in git
+!data/watchlist.txt
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MACHINE-SPECIFIC / TOOLING — recreated locally, not portable.
+# ─────────────────────────────────────────────────────────────────────────────
+# rebuilt by .trading_certs/build_bundle.py
+.trading_certs/combined_cacert.pem
+settings.local.json
+__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
+venv/
+.venv/
+.DS_Store
+node_modules/
+
+PIPELINE_NOTES.md
+TESTING.md

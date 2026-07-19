@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": ".*",
+        "hooks": [{ "type": "command", "command": "bash .trading/hooks/PreMarket.sh" }]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [{ "type": "command", "command": "bash .trading/hooks/EndOfDay.sh" }]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": ["Bash", "Read", "Write", "WebFetch"],
+    "deny": []
+  },
+  "model": "claude-opus-4-8",
+  "riskFile": "RISK.md"
+}

@@ -1,0 +1,6 @@
+{
+  "calendar_integration": {
+    "provider": "google",
+    "calendar_id": "your-calendar-id"
+  }
+}
