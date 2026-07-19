@@ -42,6 +42,8 @@ REQUEST_PAUSE = 0.3   # seconds between yfinance .info calls
 # Each dimension scored 0–10, combined into 0–100 total.
 # Value 40% | Quality 40% | Growth 20%
 
+#Review of the weights , better to put then as equal weight since is just a model for now so 0,33 - 0,33 - 0,34 (quality has 0,34)
+
 # Helper — dict lookup that also treats NaN as a missing value.
 def _safe(d, key, default=None):
     v = d.get(key, default)
@@ -58,22 +60,24 @@ def score_value(info):
     """Score cheapness: P/E, P/B, EV/EBITDA, PEG. Returns 0-10."""
     score = 0.0
 
+#PE increased parameter due to the tech leading markets, always for a model, these numbers should all change depending on the sector (a good pe for tech is 30 but is high for industrials and so on)
+
     pe = _safe(info, "trailingPE")
     if pe is not None:
         if pe < 0:
             score -= 1
-        elif pe < 12:
+        elif pe < 18:
             score += 3
-        elif pe < 20:
+        elif pe < 25:
             score += 2
-        elif pe < 30:
+        elif pe < 34:
             score += 1
 
     pb = _safe(info, "priceToBook")
     if pb is not None and pb > 0:
-        if pb < 1.0:
+        if pb < 0.75:
             score += 3
-        elif pb < 2.0:
+        elif pb < 1.5:
             score += 2
         elif pb < 3.0:
             score += 1
