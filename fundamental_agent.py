@@ -10,6 +10,13 @@ Run after fetch_data.py:
   python3 fundamental_agent.py
 """
 
+# ═════════════════════════════════════════════════════════════════════════════
+#  SCORING REVIEW — functions tagged "REVIEW(scoring)" define the fundamental
+#  score bands, the 40/40/20 composite weights, and the rating thresholds.
+#  All hand-picked and sector-blind — they need a second opinion.
+#  Search for: REVIEW(scoring)
+# ═════════════════════════════════════════════════════════════════════════════
+
 import json
 import os
 import sys
@@ -35,6 +42,7 @@ REQUEST_PAUSE = 0.3   # seconds between yfinance .info calls
 # Each dimension scored 0–10, combined into 0–100 total.
 # Value 40% | Quality 40% | Growth 20%
 
+# Helper — dict lookup that also treats NaN as a missing value.
 def _safe(d, key, default=None):
     v = d.get(key, default)
     if v is None or (isinstance(v, float) and (v != v)):  # NaN check
@@ -42,6 +50,10 @@ def _safe(d, key, default=None):
     return v
 
 
+# REVIEW(scoring): value/cheapness 0–10. Points: P/E up to +3 (bands 12/20/30,
+# negative P/E −1), P/B up to +3 (bands 1/2/3), EV/EBITDA up to +2 (bands 8/15),
+# PEG up to +2 (bands 1.0/1.5). Max raw = 10. All band edges are hand-picked and
+# applied to every sector alike (a bank and a SaaS company get the same bands).
 def score_value(info):
     """Score cheapness: P/E, P/B, EV/EBITDA, PEG. Returns 0-10."""
     score = 0.0
@@ -83,6 +95,10 @@ def score_value(info):
     return round(min(max(score, 0), 10), 2)
 
 
+# REVIEW(scoring): business quality 0–10. Points: ROE up to +3 (bands 25%/15%/5%),
+# profit margin up to +2.5 (bands 20%/10%/5%), debt/equity up to +2.5 (bands
+# 0.3/0.7/1.5, heavy leverage −1), positive FCF +2 (negative −0.5).
+# NOTE: yfinance returns debtToEquity as a percentage — divided by 100 here.
 def score_quality(info):
     """Score business quality: ROE, margins, debt, FCF. Returns 0-10."""
     score = 0.0
@@ -127,6 +143,9 @@ def score_quality(info):
     return round(min(max(score, 0), 10), 2)
 
 
+# REVIEW(scoring): growth 0–10. Points: revenue growth up to +3 (bands 20%/10%/3%),
+# earnings growth up to +3 (same bands), forward P/E below trailing +2 (if >10%
+# lower) or +1 (any lower) — a proxy for "earnings expected to improve".
 def score_growth(info):
     """Score momentum: revenue growth, earnings growth, forward vs trailing PE. Returns 0-10."""
     score = 0.0
@@ -161,6 +180,9 @@ def score_growth(info):
     return round(min(max(score, 0), 10), 2)
 
 
+# REVIEW(scoring): maps the 0–100 composite to a label — ≥62 "Undervalued",
+# 40–61 "Fair", <40 "Overvalued". The 62/40 cutoffs are arbitrary; review whether
+# they produce a sensible distribution across a real run.
 def fundamental_rating(total_score):
     if total_score >= 62:
         return "Undervalued"
@@ -169,6 +191,10 @@ def fundamental_rating(total_score):
     return "Overvalued"
 
 
+# REVIEW(scoring): pulls yfinance .info for one ticker and combines the three
+# sub-scores into the 0–100 composite HERE: value×4 + quality×4 + growth×2
+# (i.e. the 40/40/20 weighting). Also note the blanket `except: return None` —
+# it hides whether a failure was a fetch error or a scoring bug (known issue).
 def fetch_fundamentals(ticker):
     """Returns a dict of scored fundamental data for one ticker."""
     try:
@@ -213,6 +239,8 @@ def fetch_fundamentals(ticker):
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+# Orchestration: loads market_data.json, scores every ticker whose conviction is
+# in CONVICTION_FILTER (High/Medium), writes data/fundamental_data.json sorted by f_score.
 def main():
     logging.basicConfig(
         level=logging.INFO,

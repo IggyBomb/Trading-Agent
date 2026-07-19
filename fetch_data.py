@@ -6,6 +6,13 @@ computes key technical metrics, and writes data/market_data.json
 for Claude to read before running /scan.
 """
 
+# ═════════════════════════════════════════════════════════════════════════════
+#  SCORING REVIEW — functions tagged "REVIEW(scoring)" below define how setups
+#  are classified and how conviction points are assigned. Thresholds and
+#  weights are hand-picked and need a second opinion.
+#  Search for: REVIEW(scoring)
+# ═════════════════════════════════════════════════════════════════════════════
+
 import json
 import os
 import sys
@@ -43,26 +50,32 @@ OUTPUT_PATH = MARKET_DATA_PATH
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+# Region helpers — detect the exchange from the ticker suffix (".PA", ".T", ".TO"…).
+# Only used to pick region-specific volume/ATR filter thresholds in process_ticker().
 def is_european(ticker):
     dot = ticker.rfind(".")
     return dot != -1 and ticker[dot:].upper() in EU_SUFFIXES
 
 
+# Ticker suffix check — Japanese exchanges.
 def is_japanese(ticker):
     dot = ticker.rfind(".")
     return dot != -1 and ticker[dot:].upper() in JP_SUFFIXES
 
 
+# Ticker suffix check — Canadian exchanges.
 def is_canadian(ticker):
     dot = ticker.rfind(".")
     return dot != -1 and ticker[dot:].upper() in CA_SUFFIXES
 
 
+# Ticker suffix check — Brazilian exchanges.
 def is_brazilian(ticker):
     dot = ticker.rfind(".")
     return dot != -1 and ticker[dot:].upper() in BR_SUFFIXES
 
 
+# Loads tickers from watchlist.txt (skips blanks and '#' comment lines), capped at MAX_TICKERS.
 def load_watchlist(path):
     if not os.path.exists(path):
         print(f"ERROR: Watchlist not found at {path}")
@@ -72,7 +85,8 @@ def load_watchlist(path):
     print(f"Loaded {len(tickers)} tickers from watchlist")
     return tickers[:MAX_TICKERS]
 
-"""volatility?"""
+# Volatility: Average True Range over `period` days. Used twice — the ATR%
+# tradability filter in process_ticker(), and stop/target placement (price ± 1 ATR).
 def atr(highs, lows, closes, period=14):
     """Average True Range over `period` days."""
     if len(closes) < period + 1:
@@ -88,6 +102,8 @@ def atr(highs, lows, closes, period=14):
     return float(np.mean(trs[-period:]))
 
 
+# Trend over the last 20 closes: splits them into 5-day blocks and compares
+# highs/lows across blocks. Feeds setup_type() and both conviction functions.
 def trend_direction(closes):
     """Returns 'up', 'down', or 'sideways' based on last 20 closes."""
     if len(closes) < 20:
@@ -106,6 +122,7 @@ def trend_direction(closes):
     return "sideways"
 
 
+# 20-day average daily volume, excluding today. Liquidity-filter input.
 def avg_volume(volumes):
     """20-day average volume."""
     if len(volumes) < 21:
@@ -113,6 +130,8 @@ def avg_volume(volumes):
     return float(np.mean(volumes[-21:-1]))
 
 
+# Relative volume — today's volume vs the 20-day average. Key scoring input:
+# ">1.3" counts as strong volume in setup classification, ">1.2/1.5" earn conviction points.
 def volume_vs_avg(volumes):
     """Returns ratio of last close volume vs 20-day average."""
     avg = avg_volume(volumes)
@@ -121,6 +140,7 @@ def volume_vs_avg(volumes):
     return round(float(volumes[-1]) / avg, 2)
 
 
+# Simple S/R: lowest low / highest high over the last SR_WINDOW days.
 def support_resistance(highs, lows, window=SR_WINDOW):
     """Pivot-based S/R using a short-term window."""
     if len(highs) < window:
@@ -132,6 +152,7 @@ def support_resistance(highs, lows, window=SR_WINDOW):
     return support, resistance
 
 
+# Percent distance of the current price from support (below) and resistance (above).
 def distance_from_sr(price, support, resistance):
     """How far current price is from support and resistance, in %."""
     if support is None or resistance is None or price is None:
@@ -141,6 +162,9 @@ def distance_from_sr(price, support, resistance):
     return dist_support, dist_resistance
 
 
+# REVIEW(scoring): classifies the long setup — breakout / pullback / reversal /
+# consolidation / neutral. Hardcoded choices to review: "near S/R" = within 2%,
+# "strong volume" = ratio > 1.3. This label is the biggest input to conviction().
 def setup_type(closes, volumes, support, resistance):
     """Classify the current setup based on price action."""
     if len(closes) < SR_WINDOW or support is None:
@@ -164,6 +188,8 @@ def setup_type(closes, volumes, support, resistance):
     return "neutral"
 
 
+# REVIEW(scoring): short-side twin of setup_type — breakdown / distribution /
+# dead_cat / none. Uses the same hardcoded 2% proximity and 1.3 volume thresholds.
 def short_setup_type(closes, volumes, support, resistance):
     """Classify short setup based on price action."""
     if len(closes) < SR_WINDOW or resistance is None:
@@ -190,6 +216,9 @@ def short_setup_type(closes, volumes, support, resistance):
     return "none"
 
 
+# REVIEW(scoring): short conviction via additive points — setup 2–3 pts,
+# volume ratio 1–2 pts, distance-to-resistance 1–2 pts. Cutoffs: ≥6 High,
+# ≥3 Medium, else Low. Review both the point weights and the cutoffs.
 def short_conviction(short_setup, vol_ratio, dist_resistance, trend):
     """Assign short conviction: High / Medium / Low / None."""
     if short_setup == "none" or trend != "down":
@@ -219,6 +248,10 @@ def short_conviction(short_setup, vol_ratio, dist_resistance, trend):
     return "Low"
 
 
+# REVIEW(scoring): long conviction via additive points — setup 1–3 pts, volume
+# ratio 1–2 pts, distance-to-resistance 1–2 pts, trend agreement +1. Cutoffs:
+# ≥6 High, ≥3 Medium, else Low. NOTE: this label gates everything downstream —
+# only High/Medium tickers reach fundamental_agent.py and the ranker.
 def conviction(setup, vol_ratio, dist_resistance, dist_support, trend):
     """Assign conviction: High / Medium / Low."""
     score = 0
@@ -256,6 +289,8 @@ def conviction(setup, vol_ratio, dist_resistance, dist_support, trend):
 #  REQUIRES the 1-year fetch window (period="1y") so MA200 / 52w-high have enough bars.
 # ═══════════════════════════════════════════════════════════════════════════
 
+# Simple moving average — becomes ma50/ma200 in the output JSON,
+# consumed by watchlist_ranker.score_technical().
 def sma(closes, period):
     """Simple moving average of the last `period` closes. None if not enough history."""
     if len(closes) < period:
@@ -263,6 +298,7 @@ def sma(closes, period):
     return round(float(np.mean(closes[-period:])), 4)
 
 
+# Momentum oscillator (0–100), consumed by watchlist_ranker.score_technical().
 def rsi(closes, period=14):
     """RSI (0-100) over `period` days. Simple-average variant (SMA of gains/losses) —
     consistent with the SMA-style atr() above, NOT Wilder's smoothing. None if short."""
@@ -279,6 +315,7 @@ def rsi(closes, period=14):
     return round(100.0 - (100.0 / (1.0 + rs)), 2)
 
 
+# 52-week high over the fetched 1-year window; downstream ranker scores % distance from it.
 def week52_high(highs):
     """Highest intraday high over the available window (~1 year). None if empty."""
     if len(highs) == 0:
@@ -286,6 +323,10 @@ def week52_high(highs):
     return round(float(np.max(highs)), 4)
 
 
+# REVIEW(scoring): the per-ticker pipeline. Applies the hard filters that decide
+# which tickers survive at all (MIN_PRICE, region min avg volume, region min ATR% —
+# values in config.py), then computes every metric plus long/short setup and
+# conviction, and assembles the JSON record.
 def process_ticker(ticker, hist):
     """Extract all metrics for one ticker."""
     if hist is None or hist.empty or len(hist) < SR_WINDOW + 5:
@@ -391,6 +432,8 @@ def process_ticker(ticker, hist):
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+# Orchestration: batch-downloads 1y of history per region (US/EU/JP/CA/BR),
+# runs process_ticker() on each, sorts by conviction, writes data/market_data.json.
 def main():
     print(f"\n{'='*60}")
     print(f"  Market Data Fetcher — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
