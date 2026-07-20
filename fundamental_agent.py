@@ -22,6 +22,8 @@ import os
 import sys
 import time
 from datetime import datetime
+from schemas import FundamentalRecord
+from pydantic import ValidationError
 import logging
 log = logging.getLogger("fundamental_agent")
 
@@ -280,16 +282,34 @@ def main():
     sorted_results = dict(
         sorted(results.items(), key=lambda x: x[1]["f_score"], reverse=True)
     )
+    
+    # validation of the schema of the fundamental ticker data
+    validated_tickers = dict()
+    erroneous_tickers = dict()
+    for ticker, data in sorted_results.items():
+        try:
+            FundamentalRecord.model_validate(data)   # checkpoint: raises if data is bad
+            validated_tickers[ticker] = data          # passed → keep the JSON-ready dict
+        except ValidationError as e:
+            erroneous_tickers[ticker] = str(e)
+            log.error(f"Validation error for {ticker}: {e}")
 
-    undervalued = [t for t, d in sorted_results.items() if d["rating"] == "Undervalued"]
-    fair        = [t for t, d in sorted_results.items() if d["rating"] == "Fair"]
-    overvalued  = [t for t, d in sorted_results.items() if d["rating"] == "Overvalued"]
+    undervalued = [t for t, d in validated_tickers.items() if d["rating"] == "Undervalued"]
+    fair        = [t for t, d in validated_tickers.items() if d["rating"] == "Fair"]
+    overvalued  = [t for t, d in validated_tickers.items() if d["rating"] == "Overvalued"]
+    
+ 
+
+
+    
+    
 
     output = {
         "summary": {
             "generated_at":  datetime.now().isoformat(),
             "total_scored":  len(results),
             "total_errors":  len(errors),
+            "schema_rejected": len(erroneous_tickers),
             "undervalued":   len(undervalued),
             "fair":          len(fair),
             "overvalued":    len(overvalued),
@@ -302,7 +322,8 @@ def main():
                 "overvalued_threshold":  "< 40",
             },
         },
-        "fundamentals": sorted_results,
+        "fundamentals": validated_tickers,
+        "validation_errors": erroneous_tickers,
     }
 
     os.makedirs("./data", exist_ok=True)
@@ -317,7 +338,7 @@ def main():
     print(f"\nTop Undervalued with high f_score:")
     print(f"{'─'*60}")
     for ticker in list(undervalued)[:10]:
-        d = sorted_results[ticker]
+        d = validated_tickers[ticker]
         print(f"  {ticker:<10} f={d['f_score']:>5.1f}  "
               f"V={d['value_score']} Q={d['quality_score']} G={d['growth_score']}  "
               f"{d['sector']}")

@@ -44,3 +44,43 @@ class TickerSignal(BaseModel):
     # and what downstream consumers match. Do NOT "fix" without updating them.
     short_setup: str | None = None
     short_conviction: str | None = None
+
+
+class FundamentalRecord(BaseModel):
+    """One record in fundamental_data.json 'fundamentals' — the fundamental_agent.py contract.
+
+    NOTE: the container is a DICT keyed by ticker, not a list:
+        {"summary": {...}, "fundamentals": {"AAPL": {...}, ...}}
+    so validate with:  for rec in data["fundamentals"].values(): ...
+    """
+
+    ticker: str
+
+    # composite scores — always computed, never null
+    f_score: float        # 0-100: value*4 + quality*4 + growth*2
+    value_score: float    # 0-10
+    quality_score: float  # 0-10
+    growth_score: float   # 0-10
+    rating: Literal["Undervalued", "Fair", "Overvalued"]  # fundamental_rating()'s only 3 returns
+
+    # raw valuation metrics — _safe() defaults to None when yfinance lacks the
+    # field, so ALL of these can be null (pb/market_cap have no nulls in today's
+    # data, but the code path allows it — schema follows the code)
+    pe: float | None = None
+    fwd_pe: float | None = None
+    pb: float | None = None
+    ev_ebitda: float | None = None
+    peg: float | None = None
+
+    # raw profitability/growth metrics — computed with `or 0` / default-0
+    # fallbacks, so always a number
+    roe: float
+    profit_margin: float
+    debt_equity: float
+    revenue_growth: float
+    earnings_growth: float
+    fcf_positive: bool
+
+    market_cap: int | None = None
+    sector: str    # _safe() defaults to "Unknown", never null
+    industry: str
