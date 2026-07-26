@@ -80,15 +80,24 @@ BR_BATCH_PAUSE    = 4
 CONVICTION_FILTER = {"High", "Medium"}  # tickers passed to fundamental + alt data agents
 
 # ── File paths ────────────────────────────────────────────────────────────────
-WATCHLIST_PATH       = "./data/watchlist.txt"
-MARKET_DATA_PATH     = "./data/market_data.json"
-FUNDAMENTAL_PATH     = "./data/fundamental_data.json"
-ALT_DATA_PATH        = "./data/alt_data.json"
-SENTIMENT_PATH       = "./data/sentiment_data.json"
-EARNINGS_PATH        = "./data/earnings_calendar.json"
-MACRO_REGIME_PATH    = "./data/macro_regime.json"
-SECTOR_ROTATION_PATH = "./data/sector_rotation.json"
-WATCHLIST_RANKED_PATH= "./data/watchlist_ranked.json"
-PREMARKET_GAPS_PATH  = "./data/premarket_gaps.json"
-TRADES_PATH          = "./logs/trades.jsonl"
-BACKTEST_PATH        = "./data/backtest_results.json"
+# Anchored to THIS FILE's directory, not the current working directory. A plain
+# "./data/..." resolves against wherever python was launched from, so running a
+# script from anywhere but the repo root silently pointed at a non-existent
+# data/ folder. Same technique already used by _load_env() above, so the whole
+# file is now consistent — and the project can be moved or renamed freely.
+ROOT_DIR = Path(__file__).parent
+DATA_DIR = ROOT_DIR / "data"
+LOGS_DIR = ROOT_DIR / "logs"
+
+WATCHLIST_PATH       = str(DATA_DIR / "watchlist.txt")
+MARKET_DATA_PATH     = str(DATA_DIR / "market_data.json")
+FUNDAMENTAL_PATH     = str(DATA_DIR / "fundamental_data.json")
+ALT_DATA_PATH        = str(DATA_DIR / "alt_data.json")
+SENTIMENT_PATH       = str(DATA_DIR / "sentiment_data.json")
+EARNINGS_PATH        = str(DATA_DIR / "earnings_calendar.json")
+MACRO_REGIME_PATH    = str(DATA_DIR / "macro_regime.json")
+SECTOR_ROTATION_PATH = str(DATA_DIR / "sector_rotation.json")
+WATCHLIST_RANKED_PATH= str(DATA_DIR / "watchlist_ranked.json")
+PREMARKET_GAPS_PATH  = str(DATA_DIR / "premarket_gaps.json")
+TRADES_PATH          = str(LOGS_DIR / "trades.jsonl")
+BACKTEST_PATH        = str(DATA_DIR / "backtest_results.json")
