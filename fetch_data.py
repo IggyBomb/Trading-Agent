@@ -352,6 +352,11 @@ def process_ticker(ticker, hist):
     volumes = hist["Volume"].values
 
     price = round(float(closes[-1]), 4)
+    # NOTE: a NaN price is deliberately NOT dropped here — round(nan, 4) returns
+    # nan without crashing, so the record builds and the schema (price has
+    # allow_inf_nan=False) rejects it into schema_rejected_details, keeping it
+    # visible/auditable. Contrast avg_volume, which MUST clean at source because
+    # round(nan) there crashes before any record exists.
     if price < MIN_PRICE:
         log.debug(f"{ticker}: dropped — price {price} < MIN_PRICE {MIN_PRICE}")
         return None

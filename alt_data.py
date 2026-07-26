@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 alt_data.py — Alternative Data Fetcher
@@ -24,7 +25,10 @@ API keys (both optional — skipped gracefully if missing), set in .env or env v
 """
 
 import json, os, sys, time
+import logging
 from datetime import datetime, timezone, timedelta
+
+log = logging.getLogger("alt_data")
 
 try:
     from dotenv import load_dotenv
@@ -98,11 +102,29 @@ def _days_ago(n):
     return (datetime.now(timezone.utc) - timedelta(days=n)).date()
 
 
+# Counts 403s so main() can report the plan wall once instead of ~3x per
+# blocked ticker. The free Finnhub plan is US-only, so every non-US symbol
+# returns 403 on every endpoint — logging each one would bury the real errors.
+_FINNHUB_403 = {"count": 0, "symbols": set(), "paths": set()}
+
+
 def _finnhub_get(path, params):
+    symbol = params.get("symbol", "?")
     params = {**params, "token": FINNHUB_API_KEY}
-    r = requests.get(f"{FINNHUB_BASE}/{path}", params=params, timeout=10)
+    try:
+        r = requests.get(f"{FINNHUB_BASE}/{path}", params=params, timeout=10)
+    except Exception as e:
+        # never log the URL — it carries the API key
+        log.warning(f"finnhub {path} [{symbol}] request failed: {e}")
+        raise
     if r.status_code == 403:
+        _FINNHUB_403["count"] += 1
+        _FINNHUB_403["symbols"].add(symbol)
+        _FINNHUB_403["paths"].add(path)
+        log.debug(f"finnhub {path} [{symbol}]: 403 — not available on this plan")
         return None  # endpoint not available on this plan
+    if r.status_code == 429:
+        log.warning(f"finnhub {path} [{symbol}]: 429 rate limited — consider raising REQUEST_PAUSE")
     r.raise_for_status()
     return r.json()
 
@@ -139,6 +161,7 @@ def fetch_short_interest(info):
             "interpretation":  _interp_short(pct_display, dtc, mom, squeeze),
         }
     except Exception as e:
+        log.warning(f"short interest parse failed: {e}", exc_info=True)
         return {"signal": "ERROR", "squeeze_watch": False, "interpretation": str(e)}
 
 
@@ -250,6 +273,7 @@ def fetch_insider(ticker):
             "interpretation":     _interp_insider(sig, u_buyers, bought, sold),
         }
     except Exception as e:
+        log.warning(f"{ticker}: insider fetch failed: {e}", exc_info=True)
         return {**_no_insider(), "cluster_signal": "ERROR", "interpretation": f"Insider error: {e}"}
 
 
@@ -291,6 +315,7 @@ def fetch_insider_sentiment(ticker):
         return {"status": "OK", "avg_mspr": avg, "trend": trend,
                 "months_used": len(recent)}
     except Exception as e:
+        log.warning(f"{ticker}: insider sentiment (MSPR) failed: {e}", exc_info=True)
         return {"status": "ERROR", "avg_mspr": None, "trend": "UNKNOWN", "error": str(e)}
 
 
@@ -363,6 +388,7 @@ def fetch_congressional(ticker):
             "interpretation": _interp_congress(net, buys, sells),
         }
     except Exception as e:
+        log.warning(f"{ticker}: congressional fetch failed (reference only, unscored): {e}", exc_info=True)
         return {"status": "ERROR", "net_direction": "UNKNOWN", "notable": [], "recent_trades": [],
                 "interpretation": f"Congressional data error: {e}"}
 
@@ -424,6 +450,7 @@ def fetch_analyst_trend(ticker):
             "interpretation": _interp_analyst(trend, latest_ratio, delta),
         }
     except Exception as e:
+        log.warning(f"{ticker}: analyst trend failed: {e}", exc_info=True)
         return {"status": "ERROR", "trend": "UNKNOWN", "interpretation": f"Analyst trend error: {e}"}
 
 
@@ -480,6 +507,7 @@ def fetch_news_sentiment(ticker):
             "interpretation": _interp_news(avg, label, vel, len(scores)),
         }
     except Exception as e:
+        log.warning(f"{ticker}: news sentiment failed: {e}", exc_info=True)
         return {"status": "ERROR", "sentiment_label": "UNKNOWN", "interpretation": str(e)}
 
 
@@ -535,6 +563,9 @@ def _interp_news(score, label, vel, count):
 
 
 # ── Alt Data Score ────────────────────────────────────────────────────────────
+# Riguarda questa parte, di come vengono calcolati i punteggi e i segnali basati sui dati raccolti. Attualmente una persona che ha comprato 500.000$ vale meno di 2 persone che hanno comprato 5000%.
+# Inoltre non viene considerata la posizione di chi compra, cioe' se e' il CFO o una segretaria viene considerato uguale, mentre in realta' il CFO ha piu' informazioni e quindi il suo acquisto vale di piu'.
+# questi dati possiamo trovarli in yfinance, quindi possiamo fare un punteggio piu' preciso.
 
 def score_and_signal(insider, short_int, analyst, news, insider_sent):
     s = 0
@@ -640,62 +671,87 @@ def print_summary(results):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    print(f"\n{'='*60}")
-    print(f"  Alt Data Agent — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print(f"  Finnhub data  : {'ENABLED (analyst trend + insider MSPR + news fallback)' if FINNHUB_API_KEY else 'DISABLED (set FINNHUB_API_KEY)'}")
-    print(f"  Congress data : {'ENABLED (reference only, not scored)' if QUIVER_API_KEY else 'DISABLED (set QUIVER_API_KEY)'}")
-    print(f"  VADER NLP     : {'ENABLED' if _VADER else 'DISABLED'}")
-    print(f"{'='*60}\n")
+    
+    os.makedirs("logs", exist_ok=True)
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")   # em-dashes on any Windows console
+    except Exception:
+        pass
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)-7s %(name)s  %(message)s",
+        datefmt="%H:%M:%S",
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler("logs/alt_data.log", mode="w", encoding="utf-8"),
+        ],
+    )
+    log.info("=" * 60)
+    log.info(f"Alt Data Agent — {datetime.now():%Y-%m-%d %H:%M}")
+    log.info("=" * 60)
+    log.info(f"Finnhub  : {'enabled (analyst trend + insider MSPR + news fallback)' if FINNHUB_API_KEY else 'DISABLED — set FINNHUB_API_KEY'}")
+    log.info(f"Quiver   : {'enabled (reference only, not scored)' if QUIVER_API_KEY else 'DISABLED — set QUIVER_API_KEY'}")
+    log.info(f"VADER NLP: {'enabled' if _VADER else 'DISABLED — news sentiment will be skipped'}")
 
     if not os.path.exists(MARKET_DATA_PATH):
-        print(f"ERROR: {MARKET_DATA_PATH} not found. Run fetch_data.py first.")
+        log.error(f"{MARKET_DATA_PATH} not found — run fetch_data.py first; aborting")
         sys.exit(1)
 
-    with open(MARKET_DATA_PATH) as f:
+    with open(MARKET_DATA_PATH, encoding="utf-8") as f:
         market_data = json.load(f)
 
     candidates = [s["ticker"] for s in market_data["signals"] if s["conviction"] in CONVICTION_FILTER]
-    print(f"Processing {len(candidates)} High/Medium conviction tickers...\n")
+    log.info(f"{len(candidates)} High/Medium conviction tickers to process "
+             f"(of {len(market_data['signals'])} signals)")
 
     results = {}
     total   = len(candidates)
 
     for i, ticker in enumerate(candidates, 1):
-        print(f"  [{i:>4}/{total}] {ticker:<12}", end=" ", flush=True)
-
         # Single .info call reused for short interest
         info = {}
         try:
             info = yf.Ticker(ticker).info or {}
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning(f"{ticker}: .info fetch failed — short interest will be UNKNOWN: {e}")
+        if not info:
+            log.debug(f"{ticker}: .info returned empty")
         time.sleep(REQUEST_PAUSE)
 
         short_int = fetch_short_interest(info)
-        si_str    = f"{short_int.get('short_pct_float','?')}%" if short_int.get("short_pct_float") is not None else "SI=?"
-        print(f"{si_str:<8}", end=" ", flush=True)
+        si_str    = f"{short_int.get('short_pct_float')}%" if short_int.get("short_pct_float") is not None else "?"
 
         insider = fetch_insider(ticker)
-        print(f"ins={insider.get('cluster_signal','?')[:14]:<16}", end=" ", flush=True)
         time.sleep(REQUEST_PAUSE)
 
         insider_sent = fetch_insider_sentiment(ticker)
         time.sleep(0.3)
 
         analyst = fetch_analyst_trend(ticker)
-        print(f"an={analyst.get('trend','?')[:4]:<5}", end=" ", flush=True)
         time.sleep(0.3)
 
         congress = fetch_congressional(ticker)  # reference only, not scored
         time.sleep(0.3)
 
         news = fetch_news_sentiment(ticker)
-        print(f"news={news.get('sentiment_label','?')[:3]}", end=" ", flush=True)
         time.sleep(REQUEST_PAUSE)
 
         score, signal = score_and_signal(insider, short_int, analyst, news, insider_sent)
         flags = build_flags(insider, short_int, analyst, news, insider_sent)
-        print(f"→ {score} {signal}")
+
+        # One line per ticker: every signal's verdict plus the resulting score.
+        # (Built as a single record rather than incremental prints so it lands
+        # in the logfile as one parseable entry.)
+        log.info(
+            f"[{i:>4}/{total}] {ticker:<12} "
+            f"SI={si_str:<7} "
+            f"ins={insider.get('cluster_signal','?'):<22} "
+            f"mspr={insider_sent.get('trend','?'):<8} "
+            f"an={analyst.get('trend','?'):<14} "
+            f"news={news.get('sentiment_label','?'):<8} "
+            f"-> {score:>3} {signal}"
+            + (f"  flags={','.join(flags)}" if flags else "")
+        )
 
         results[ticker] = {
             "ticker":           ticker,
@@ -710,6 +766,39 @@ def main():
             "news_sentiment":   news,
         }
 
+    # ── Run summary — how much of each signal actually got data ─────────────
+    def _missing(pred):
+        return sum(1 for r in results.values() if pred(r))
+
+    n = len(results) or 1
+    coverage = {
+        "insider":  _missing(lambda r: r["insider"]["cluster_signal"] in ("NONE", "ERROR")),
+        "mspr":     _missing(lambda r: r["insider_sentiment"]["trend"] == "UNKNOWN"),
+        "short":    _missing(lambda r: r["short_interest"]["signal"] == "UNKNOWN"),
+        "analyst":  _missing(lambda r: r["analyst_trend"]["trend"] == "UNKNOWN"),
+        "news":     _missing(lambda r: r["news_sentiment"].get("status") != "OK"),
+    }
+    signals = {}
+    for r in results.values():
+        signals[r["alt_data_signal"]] = signals.get(r["alt_data_signal"], 0) + 1
+
+    log.info("=" * 60)
+    log.info(f"scored {len(results)} tickers — "
+             + " ".join(f"{k}:{v}" for k, v in sorted(signals.items())))
+    log.info("signal coverage (missing / total):")
+    for name, miss in coverage.items():
+        log.info(f"  {name:<9} {miss:>4}/{len(results)}  ({miss*100//n}% missing)")
+
+    if _FINNHUB_403["count"]:
+        log.warning(
+            f"Finnhub returned 403 on {_FINNHUB_403['count']} calls covering "
+            f"{len(_FINNHUB_403['symbols'])} symbols and endpoints "
+            f"{sorted(_FINNHUB_403['paths'])} — the free plan is US-only, so "
+            f"non-US tickers score without MSPR and analyst trend"
+        )
+    log.info("=" * 60)
+
+    # Human-facing table — stays print, same convention as the other agents
     print_summary(results)
 
     output = {
@@ -722,10 +811,11 @@ def main():
     }
 
     os.makedirs("./data", exist_ok=True)
-    with open(OUTPUT_PATH, "w") as f:
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
 
-    print(f"  Output saved to: {OUTPUT_PATH}\n")
+    log.info(f"output saved to {OUTPUT_PATH}")
+    log.info("run finished")
 
 
 if __name__ == "__main__":
