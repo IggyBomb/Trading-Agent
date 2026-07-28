@@ -10,7 +10,11 @@ Run before /scan or standalone:
 """
 
 import json, os, sys, time
+import io
+import logging
 from datetime import datetime, timezone
+
+log = logging.getLogger("sentiment_agent")
 
 try:
     import yfinance as yf
@@ -29,6 +33,10 @@ try:
 except ImportError:
     os.system(f"{sys.executable} -m pip install requests --quiet")
     import requests
+
+# ── Schema contract (schemas.py) ─────────────────────────────────────────────
+from pydantic import ValidationError
+from schemas import SentimentSnapshot
 
 OUTPUT_PATH = "./data/sentiment_data.json"
 
@@ -73,17 +81,20 @@ def fng_label(score):
     return "Extreme Greed"
 
 def load_previous():
+    """Previous run's snapshot, used for the composite delta. Absent on a first
+    run — that is normal, so it logs at debug, not warning."""
     try:
-        with open(OUTPUT_PATH) as f:
+        with open(OUTPUT_PATH, encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        log.debug(f"no previous snapshot at {OUTPUT_PATH} ({e}) — delta will be null")
         return None
 
 
 # ── 1. CNN Fear & Greed ───────────────────────────────────────────────────────
 
 def fetch_cnn_fng():
-    print("  Fetching CNN Fear & Greed...", end=" ", flush=True)
+    log.info("fetching CNN Fear & Greed...")
     try:
         r = requests.get(
             "https://production.dataviz.cnn.io/index/fearandgreed/graphdata",
@@ -102,7 +113,7 @@ def fetch_cnn_fng():
         weekly_delta  = round(score - prev_1w, 1)
         monthly_delta = round(score - prev_1m, 1)
 
-        print(f"score={score} ({rating})")
+        log.info(f"CNN F&G ok — score={score} ({rating}) week_delta={weekly_delta}")
         return {
             "score":          score,
             "rating":         fng_label(score),
@@ -115,7 +126,7 @@ def fetch_cnn_fng():
             "interpretation": _interpret_fng(score, weekly_delta, monthly_delta),
         }
     except Exception as e:
-        print(f"ERROR: {e}")
+        log.error(f"CNN Fear & Greed fetch failed (section will be null): {e}", exc_info=True)
         return None
 
 
@@ -141,7 +152,7 @@ def _interpret_fng(score, w_delta, m_delta):
 # ── 2. VIX Metrics ────────────────────────────────────────────────────────────
 
 def fetch_vix():
-    print("  Fetching VIX metrics...", end=" ", flush=True)
+    log.info("fetching VIX metrics...")
     try:
         vix   = yf.Ticker("^VIX").history(period="3mo")
         vix9d = yf.Ticker("^VIX9D").history(period="1mo")
@@ -172,7 +183,9 @@ def fetch_vix():
         vix_1y = vix["Close"].values[-252:] if len(vix) >= 252 else vix["Close"].values
         percentile = round(float(np.mean(vix_1y <= spot)) * 100, 1)
 
-        print(f"VIX={spot} ({label_vix(spot)}) term={term_structure} VIX9D/VIX={vix9d_spread}")
+        if v9d is None or v3m is None:
+            log.warning(f"VIX term structure incomplete (VIX9D={v9d}, VIX3M={v3m}) — term_structure='{term_structure}'")
+        log.info(f"VIX ok — spot={spot} ({label_vix(spot)}) term={term_structure} vix9d_spread={vix9d_spread}")
         return {
             "spot":            spot,
             "prev_close":      prev,
@@ -190,7 +203,7 @@ def fetch_vix():
             "interpretation":  _interpret_vix(spot, prev, term_structure, percentile, vix9d_spread),
         }
     except Exception as e:
-        print(f"ERROR: {e}")
+        log.error(f"VIX fetch failed (section will be null): {e}", exc_info=True)
         return None
 
 
@@ -225,7 +238,7 @@ def _interpret_vix(spot, prev, term, pct, v9d_spread):
 # ── 3. Market Internals ───────────────────────────────────────────────────────
 
 def fetch_market_internals():
-    print("  Fetching market internals...", end=" ", flush=True)
+    log.info("fetching market internals (SPY/QQQ/IWM)...")
     try:
         results = {}
         prices = {}
@@ -280,13 +293,16 @@ def fetch_market_internals():
         results["qqq_spy_ratio"] = ratio_data(qqq_c, spy_c, "QQQ/SPY — tech vs market")
         results["iwm_spy_ratio"] = ratio_data(iwm_c, spy_c, "IWM/SPY — small cap vs market")
 
-        print(f"SPY {'▲' if results['SPY']['above_ma200'] else '▼'} MA200  "
-              f"QQQ {'▲' if results['QQQ']['above_ma200'] else '▼'} MA200  "
-              f"IWM {'▲' if results['IWM']['above_ma200'] else '▼'} MA200  "
-              f"QQQ/SPY={results['qqq_spy_ratio']['ratio']} {results['qqq_spy_ratio']['trend_5d']}")
+        log.info(
+            f"market internals ok — "
+            f"SPY {'above' if results['SPY']['above_ma200'] else 'below'} MA200, "
+            f"QQQ {'above' if results['QQQ']['above_ma200'] else 'below'} MA200, "
+            f"IWM {'above' if results['IWM']['above_ma200'] else 'below'} MA200, "
+            f"QQQ/SPY={results['qqq_spy_ratio']['ratio']}"
+        )
         return results
     except Exception as e:
-        print(f"ERROR: {e}")
+        log.error(f"market internals fetch failed (section will be null): {e}", exc_info=True)
         return None
 
 
@@ -309,12 +325,13 @@ def _breadth_note(spy, qqq, iwm):
 # ── 4. Safe Haven Demand ──────────────────────────────────────────────────────
 
 def fetch_safe_haven():
-    print("  Fetching safe haven demand...", end=" ", flush=True)
+    log.info("fetching safe haven demand (TLT/GLD/UUP)...")
     try:
         data = {}
         for sym, label in [("TLT","Bonds_20yr"), ("GLD","Gold"), ("UUP","DollarIndex")]:
             h = yf.Ticker(sym).history(period="1mo")
             if h.empty:
+                log.warning(f"safe_haven: {sym} returned no history — omitted from section")
                 continue
             c = h["Close"].values
             ret_5d  = pct_change(float(c[-1]), float(c[-6])) if len(c) >= 6 else None
@@ -328,10 +345,12 @@ def fetch_safe_haven():
 
         interpretation = _interpret_safe_haven(data)
         data["interpretation"] = interpretation
-        print(f"TLT {data.get('TLT',{}).get('ret_20d','?')}% 20d  GLD {data.get('GLD',{}).get('ret_20d','?')}% 20d")
+        log.info(f"safe haven ok — TLT {data.get('TLT',{}).get('ret_20d','?')}% 20d, "
+                 f"GLD {data.get('GLD',{}).get('ret_20d','?')}% 20d, "
+                 f"UUP {data.get('UUP',{}).get('ret_20d','?')}% 20d")
         return data
     except Exception as e:
-        print(f"ERROR: {e}")
+        log.error(f"safe haven fetch failed (section will be null): {e}", exc_info=True)
         return None
 
 
@@ -356,12 +375,13 @@ def _interpret_safe_haven(d):
 # ── 5. Credit Market Sentiment ────────────────────────────────────────────────
 
 def fetch_credit():
-    print("  Fetching credit market sentiment...", end=" ", flush=True)
+    log.info("fetching credit market sentiment (HYG/LQD/JNK)...")
     try:
         data = {}
         for sym, label in [("HYG","HighYield"), ("LQD","InvGrade"), ("JNK","Junk")]:
             h = yf.Ticker(sym).history(period="1mo")
             if h.empty:
+                log.warning(f"credit: {sym} returned no history — omitted from section")
                 continue
             c = h["Close"].values
             data[sym] = {
@@ -386,22 +406,22 @@ def fetch_credit():
             interp = "Insufficient credit data"
 
         data["interpretation"] = interp
-        print(f"HYG {hyg_ret}% 20d  LQD {lqd_ret}% 20d")
+        log.info(f"credit ok — HYG {hyg_ret}% 20d, LQD {lqd_ret}% 20d")
         return data
     except Exception as e:
-        print(f"ERROR: {e}")
+        log.error(f"credit fetch failed (section will be null): {e}", exc_info=True)
         return None
 
 
 # ── 6. Put/Call Ratio ─────────────────────────────────────────────────────────
 
 def fetch_put_call():
-    print("  Fetching put/call ratio (SPY options)...", end=" ", flush=True)
+    log.info("fetching put/call ratio (SPY options)...")
     try:
         spy  = yf.Ticker("SPY")
         exps = spy.options
         if not exps:
-            print("no options data")
+            log.warning("put/call: SPY returned no option expiries (section will be null)")
             return None
 
         chain = spy.option_chain(exps[0])
@@ -409,7 +429,7 @@ def fetch_put_call():
         puts  = chain.puts["openInterest"].sum()
 
         if calls == 0:
-            print("no call OI")
+            log.warning(f"put/call: zero call open interest for expiry {exps[0]} (section will be null)")
             return None
 
         ratio = round(puts / calls, 3)
@@ -420,7 +440,7 @@ def fetch_put_call():
             "bullish (call-heavy)"
         )
 
-        print(f"P/C={ratio} ({label})")
+        log.info(f"put/call ok — ratio={ratio} ({label}) expiry={exps[0]}")
         return {
             "ratio":           ratio,
             "calls_oi":        int(calls),
@@ -430,7 +450,7 @@ def fetch_put_call():
             "interpretation":  _interpret_pc(ratio),
         }
     except Exception as e:
-        print(f"ERROR: {e}")
+        log.error(f"put/call fetch failed (section will be null): {e}", exc_info=True)
         return None
 
 
@@ -449,7 +469,7 @@ def _interpret_pc(ratio):
 # ── 7. EU Market Internals ────────────────────────────────────────────────────
 
 def fetch_eu_internals():
-    print("  Fetching EU market internals...", end=" ", flush=True)
+    log.info("fetching EU market internals...")
     try:
         results = {}
 
@@ -463,6 +483,7 @@ def fetch_eu_internals():
             try:
                 h = yf.Ticker(sym).history(period="1y")
                 if h.empty:
+                    log.warning(f"eu_internals: {sym} ({label}) returned no history — omitted")
                     continue
                 c = h["Close"].values
                 price        = round(float(c[-1]), 2)
@@ -482,7 +503,8 @@ def fetch_eu_internals():
                     "ret_5d":         ret_5d,
                     "ret_1m":         ret_1m,
                 }
-            except Exception:
+            except Exception as e:
+                log.warning(f"eu_internals: {sym} ({label}) failed — omitted: {e}", exc_info=True)
                 continue
 
         # VSTOXX — European volatility index (equivalent of VIX)
@@ -506,8 +528,10 @@ def fetch_eu_internals():
                     "percentile": v_pct,
                     "label":      label_vix(v_spot),
                 }
-        except Exception:
-            pass
+            else:
+                log.warning("eu_internals: VSTOXX unavailable (^V2TX and ^VDAX both empty) — omitted")
+        except Exception as e:
+            log.warning(f"eu_internals: VSTOXX failed — omitted: {e}", exc_info=True)
 
         # EUR/USD
         try:
@@ -524,8 +548,10 @@ def fetch_eu_internals():
                     "trend":   ("strengthening" if r5d and r5d > 0.3 else
                                 "weakening"     if r5d and r5d < -0.3 else "stable"),
                 }
-        except Exception:
-            pass
+            else:
+                log.warning("eu_internals: EURUSD=X returned no history — omitted")
+        except Exception as e:
+            log.warning(f"eu_internals: EURUSD failed — omitted: {e}", exc_info=True)
 
         # EU breadth
         eu_syms      = ["^GDAXI", "^FTSE", "^FCHI", "^FTSEMIB"]
@@ -537,22 +563,23 @@ def fetch_eu_internals():
         results["eu_bull_regime"] = bull_regime
         results["interpretation"] = _interpret_eu(results, above_200, tracked)
 
-        # Print summary line
+        # Summary line
         parts = []
         for sym in ["^GDAXI", "^FTSE"]:
             if sym in results:
                 lbl  = results[sym]["label"]
-                flag = "▲" if results[sym].get("above_ma200") else "▼"
+                flag = "above" if results[sym].get("above_ma200") else "below"
                 parts.append(f"{lbl} {flag} MA200")
         if "VSTOXX" in results:
             parts.append(f"VSTOXX={results['VSTOXX']['spot']}")
         if "EURUSD" in results:
             parts.append(f"EUR/USD={results['EURUSD']['price']}")
-        print("  ".join(parts) if parts else "partial data")
+        log.info(f"EU internals ok — {', '.join(parts) if parts else 'partial data only'} "
+                 f"| breadth: {results['eu_breadth']}")
 
         return results
     except Exception as e:
-        print(f"ERROR: {e}")
+        log.error(f"EU internals fetch failed (section will be null): {e}", exc_info=True)
         return None
 
 
@@ -628,11 +655,11 @@ def eu_composite_score(eu):
 # ── 8. Rates (10Y Treasury) ───────────────────────────────────────────────────
 
 def fetch_rates():
-    print("  Fetching rates (10Y Treasury)...", end=" ", flush=True)
+    log.info("fetching rates (10Y Treasury ^TNX)...")
     try:
         h10 = yf.Ticker("^TNX").history(period="3mo")
         if h10.empty:
-            print("no data")
+            log.warning("rates: ^TNX returned no history (section will be null)")
             return None
 
         c = h10["Close"].values
@@ -645,7 +672,7 @@ def fetch_rates():
 
         trend = "rising" if ret_5d and ret_5d > 0.05 else ("falling" if ret_5d and ret_5d < -0.05 else "stable")
 
-        print(f"10Y={yield_10y}% ({trend})")
+        log.info(f"rates ok — 10Y={yield_10y}% ({trend}) change_1d={change_1d}")
         return {
             "yield_10y":    yield_10y,
             "prev_close":   prev_10y,
@@ -657,7 +684,7 @@ def fetch_rates():
             "interpretation": _interpret_rates(yield_10y, ret_5d, ret_20d),
         }
     except Exception as e:
-        print(f"ERROR: {e}")
+        log.error(f"rates fetch failed (section will be null): {e}", exc_info=True)
         return None
 
 
@@ -1005,9 +1032,27 @@ def print_dashboard(score, label, score_delta, fng, vix, internals, safe_haven, 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    print(f"\n{'='*60}")
-    print(f"  Sentiment Agent — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print(f"{'='*60}\n")
+    # Logging setup — INFO to console + a fresh logfile each run. Flip to
+    # logging.DEBUG for the quieter details (e.g. missing previous snapshot).
+    os.makedirs("logs", exist_ok=True)
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")   # em-dashes on any Windows console
+    except Exception:
+        pass
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)-7s %(name)s  %(message)s",
+        datefmt="%H:%M:%S",
+        handlers=[
+            # bind to the real stdout NOW: main() later redirects sys.stdout to a
+            # buffer to capture the dashboard, and log lines must not land in it
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler("logs/sentiment_agent.log", mode="w", encoding="utf-8"),
+        ],
+    )
+    log.info("=" * 60)
+    log.info(f"Sentiment Agent — {datetime.now():%Y-%m-%d %H:%M}")
+    log.info("=" * 60)
 
     previous   = load_previous()
     prev_score = previous.get("composite_score") if previous else None
@@ -1021,9 +1066,26 @@ def main():
     rates      = fetch_rates()
     eu         = fetch_eu_internals()
 
+    # Which sections actually made it — the composite is computed from whatever
+    # is present, so a missing section silently shifts the score. Make it visible.
+    sections = {
+        "cnn_fear_greed": fng, "vix": vix, "market_internals": internals,
+        "safe_haven": safe_haven, "credit": credit, "put_call": pc,
+        "rates": rates, "eu_internals": eu,
+    }
+    missing = [name for name, value in sections.items() if not value]
+    if missing:
+        log.warning(f"{len(missing)}/{len(sections)} sections missing this run: "
+                    f"{', '.join(missing)} — composite computed without them")
+    else:
+        log.info(f"all {len(sections)} sections fetched successfully")
+
     score, label       = composite_score(fng, vix, internals, safe_haven, credit, pc, rates, eu)
     score_delta        = round(score - prev_score, 1) if prev_score is not None else None
     eu_score, eu_label = eu_composite_score(eu)
+    log.info(f"composite: {score}/100 {label}"
+             + (f" (delta {score_delta:+})" if score_delta is not None else " (no previous run)"))
+    log.info(f"EU composite: {eu_score} {eu_label}")
 
     output = {
         "generated_at":       datetime.now(timezone.utc).isoformat(),
@@ -1042,11 +1104,36 @@ def main():
         "eu_composite_label": eu_label,
     }
 
+    # ── Schema validation — the whole document must match SentimentSnapshot ──
+    # Unlike fetch_data.py there is nothing to quarantine here: this file is ONE
+    # document, so refusing to write it would leave the pipeline with no
+    # sentiment data at all. Per "flag, never block" the file is still written,
+    # but the outcome is logged precisely AND recorded in the file itself, so a
+    # consumer (or you) can see the run produced a shape nobody expected.
+    schema_valid  = True
+    schema_errors = []
+    try:
+        SentimentSnapshot.model_validate(output)
+        log.info("schema validation passed")
+    except ValidationError as e:
+        schema_valid = False
+        for err in e.errors():
+            where = ".".join(str(x) for x in err["loc"]) or "document"
+            schema_errors.append({"field": where, "error": err["msg"]})
+            log.error(f"schema violation at {where}: {err['msg']} "
+                      f"(got {err.get('input')!r})")
+        log.error(f"schema validation FAILED — {len(schema_errors)} problem(s); "
+                  f"file still written, flagged schema_valid=false")
+
+    output["schema_valid"]  = schema_valid
+    output["schema_errors"] = schema_errors
+
     os.makedirs("./data", exist_ok=True)
-    with open(OUTPUT_PATH, "w") as f:
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
 
-    import io, sys
+    # NOTE: io/sys are imported at module level — re-importing them here would
+    # make `sys` local to main() and break the logging setup above.
     buf = io.StringIO()
     old_stdout = sys.stdout
     sys.stdout = buf
@@ -1056,15 +1143,21 @@ def main():
     dashboard_text = buf.getvalue()
 
     report_path = f"./data/sentiment_report_{datetime.now().strftime('%Y-%m-%d')}.md"
-    with open(report_path, "w") as f:
+    # encoding is explicit: the dashboard contains Δ, ─, ▲, ✓ … which the Windows
+    # default codepage (cp1252) cannot encode — without this the write crashes.
+    with open(report_path, "w", encoding="utf-8") as f:
         f.write(f"# Sentiment Report — {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n")
         f.write("```\n")
         f.write(dashboard_text)
         f.write("```\n")
 
+    # Dashboard stays print() — it is the human-facing report, captured above
+    # into dashboard_text and written to the .md file.
     print(dashboard_text)
-    print(f"  Output saved to : {OUTPUT_PATH}")
-    print(f"  Report saved to : {report_path}\n")
+
+    log.info(f"output saved to {OUTPUT_PATH}")
+    log.info(f"report saved to {report_path}")
+    log.info("run finished" + ("" if schema_valid else " WITH SCHEMA ERRORS"))
 
 
 if __name__ == "__main__":

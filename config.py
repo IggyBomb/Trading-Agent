@@ -79,17 +79,23 @@ BR_BATCH_PAUSE    = 4
 # ── Scan / agent filters ──────────────────────────────────────────────────────
 CONVICTION_FILTER = {"High", "Medium"}  # tickers passed to fundamental + alt data agents
 
+
 # ── File paths ────────────────────────────────────────────────────────────────
-WATCHLIST_PATH       = "./data/watchlist.txt"
-MARKET_DATA_PATH     = "./data/market_data.json"
-FUNDAMENTAL_PATH     = "./data/fundamental_data.json"
-ALT_DATA_PATH        = "./data/alt_data.json"
-SENTIMENT_PATH       = "./data/sentiment_data.json"
-EARNINGS_PATH        = "./data/earnings_calendar.json"
-MACRO_REGIME_PATH    = "./data/macro_regime.json"
-MACRO_FRED_PATH      = "./data/macro_fred.json"
-SECTOR_ROTATION_PATH = "./data/sector_rotation.json"
-WATCHLIST_RANKED_PATH= "./data/watchlist_ranked.json"
-PREMARKET_GAPS_PATH  = "./data/premarket_gaps.json"
-TRADES_PATH          = "./logs/trades.jsonl"
-BACKTEST_PATH        = "./data/backtest_results.json"
+
+ROOT_DIR = Path(__file__).parent
+DATA_DIR = ROOT_DIR / "data"
+LOGS_DIR = ROOT_DIR / "logs"
+
+WATCHLIST_PATH       = str(DATA_DIR / "watchlist.txt")
+MARKET_DATA_PATH     = str(DATA_DIR / "market_data.json")
+FUNDAMENTAL_PATH     = str(DATA_DIR / "fundamental_data.json")
+ALT_DATA_PATH        = str(DATA_DIR / "alt_data.json")
+SENTIMENT_PATH       = str(DATA_DIR / "sentiment_data.json")
+EARNINGS_PATH        = str(DATA_DIR / "earnings_calendar.json")
+MACRO_REGIME_PATH    = str(DATA_DIR / "macro_regime.json")
+MACRO_FRED_PATH      = str(DATA_DIR / "macro_fred.json")
+SECTOR_ROTATION_PATH = str(DATA_DIR / "sector_rotation.json")
+WATCHLIST_RANKED_PATH= str(DATA_DIR / "watchlist_ranked.json")
+PREMARKET_GAPS_PATH  = str(DATA_DIR / "premarket_gaps.json")
+TRADES_PATH          = str(LOGS_DIR / "trades.jsonl")
+BACKTEST_PATH        = str(DATA_DIR / "backtest_results.json")
