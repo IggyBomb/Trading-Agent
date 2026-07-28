@@ -79,12 +79,9 @@ BR_BATCH_PAUSE    = 4
 # ── Scan / agent filters ──────────────────────────────────────────────────────
 CONVICTION_FILTER = {"High", "Medium"}  # tickers passed to fundamental + alt data agents
 
+
 # ── File paths ────────────────────────────────────────────────────────────────
-# Anchored to THIS FILE's directory, not the current working directory. A plain
-# "./data/..." resolves against wherever python was launched from, so running a
-# script from anywhere but the repo root silently pointed at a non-existent
-# data/ folder. Same technique already used by _load_env() above, so the whole
-# file is now consistent — and the project can be moved or renamed freely.
+
 ROOT_DIR = Path(__file__).parent
 DATA_DIR = ROOT_DIR / "data"
 LOGS_DIR = ROOT_DIR / "logs"
@@ -96,6 +93,7 @@ ALT_DATA_PATH        = str(DATA_DIR / "alt_data.json")
 SENTIMENT_PATH       = str(DATA_DIR / "sentiment_data.json")
 EARNINGS_PATH        = str(DATA_DIR / "earnings_calendar.json")
 MACRO_REGIME_PATH    = str(DATA_DIR / "macro_regime.json")
+MACRO_FRED_PATH      = str(DATA_DIR / "macro_fred.json")
 SECTOR_ROTATION_PATH = str(DATA_DIR / "sector_rotation.json")
 WATCHLIST_RANKED_PATH= str(DATA_DIR / "watchlist_ranked.json")
 PREMARKET_GAPS_PATH  = str(DATA_DIR / "premarket_gaps.json")

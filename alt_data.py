@@ -206,7 +206,120 @@ def _classify_text(text):
     return None
 
 
-def fetch_insider(ticker):
+# ── 2a. Insider impact model ──────────────────────────────────────────────────
+# Buyer-count alone was misleading the score: 2 insiders buying €10 each
+# outranked 1 insider buying €10M (see conversation). This replaces that with
+# a relative-impact model — how much of the daily volume/float the buy
+# actually moves, filtered by market cap relevance — per the framework:
+#   1. Volume:   trade size vs ADV — <5% no market impact, ≥15% can't pass unnoticed
+#   2. Float:    low-float (<20M shares) + ≥0.5% of float bought = scarcity shock;
+#                high-float (>300M shares) = drop in the ocean regardless of %
+#   3. Mkt cap:  <$2B = insider buy is the strongest signal available (info vacuum);
+#                >$100B = even a large $ buy is noise against the total cap
+#
+# RAW(yfinance): averageVolume/floatShares/marketCap all come from the same
+# .info dict already fetched once per ticker in main() (line ~669) — no extra
+# API calls. shares_col below (insider_transactions "Shares" column) has NOT
+# been confirmed live in this environment — verify with:
+#   yf.Ticker('AAPL').insider_transactions.columns
+
+ADV_HIGH_PCT        = 0.15     # trade shares / avg daily volume
+ADV_MODERATE_PCT    = 0.05
+
+FLOAT_LOW_SHARES    = 20_000_000
+FLOAT_MID_SHARES    = 300_000_000
+FLOAT_HIGH_PCT      = 0.005    # 0.5% of float bought
+FLOAT_MODERATE_PCT  = 0.002   # 0.2% of float bought
+FLOAT_LOW_PCT       = 0.001  # 0.1% of float bought
+
+MCAP_MICRO_SMALL    = 100_000_000
+MCAP_MEDIUM         = 5_000_000_000
+MCAP_LARGE_MEGA     = 150_000_000_000
+
+
+def _volume_impact(shares_bought, avg_volume):
+    """Trade size vs average daily volume. Returns (band, pct-or-None)."""
+    if not avg_volume or avg_volume <= 0 or not shares_bought:
+        return "UNKNOWN", None
+    pct = shares_bought / avg_volume
+    if pct >= ADV_HIGH_PCT:
+        band = "HIGH"
+    elif pct >= ADV_MODERATE_PCT:
+        band = "MODERATE"
+    else:
+        band = "LOW"
+    return band, round(pct * 100, 2)
+
+
+def _float_impact(shares_bought, float_shares):
+    """Scarcity shock potential. High-float stocks stay MINIMAL regardless of
+    % bought — the buy is a drop in the ocean no matter the dollar size.
+    Three floor levels below HIGH: MODERATE (>=0.2%), LOW (>=0.1% — the
+    minimum to register any impact at all), MINIMAL (<0.1%, or high-float)."""
+    if not float_shares or float_shares <= 0 or not shares_bought:
+        return "UNKNOWN", None, "UNKNOWN"
+
+    if float_shares < FLOAT_LOW_SHARES:
+        size_tier = "LOW_FLOAT"
+    elif float_shares < FLOAT_MID_SHARES:
+        size_tier = "MID_FLOAT"
+    else:
+        size_tier = "HIGH_FLOAT"
+
+    pct = shares_bought / float_shares
+    if size_tier == "HIGH_FLOAT":
+        band = "MINIMAL"
+    elif pct >= FLOAT_HIGH_PCT:
+        band = "HIGH"
+    elif pct >= FLOAT_MODERATE_PCT:
+        band = "MODERATE"
+    elif pct >= FLOAT_LOW_PCT:
+        band = "LOW"
+    else:
+        band = "MINIMAL"
+    return band, round(pct * 100, 4), size_tier
+
+
+def _market_cap_tier(market_cap):
+    """Four tiers now: MICRO_SMALL (<$100M) gets the strongest relevance
+    boost (pure info vacuum), SMALL ($100M-$5B) a smaller boost, MEDIUM
+    ($5B-$150B) neutral, LARGE_MEGA (>$150B) dampened — a $ amount that
+    moves a micro cap is noise against a $150B+ company."""
+    if not market_cap or market_cap <= 0:
+        return "UNKNOWN"
+    if market_cap < MCAP_MICRO_SMALL:
+        return "MICRO_SMALL"
+    if market_cap < MCAP_MEDIUM:
+        return "SMALL"
+    if market_cap < MCAP_LARGE_MEGA:
+        return "MEDIUM"
+    return "LARGE_MEGA"
+
+
+def _impact_signal(volume_band, float_band, mcap_tier, u_buyers):
+    """Combines the three dimensions above into one label — this is what
+    drives the insider score now, buyer count is a secondary +0/+1/+2 nudge
+    rather than the primary axis it used to be. Max points unchanged (10),
+    so the MAJOR/SIGNIFICANT/MINOR/NEGLIGIBLE cutoffs below still apply."""
+    pts = 0
+    pts += {"HIGH": 3, "MODERATE": 1}.get(volume_band, 0)
+    pts += {"HIGH": 3, "MODERATE": 2, "LOW": 1}.get(float_band, 0)
+    pts += {"MICRO_SMALL": 2, "SMALL": 1, "MEDIUM": 0, "LARGE_MEGA": -2}.get(mcap_tier, 0)
+    pts += 2 if u_buyers >= 3 else (1 if u_buyers == 2 else 0)
+
+    if pts >= 7:
+        label = "MAJOR_IMPACT"
+    elif pts >= 4:
+        label = "SIGNIFICANT_IMPACT"
+    elif pts >= 1:
+        label = "MINOR_IMPACT"
+    else:
+        label = "NEGLIGIBLE"
+    return label, pts
+
+
+def fetch_insider(ticker, info=None):
+    info = info or {}
     try:
         df = yf.Ticker(ticker).insider_transactions
         if df is None or (hasattr(df, "empty") and df.empty):
@@ -214,10 +327,11 @@ def fetch_insider(ticker):
 
         df.columns = [str(c).strip() for c in df.columns]
 
-        date_col  = next((c for c in df.columns if any(k in c.lower() for k in ["date", "start"])), None)
-        text_col  = next((c for c in df.columns if any(k in c.lower() for k in ["text", "type", "transaction"])), None)
-        name_col  = next((c for c in df.columns if any(k in c.lower() for k in ["insider", "name", "person"])), None)
-        value_col = next((c for c in df.columns if "value" in c.lower()), None)
+        date_col   = next((c for c in df.columns if any(k in c.lower() for k in ["date", "start"])), None)
+        text_col   = next((c for c in df.columns if any(k in c.lower() for k in ["text", "type", "transaction"])), None)
+        name_col   = next((c for c in df.columns if any(k in c.lower() for k in ["insider", "name", "person"])), None)
+        value_col  = next((c for c in df.columns if "value" in c.lower()), None)
+        shares_col = next((c for c in df.columns if "share" in c.lower()), None)
 
         if date_col is None:
             return _no_insider()
@@ -232,26 +346,36 @@ def fetch_insider(ticker):
 
         buys, sells = [], []
         for _, row in recent.iterrows():
-            text  = str(row[text_col]) if text_col else ""
-            name  = str(row[name_col]) if name_col else "Unknown"
-            value = abs(_safe(row[value_col], 0) if value_col else 0)
+            text   = str(row[text_col]) if text_col else ""
+            name   = str(row[name_col]) if name_col else "Unknown"
+            value  = abs(_safe(row[value_col], 0) if value_col else 0)
+            shares = abs(_safe(row[shares_col], 0) if shares_col else 0)
             action = _classify_text(text)
             if action == "BUY":
-                buys.append({"name": name, "value": value})
+                buys.append({"name": name, "value": value, "shares": shares})
             elif action == "SELL":
-                sells.append({"name": name, "value": value})
+                sells.append({"name": name, "value": value, "shares": shares})
 
-        u_buyers  = len({b["name"] for b in buys})
-        u_sellers = len({s["name"] for s in sells})
-        bought    = sum(b["value"] for b in buys)
-        sold      = sum(s["value"] for s in sells)
+        u_buyers      = len({b["name"] for b in buys})
+        u_sellers     = len({s["name"] for s in sells})
+        bought        = sum(b["value"] for b in buys)
+        sold          = sum(s["value"] for s in sells)
+        shares_bought = sum(b["shares"] for b in buys)
 
+        # Buyer-count label — kept for context/display, no longer drives the score.
         if u_buyers >= 3:            sig = "STRONG_CLUSTER"
         elif u_buyers == 2:          sig = "CLUSTER"
         elif u_buyers == 1 and bought >= 100_000: sig = "SINGLE_BUY_SIGNIFICANT"
         elif u_buyers >= 1:          sig = "SINGLE_BUY"
         elif u_sellers >= 2:         sig = "SELLING"
         else:                        sig = "NONE"
+
+        # Impact model — see _impact_signal() above. This is the new primary
+        # driver of the insider score in score_and_signal().
+        volume_band, volume_pct           = _volume_impact(shares_bought, _safe(info.get("averageVolume")))
+        float_band, float_pct, float_tier = _float_impact(shares_bought, _safe(info.get("floatShares")))
+        mcap_tier                         = _market_cap_tier(_safe(info.get("marketCap")))
+        impact_signal, impact_pts         = _impact_signal(volume_band, float_band, mcap_tier, u_buyers)
 
         if bought > sold * 1.5:      net = "BUY"
         elif sold > bought * 1.5:    net = "SELL"
@@ -266,23 +390,38 @@ def fetch_insider(ticker):
 
         return {
             "cluster_signal":     sig,
+            "impact_signal":      impact_signal,
+            "impact_points":      impact_pts,
+            "volume_impact":      volume_band,
+            "pct_of_avg_volume":  volume_pct,
+            "float_impact":       float_band,
+            "pct_of_float":       float_pct,
+            "float_tier":         float_tier,
+            "market_cap_tier":    mcap_tier,
             "net_activity":       net,
             "buyers_30d":         u_buyers,
             "sellers_30d":        u_sellers,
+            "shares_bought_30d":  round(shares_bought),
             "total_value_bought": round(bought),
             "total_value_sold":   round(sold),
             "notable":            notable,
-            "interpretation":     _interp_insider(sig, u_buyers, bought, sold),
+            "interpretation":     _interp_insider(sig, u_buyers, bought, sold, impact_signal),
         }
     except Exception as e:
         log.warning(f"{ticker}: insider fetch failed: {e}", exc_info=True)
-        return {**_no_insider(), "cluster_signal": "ERROR", "interpretation": f"Insider error: {e}"}
+        return {**_no_insider(), "cluster_signal": "ERROR", "impact_signal": "ERROR",
+                "interpretation": f"Insider error: {e}"}
+
 
 
 def _no_insider():
     return {
-        "cluster_signal": "NONE", "net_activity": "NONE",
-        "buyers_30d": 0, "sellers_30d": 0,
+        "cluster_signal": "NONE", "impact_signal": "NEGLIGIBLE", "impact_points": 0,
+        "volume_impact": "UNKNOWN", "pct_of_avg_volume": None,
+        "float_impact": "UNKNOWN", "pct_of_float": None, "float_tier": "UNKNOWN",
+        "market_cap_tier": "UNKNOWN",
+        "net_activity": "NONE",
+        "buyers_30d": 0, "sellers_30d": 0, "shares_bought_30d": 0,
         "total_value_bought": 0, "total_value_sold": 0,
         "notable": [], "interpretation": "No insider data available",
     }
@@ -321,18 +460,22 @@ def fetch_insider_sentiment(ticker):
         return {"status": "ERROR", "avg_mspr": None, "trend": "UNKNOWN", "error": str(e)}
 
 
-def _interp_insider(sig, buyers, bought, sold):
-    if sig == "STRONG_CLUSTER":
-        return f"{buyers} insiders made open-market purchases in last 30d — strong cluster, one of the highest-conviction long signals available"
-    if sig == "CLUSTER":
-        return f"{buyers} insiders bought in last 30d — cluster signal (2+ insiders rarely wrong simultaneously)"
-    if sig == "SINGLE_BUY_SIGNIFICANT":
-        return f"Single significant insider purchase (${bought:,.0f}) — high conviction, watch for follow-on cluster"
-    if sig == "SINGLE_BUY":
-        return "Single insider purchase — mild positive signal"
+def _interp_insider(sig, buyers, bought, sold, impact=None):
     if sig == "SELLING":
         return f"Insider selling ${sold:,.0f} net — insiders know their own business best"
-    return "No meaningful insider activity in last 30 days"
+    if bought <= 0:
+        return "No meaningful insider activity in last 30 days"
+
+    buyer_note = f"{buyers} insider{'s' if buyers != 1 else ''} bought ${bought:,.0f} in last 30d"
+    if impact == "MAJOR_IMPACT":
+        return f"{buyer_note} — major impact (large vs volume/float, and/or small-cap relevance): one of the highest-conviction signals available"
+    if impact == "SIGNIFICANT_IMPACT":
+        return f"{buyer_note} — significant impact relative to volume/float/market cap"
+    if impact == "MINOR_IMPACT":
+        return f"{buyer_note} — some impact, but modest relative to volume/float/market cap"
+    if impact == "NEGLIGIBLE":
+        return f"{buyer_note} — negligible relative to volume/float/market cap (e.g. a small buy on a large, liquid, high-float name)"
+    return buyer_note  # impact unknown (missing volume/float/mcap data)
 
 
 # ── 3. Congressional Trading ──────────────────────────────────────────────────
@@ -572,10 +715,19 @@ def _interp_news(score, label, vel, count):
 def score_and_signal(insider, short_int, analyst, news, insider_sent):
     s = 0
 
-    # Insider transactions (35 pts)
-    sig = (insider or {}).get("cluster_signal", "NONE")
-    s += {"STRONG_CLUSTER": 35, "CLUSTER": 28, "SINGLE_BUY_SIGNIFICANT": 19,
-          "SINGLE_BUY": 13, "SELLING": 0, "NONE": 9, "ERROR": 9}.get(sig, 9)
+    # Insider transactions (35 pts) — driven by impact_signal (trade size vs
+    # volume/float, filtered by market cap relevance), not raw buyer count.
+    # See _impact_signal(): a single large buy on a small, low-float name can
+    # now outscore a "cluster" of trivial buys on a mega cap, correctly.
+    cluster_sig = (insider or {}).get("cluster_signal", "NONE")
+    if cluster_sig == "SELLING":
+        s += 0
+    elif cluster_sig == "ERROR":
+        s += 9
+    else:
+        impact_sig = (insider or {}).get("impact_signal", "NEGLIGIBLE")
+        s += {"MAJOR_IMPACT": 35, "SIGNIFICANT_IMPACT": 26,
+              "MINOR_IMPACT": 16, "NEGLIGIBLE": 9}.get(impact_sig, 9)
 
     # Insider sentiment modifier (±5 pts) — Finnhub MSPR, confirms/conflicts with above
     mspr_trend = (insider_sent or {}).get("trend", "UNKNOWN")
@@ -619,8 +771,9 @@ def score_and_signal(insider, short_int, analyst, news, insider_sent):
 
 def build_flags(insider, short_int, analyst, news, insider_sent):
     flags = []
-    ins = (insider or {}).get("cluster_signal", "")
-    if ins in ("STRONG_CLUSTER", "CLUSTER"):
+    ins    = (insider or {}).get("cluster_signal", "")
+    impact = (insider or {}).get("impact_signal", "")
+    if impact in ("MAJOR_IMPACT", "SIGNIFICANT_IMPACT"):
         flags.append("INSIDER_CLUSTER")
     if ins == "SELLING":
         flags.append("INSIDER_SELLING")
@@ -652,19 +805,19 @@ def print_summary(results):
     print(f"\n{'='*W}")
     print(f"  ALT DATA SUMMARY — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*W}")
-    hdr = f"  {'TICKER':<10} {'SCORE':>5}  {'SIGNAL':<9}  {'INSIDER':<25}  {'SI%':>5}  {'FLAGS'}"
+    hdr = f"  {'TICKER':<10} {'SCORE':>5}  {'SIGNAL':<9}  {'INSIDER IMPACT':<20}  {'SI%':>5}  {'FLAGS'}"
     print(hdr)
-    print(f"  {'─'*10} {'─'*5}  {'─'*9}  {'─'*25}  {'─'*5}  {'─'*20}")
+    print(f"  {'─'*10} {'─'*5}  {'─'*9}  {'─'*20}  {'─'*5}  {'─'*20}")
 
     for ticker, d in sorted(results.items(), key=lambda x: x[1]["alt_data_score"], reverse=True):
-        ins = d.get("insider", {}).get("cluster_signal", "—")
+        ins = d.get("insider", {}).get("impact_signal", "—")
         si  = d.get("short_interest", {}).get("short_pct_float")
         si_s = f"{si}%" if si is not None else "—"
         flags = " | ".join(d.get("flags", [])) or "—"
-        print(f"  {ticker:<10} {d['alt_data_score']:>5}  {d['alt_data_signal']:<9}  {ins:<25}  {si_s:>5}  {flags}")
+        print(f"  {ticker:<10} {d['alt_data_score']:>5}  {d['alt_data_signal']:<9}  {ins:<20}  {si_s:>5}  {flags}")
 
     # Highlights
-    clusters  = [t for t, d in results.items() if d.get("insider", {}).get("cluster_signal") in ("STRONG_CLUSTER", "CLUSTER")]
+    clusters  = [t for t, d in results.items() if d.get("insider", {}).get("impact_signal") in ("MAJOR_IMPACT", "SIGNIFICANT_IMPACT")]
     squeezes  = [t for t, d in results.items() if d.get("short_interest", {}).get("squeeze_watch")]
     upgrades  = [t for t, d in results.items() if d.get("analyst_trend", {}).get("trend") == "IMPROVING"]
     downgrades = [t for t, d in results.items() if d.get("analyst_trend", {}).get("trend") == "DETERIORATING"]
@@ -729,7 +882,8 @@ def main():
         short_int = fetch_short_interest(info)
         si_str    = f"{short_int.get('short_pct_float')}%" if short_int.get("short_pct_float") is not None else "?"
 
-        insider = fetch_insider(ticker)
+        insider = fetch_insider(ticker, info)
+        print(f"ins={insider.get('impact_signal','?')[:16]:<18}", end=" ", flush=True)
         time.sleep(REQUEST_PAUSE)
 
         insider_sent = fetch_insider_sentiment(ticker)
