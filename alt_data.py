@@ -25,6 +25,8 @@ API keys (both optional — skipped gracefully if missing), set in .env or env v
 """
 
 import json, os, sys, time
+from pydantic import ValidationError
+from schemas import AltDataRecord
 import logging
 from datetime import datetime, timezone, timedelta
 
@@ -586,8 +588,14 @@ def score_and_signal(insider, short_int, analyst, news, insider_sent):
     base_si = {"LOW": 20, "MODERATE": 12, "HIGH": 8, "EXTREME": 5, "UNKNOWN": 10}.get(si, 10)
     if sq and si in ("HIGH", "EXTREME"):
         base_si += 4  # squeeze potential is bonus upside, not penalty
-    if mom > 15:
+    # Both gates mirror _interp_short()'s ±10 thresholds, so the written
+    # interpretation and the score always agree. Previously the penalty fired
+    # at 15 (leaving a warned-but-unpenalised gap) and there was no reward at
+    # all for covering, even though the text called it a bullish signal.
+    if mom > 10:
         base_si -= 3  # rising short interest is a mild headwind
+    elif mom < -10:
+        base_si += 3  # short covering — bears capitulating, the mirror case
     s += base_si
 
     # Analyst recommendation trend (20 pts) — replaces Congressional (now paid everywhere)
@@ -765,6 +773,25 @@ def main():
             "congressional":    congress,
             "news_sentiment":   news,
         }
+        
+    # ── Schema validation — every record must match schemas.AltDataRecord ────
+    # Valid records continue down the pipeline; invalid ones are quarantined
+    # with the ticker name and which field(s) failed, and never reach the JSON.
+    validated = {}
+    rejected  = {}   # ticker -> "section.field: reason; ..."
+
+    for ticker, record in results.items():
+        try:
+            AltDataRecord.model_validate(record)
+            validated[ticker] = record
+        except ValidationError as e:
+            msg = "; ".join(f"{'.'.join(str(x) for x in err['loc'])}: {err['msg']}" for err in e.errors())
+            rejected[ticker] = msg
+            log.warning(f"{ticker}: schema rejected — {msg}")
+
+    # Everything below reads `results`, so we overwrite it with the validated subset.
+    results = validated
+    log.info(f"schema validation — {len(validated)} passed, {len(rejected)} rejected")
 
     # ── Run summary — how much of each signal actually got data ─────────────
     def _missing(pred):
@@ -807,9 +834,16 @@ def main():
         "finnhub_enabled": bool(FINNHUB_API_KEY),
         "quiver_enabled":  bool(QUIVER_API_KEY),
         "vader_enabled":   _VADER,
+        "schema_rejected": len(rejected),
+        "schema_rejected_details": rejected,
         "tickers":         results,
     }
-
+    
+   
+    
+    
+    
+    # Save JSON output
     os.makedirs("./data", exist_ok=True)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)

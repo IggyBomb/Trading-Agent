@@ -84,205 +84,140 @@ class FundamentalRecord(BaseModel):
     market_cap: int | None = None
     sector: str    # _safe() defaults to "Unknown", never null
     industry: str
-
-
+    
+    
 # ═══════════════════════════════════════════════════════════════════════════
-#  SENTIMENT — sentiment_data.json  (sentiment_agent.py)
+#  ALT DATA — alt_data.json  (alt_data.py)
 #
-#  DIFFERENT SHAPE from the two schemas above: this file is ONE market-wide
-#  document, not a collection of per-ticker records. So there is no per-record
-#  quarantine — validation is a single call on the whole document.
+#  Container is a DICT keyed by ticker, like fundamental_data.json:
+#      {"generated_at": ..., "tickers": {"PODD": {...}, ...}}
+#  so validate with:  for rec in data["tickers"].values(): ...
 #
-#  Every top-level section is Optional because each fetch_*() returns None on
-#  failure and composite_score() explicitly tolerates that ("flag, never
-#  block"). A partial run is a VALID run — making sections required would
-#  reject good data whenever Yahoo hiccups.
+#  Every sub-record has SEVERAL return shapes (OK / NO_API_KEY / NO_DATA /
+#  UNAVAILABLE / ERROR). Fields only produced on the success path therefore
+#  need defaults — otherwise a perfectly normal "no data" record is rejected.
+#  All Literals below come from the CODE's reachable values, not from what the
+#  current file happens to contain (the live file shows only a subset).
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Shared label vocabularies (see label_vix / fng_label / composite_score)
-RiskLabel = Literal["Risk-On", "Mild Risk-On", "Neutral", "Mild Risk-Off", "Risk-Off"]
-VixLabel  = Literal["unknown", "complacency", "calm", "elevated", "fear", "extreme_fear"]
 
+class InsiderRecord(BaseModel):
+    """insider — Form 4 open-market transactions via yfinance.
+    Every path (success, _no_insider(), ERROR) returns all 8 fields."""
 
-class FearGreedRecord(BaseModel):
-    """cnn_fear_greed — CNN Fear & Greed index. Built all-or-nothing."""
-    score: float
-    rating: Literal["unknown", "Extreme Fear", "Fear", "Neutral", "Greed", "Extreme Greed"]
-    raw_rating: str          # CNN's own wording, passed through unmapped
-    prev_1_week: float
-    prev_1_month: float
-    prev_1_year: float
-    weekly_delta: float
-    monthly_delta: float
+    cluster_signal: Literal[
+        "STRONG_CLUSTER", "CLUSTER", "SINGLE_BUY_SIGNIFICANT",
+        "SINGLE_BUY", "SELLING", "NONE", "ERROR",
+    ]
+    net_activity: Literal["BUY", "SELL", "MIXED", "NONE"]
+    buyers_30d: int
+    sellers_30d: int
+    total_value_bought: int      # round() with no ndigits → int
+    total_value_sold: int
+    notable: list[str]
     interpretation: str
 
 
-class VixRecord(BaseModel):
-    """vix — spot VIX plus term structure. ^VIX9D / ^VIX3M are often
-    unavailable on Yahoo, hence the optional 9d/3m fields."""
-    spot: float
-    prev_close: float
-    change_1d: float | None = None      # pct_change() returns None if prev is 0
-    ma_20: float
-    ma_50: float
-    vs_ma20: float
-    vix_9d: float | None = None
-    vix_3m: float | None = None
-    vix9d_spread: float | None = None
-    vix3m_spread: float | None = None
-    term_structure: Literal["backwardation", "contango", "flat", "unknown"]
-    percentile_1y: float
-    label: VixLabel
+class InsiderSentimentRecord(BaseModel):
+    """insider_sentiment — Finnhub MSPR. Has NO interpretation field (unlike
+    every other section). months_used appears only on the OK path; error only
+    on the ERROR path."""
+
+    status: Literal["OK", "NO_API_KEY", "UNAVAILABLE", "NO_DATA", "ERROR"]
+    avg_mspr: float | None = None
+    trend: Literal["BULLISH", "NEUTRAL", "BEARISH", "UNKNOWN"]
+    months_used: int | None = None
+    error: str | None = None
+
+
+class ShortInterestRecord(BaseModel):
+    """short_interest — four fields off yfinance .info.
+    The ERROR path returns ONLY signal/squeeze_watch/interpretation, so the
+    three numeric fields must tolerate being absent as well as null."""
+
+    short_pct_float: float | None = None
+    days_to_cover: float | None = None
+    mom_change_pct: float | None = None
+    signal: Literal["LOW", "MODERATE", "HIGH", "EXTREME", "UNKNOWN", "ERROR"]
+    squeeze_watch: bool
     interpretation: str
 
 
-class IndexRecord(BaseModel):
-    """One US index inside market_internals (SPY / QQQ / IWM)."""
-    price: float
-    ma_50: float
-    ma_200: float
-    ma_125: float
-    above_ma50: bool
-    above_ma200: bool
-    above_ma125: bool | None = None      # None when ma_125 is unavailable
-    pct_from_ma200: float | None = None
-    label: str
+class AnalystTrendRecord(BaseModel):
+    """analyst_trend — Finnhub recommendation counts. Everything below the
+    first three fields exists only when status == "OK" (free plan is US-only,
+    so non-US tickers never reach it)."""
 
-
-class RatioRecord(BaseModel):
-    """qqq_spy_ratio / iwm_spy_ratio — leadership ratios; every numeric
-    field is guarded by a length/zero check in ratio_data()."""
-    label: str
-    ratio: float | None = None
-    delta_5d: float | None = None
-    delta_20d: float | None = None
-    trend_5d: str                        # arrow glyph, not a stable vocabulary
-
-
-class MarketInternals(BaseModel):
-    """market_internals — SPY/QQQ/IWM are required here: fetch_market_internals()
-    builds all three or raises and returns None for the whole section."""
-    SPY: IndexRecord
-    QQQ: IndexRecord
-    IWM: IndexRecord
-    breadth_note: str
-    qqq_spy_ratio: RatioRecord
-    iwm_spy_ratio: RatioRecord
-
-
-class EtfReturnRecord(BaseModel):
-    """One ETF inside safe_haven / credit — price plus trailing returns."""
-    price: float
-    ret_5d: float | None = None
-    ret_20d: float | None = None
-    label: str
-
-
-class SafeHaven(BaseModel):
-    """safe_haven — each symbol is skipped (`continue`) when its history is
-    empty, so any of the three can be absent from an otherwise-valid section."""
-    TLT: EtfReturnRecord | None = None
-    GLD: EtfReturnRecord | None = None
-    UUP: EtfReturnRecord | None = None
+    status: Literal["OK", "NO_API_KEY", "NO_DATA", "ERROR"]
+    trend: Literal["IMPROVING", "STABLE", "DETERIORATING", "UNKNOWN"]
     interpretation: str
 
+    bull_ratio_pct: float | None = None
+    delta_pct: float | None = None
+    period: str | None = None
+    strong_buy: int | None = None
+    buy: int | None = None
+    hold: int | None = None
+    sell: int | None = None
+    strong_sell: int | None = None
 
-class Credit(BaseModel):
-    """credit — same skip-on-empty behaviour as SafeHaven."""
-    HYG: EtfReturnRecord | None = None
-    LQD: EtfReturnRecord | None = None
-    JNK: EtfReturnRecord | None = None
+
+class CongressionalRecord(BaseModel):
+    """congressional — Quiver. Fetched and stored for reference but NOT scored
+    (both free sources moved it behind paid plans). buys_count/sells_count
+    exist only on the OK path."""
+
+    status: Literal["OK", "NO_API_KEY", "NO_DATA", "ERROR"]
+    net_direction: Literal["BUY", "SELL", "MIXED", "NONE", "UNKNOWN"]
+    notable: list[str]
+    recent_trades: list = []
     interpretation: str
 
+    buys_count: int | None = None
+    sells_count: int | None = None
 
-class PutCall(BaseModel):
-    """put_call — SPY option-chain open interest. Built all-or-nothing."""
-    ratio: float
-    calls_oi: int
-    puts_oi: int
-    label: str
-    expiry_used: str
+
+class NewsSentimentRecord(BaseModel):
+    """news_sentiment — VADER over yfinance headlines (Finnhub fallback).
+    The VADER_UNAVAILABLE and ERROR paths return only status/label/
+    interpretation, so the numeric fields need defaults."""
+
+    status: Literal["OK", "NO_NEWS", "VADER_UNAVAILABLE", "ERROR"]
+    sentiment_label: Literal["POSITIVE", "NEGATIVE", "NEUTRAL", "UNKNOWN"]
     interpretation: str
 
-
-class Rates(BaseModel):
-    """rates — 10Y Treasury (^TNX)."""
-    yield_10y: float
-    prev_close: float
-    change_1d: float
-    change_5d: float | None = None       # needs >= 6 bars
-    change_20d: float | None = None      # needs >= 21 bars
-    ma_20: float
-    trend: Literal["rising", "falling", "stable"]
-    interpretation: str
+    sentiment_score: float | None = None
+    velocity: Literal["RISING", "FALLING", "STABLE", "UNKNOWN"] | None = None
+    article_count: int | None = None
 
 
-class EuIndexRecord(BaseModel):
-    """One EU index inside eu_internals."""
-    label: str
-    price: float
-    ma_50: float
-    ma_200: float
-    above_ma50: bool | None = None
-    above_ma200: bool | None = None
-    pct_from_ma200: float | None = None
-    ret_5d: float | None = None
-    ret_1m: float | None = None
+class AltDataRecord(BaseModel):
+    """One ticker in alt_data.json 'tickers' — the alt_data.py contract.
+
+    NOTE the scoring floor: a record with no data anywhere still sums to
+    9 + 2 + 10 + 10 + 10 = 41 points, so alt_data_score does not really run
+    0-100. Check the status fields before trusting a mid-range score.
+    """
+
+    ticker: str
+    alt_data_score: float = Field(allow_inf_nan=False)   # 0-100 after clamp
+    alt_data_signal: Literal["BULLISH", "NEUTRAL", "BEARISH"]
+    flags: list[str]
+
+    insider: InsiderRecord
+    insider_sentiment: InsiderSentimentRecord
+    short_interest: ShortInterestRecord
+    analyst_trend: AnalystTrendRecord
+    congressional: CongressionalRecord
+    news_sentiment: NewsSentimentRecord
 
 
-class VstoxxRecord(BaseModel):
-    """eu_internals.VSTOXX — ^V2TX with ^VDAX fallback; absent if neither loads."""
-    spot: float
-    prev: float
-    change_1d: float
-    percentile: float
-    label: VixLabel
+class AltDataSnapshot(BaseModel):
+    """The whole alt_data.json document."""
 
-
-class EurUsdRecord(BaseModel):
-    """eu_internals.EURUSD."""
-    price: float
-    ret_5d: float | None = None
-    ret_20d: float | None = None
-    trend: Literal["strengthening", "weakening", "stable"]
-
-
-class EuInternals(BaseModel):
-    """eu_internals — every index is wrapped in its own try/continue, so all
-    four are optional. The Yahoo symbols start with '^' or contain '.', which
-    are not legal Python names, so each uses an alias (same trick as 52w_high)."""
-    gdaxi: EuIndexRecord | None = Field(default=None, alias="^GDAXI")
-    ftse: EuIndexRecord | None = Field(default=None, alias="^FTSE")
-    fchi: EuIndexRecord | None = Field(default=None, alias="^FCHI")
-    ftsemib: EuIndexRecord | None = Field(default=None, alias="FTSEMIB.MI")
-    VSTOXX: VstoxxRecord | None = None
-    EURUSD: EurUsdRecord | None = None
-    eu_breadth: str
-    eu_bull_regime: bool | None = None    # None when no index was tracked
-    interpretation: str
-
-
-class SentimentSnapshot(BaseModel):
-    """The whole sentiment_data.json document — one snapshot per run."""
     generated_at: str
-    composite_score: float = Field(allow_inf_nan=False)
-    composite_label: RiskLabel
-    composite_delta: float | None = None   # None on the first ever run
-
-    # Sections — None means "that fetch failed this run", which is tolerated
-    cnn_fear_greed: FearGreedRecord | None = None
-    vix: VixRecord | None = None
-    market_internals: MarketInternals | None = None
-    safe_haven: SafeHaven | None = None
-    credit: Credit | None = None
-    put_call: PutCall | None = None
-    rates: Rates | None = None
-    eu_internals: EuInternals | None = None
-
-    eu_composite_score: float | None = None            # None when eu is missing
-    eu_composite_label: RiskLabel | Literal["N/A"]
-
-    # Written by sentiment_agent.py AFTER validation, so they are absent from the
-    # document being validated but present in the file on disk.
-    schema_valid: bool | None = None
-    schema_errors: list[dict] | None = None
+    total_tickers: int
+    finnhub_enabled: bool
+    quiver_enabled: bool
+    vader_enabled: bool
+    tickers: dict[str, AltDataRecord]
