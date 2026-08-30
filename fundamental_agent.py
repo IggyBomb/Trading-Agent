@@ -39,6 +39,9 @@ from datetime import datetime
 import logging
 log = logging.getLogger("fundamental_agent")
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "No financial Advice"))
+from disclaimer import OPINION_PREFIX, DISCLAIMER_SUFFIX
+
 
 try:
     import yfinance as yf
@@ -487,6 +490,7 @@ def main():
              f"saved to {FUNDAMENTAL_PATH}")
 
     # ── Report (for the human reader — stays print, not telemetry) ──────────
+    print(f"\n{OPINION_PREFIX}\n")
     print(f"\nTop Undervalued with high f_score:")
     print(f"{'─'*60}")
     for ticker in list(undervalued)[:10]:
@@ -494,7 +498,8 @@ def main():
         print(f"  {ticker:<10} f={d['f_score']:>5.1f}  "
               f"V={d['value_score']} Q={d['quality_score']} G={d['growth_score']}  "
               f"{d['sector']}")
-    print(f"\nNow run /scan in Claude Code to see fundamentals alongside technicals.\n")
+    print(f"\nNow run /scan in Claude Code to see fundamentals alongside technicals.")
+    print(f"\n{DISCLAIMER_SUFFIX}\n")
 
 
 if __name__ == "__main__":

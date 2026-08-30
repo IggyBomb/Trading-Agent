@@ -12,6 +12,9 @@ Run before /scan or standalone:
 import json, os, sys, time
 from datetime import datetime, timezone
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "No financial Advice"))
+from disclaimer import OPINION_PREFIX, DISCLAIMER_SUFFIX
+
 try:
     import yfinance as yf
 except ImportError:
@@ -1058,11 +1061,14 @@ def main():
     report_path = f"./data/sentiment_report_{datetime.now().strftime('%Y-%m-%d')}.md"
     with open(report_path, "w") as f:
         f.write(f"# Sentiment Report — {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n")
+        f.write(f"{OPINION_PREFIX}\n\n")
         f.write("```\n")
         f.write(dashboard_text)
-        f.write("```\n")
+        f.write("```\n\n")
+        f.write(f"{DISCLAIMER_SUFFIX}\n")
 
     print(dashboard_text)
+    print(f"{DISCLAIMER_SUFFIX}\n")
     print(f"  Output saved to : {OUTPUT_PATH}")
     print(f"  Report saved to : {report_path}\n")
 
