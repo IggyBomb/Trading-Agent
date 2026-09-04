@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config
 from compliance_guard import ComplianceError, OutputValidator, Publication, Severity
 from disclosures import from_trades_jsonl, live_position_disclosure, normalise
+from market_outlook import MarketOutlookPublication
 
 RULE = "─" * 72
 
@@ -69,7 +70,34 @@ About the instrument, never about the reader. Sizing, entries and execution
 plans belong to whoever is reading — leave them out entirely.
 """
 
-_LIST_KEYS = {"sources"}
+OUTLOOK_TEMPLATE = """\
+---
+type: market_outlook
+period: Week of 2026-09-04
+regime: REFLATION — mid cycle, HIGH confidence
+sources:
+  - Trading-Agent sentiment/macro/sector pipeline, data as of 2026-09-04
+  - CNN Fear & Greed Index
+  - CBOE VIX
+# One entry per instrument named with a directional lean in the body
+# (a sector ETF called "leading" or "lagging" counts). Must name the
+# instrument, same reason as the single-instrument `position` line.
+positions:
+  - "XLE: The author holds no position in XLE as at the date of production."
+  - "XLF: The author holds no position in XLF as at the date of production."
+---
+
+Write the review here.
+
+A shape that works: where the regime read comes from (growth/inflation
+signals, yield curve, VIX); what is leading and lagging, sourced; what that
+implies about the regime, framed as opinion; what would change the read.
+
+About the instruments, never about the reader. No sizing, no "you should
+rotate into...", no execution plan — leave all of that out entirely.
+"""
+
+_LIST_KEYS = {"sources", "positions"}
 
 
 def parse_draft(path: Path) -> Dict[str, Any]:
@@ -174,12 +202,12 @@ def show_data(ticker: str) -> int:
 # Commands
 # ---------------------------------------------------------------------------
 
-def cmd_new(path: Path) -> int:
+def cmd_new(path: Path, doc_type: str = "instrument") -> int:
     if path.exists():
         print(f"  {path} already exists — not overwriting.")
         return 1
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(TEMPLATE, encoding="utf-8")
+    path.write_text(OUTLOOK_TEMPLATE if doc_type == "outlook" else TEMPLATE, encoding="utf-8")
     print(f"  Created {path}. Edit it, then: python3 publish.py check {path}")
     return 0
 
@@ -197,9 +225,21 @@ FRONT_MATTER_FIELDS = (
     ("position",            "OBBLIGO MAR — detieni o non detieni"),
 )
 
+OUTLOOK_FRONT_MATTER_FIELDS = (
+    ("period",  "settimana/periodo coperto"),
+    ("regime",  "lettura di regime, dalla classificazione macro"),
+)
+
+
+def _is_outlook(meta: Dict[str, Any]) -> bool:
+    return str(meta.get("type", "")).strip().lower() == "market_outlook"
+
 
 def _front_matter_report(meta: Dict[str, Any]) -> int:
     """Print the state of every required field. Returns the number missing."""
+    if _is_outlook(meta):
+        return _outlook_front_matter_report(meta)
+
     print("\n  FRONT MATTER")
     missing = 0
 
@@ -231,7 +271,46 @@ def _front_matter_report(meta: Dict[str, Any]) -> int:
     return missing
 
 
+def _outlook_front_matter_report(meta: Dict[str, Any]) -> int:
+    """Same idea as `_front_matter_report`, for a `type: market_outlook` draft."""
+    print("\n  FRONT MATTER (market outlook)")
+    missing = 0
+
+    for field, why in OUTLOOK_FRONT_MATTER_FIELDS:
+        value = str(meta.get(field, "")).strip()
+        if not value:
+            print(f"    [ ! ]  {field:<20} MANCANTE — {why}")
+            missing += 1
+            continue
+        shown = value if len(value) <= 44 else value[:41] + "…"
+        print(f"    [ ok]  {field:<20} {shown}")
+
+    sources = meta.get("sources") or []
+    if sources:
+        print(f"    [ ok]  {'sources':<20} {len(sources)} citate")
+    else:
+        print(f"    [ ! ]  {'sources':<20} MANCANTI — nessuna cifra è attribuibile")
+        missing += 1
+
+    positions = meta.get("positions") or []
+    if positions:
+        print(f"    [ ok]  {'positions':<20} {len(positions)} strumento/i dichiarati")
+        for p in positions:
+            if ":" not in p:
+                print(f"    [ ! ]  \"{p}\" non nomina uno strumento (manca 'TICKER: ...')")
+                missing += 1
+    else:
+        print(f"    [ ! ]  {'positions':<20} MANCANTI — OBBLIGO MAR per ogni strumento "
+              f"nominato con un lean")
+        missing += 1
+
+    return missing
+
+
 def _reminder(meta: Dict[str, Any]) -> None:
+    if _is_outlook(meta):
+        _outlook_reminder(meta)
+        return
     ticker = str(meta.get("ticker", "questo titolo")).strip() or "questo titolo"
     days = getattr(config, "BLACKOUT_DAYS", 5)
     print(f"\n{RULE}\n  PRIMA DI PUBBLICARE — da controllare a mano ogni volta\n{RULE}\n")
@@ -241,6 +320,19 @@ def _reminder(meta: Dict[str, Any]) -> None:
     print(f"         e non prevedi di farlo nei prossimi {days}.")
     print(f"    [ ]  Ogni cifra nel testo è attribuibile a una delle fonti elencate.")
     print(f"    [ ]  Il rating rispetta le definizioni pubblicate, non il tuo istinto.")
+    print(f"    [ ]  Hai riletto il testo tu. Il controllo automatico non legge le intenzioni.")
+    print()
+
+
+def _outlook_reminder(meta: Dict[str, Any]) -> None:
+    days = getattr(config, "BLACKOUT_DAYS", 5)
+    print(f"\n{RULE}\n  PRIMA DI PUBBLICARE — da controllare a mano ogni volta\n{RULE}\n")
+    print(f"    [ ]  Ogni strumento nominato nel corpo con un lean (leader/laggard,")
+    print(f"         sovrappeso/sottopeso) ha una riga in `positions` che lo nomina.")
+    print(f"    [ ]  Ogni riga `positions` dice quello che detieni DAVVERO oggi.")
+    print(f"    [ ]  Non hai comprato o venduto nessuno di questi strumenti negli")
+    print(f"         ultimi {days} giorni, e non prevedi di farlo nei prossimi {days}.")
+    print(f"    [ ]  Ogni cifra nel testo è attribuibile a una delle fonti elencate.")
     print(f"    [ ]  Hai riletto il testo tu. Il controllo automatico non legge le intenzioni.")
     print()
 
@@ -362,6 +454,9 @@ def cmd_render(path: Path, save: bool, strict: bool) -> int:
         return 1
 
     meta = parse_draft(path)
+    if _is_outlook(meta):
+        return _render_outlook(meta, path, save, strict)
+
     required = ("instrument", "ticker", "isin", "rating", "target",
                 "horizon", "price_at_production", "previous", "basis")
     missing = [k for k in required if not str(meta.get(k, "")).strip()]
@@ -422,6 +517,53 @@ def cmd_render(path: Path, save: bool, strict: bool) -> int:
     return 0
 
 
+def _render_outlook(meta: Dict[str, Any], path: Path, save: bool, strict: bool) -> int:
+    required = ("period", "regime")
+    missing = [k for k in required if not str(meta.get(k, "")).strip()]
+    if missing:
+        print(f"\n  Draft is missing front-matter fields: {', '.join(missing)}\n")
+        return 1
+
+    pub = MarketOutlookPublication(
+        producer=config.PRODUCER,
+        author=config.AUTHOR,
+        period=meta["period"],
+        regime=meta["regime"],
+        sources=meta.get("sources", []),
+        positions=meta.get("positions", []),
+        issuer_relationship=config.ISSUER_RELATIONSHIP,
+        body=meta["body"],
+    )
+
+    try:
+        text = pub.render(allow_warnings=not strict)
+    except ComplianceError as exc:
+        print(f"\n{RULE}\n  WITHHELD\n{RULE}\n\n  {exc}\n")
+        return 1
+
+    print("\n" + text + "\n")
+
+    if save:
+        stamp = datetime.now(timezone.utc)
+        config.PUBLICATIONS_DIR.mkdir(parents=True, exist_ok=True)
+        slug = re.sub(r"[^a-z0-9]+", "-", meta["period"].lower()).strip("-")
+        out = config.PUBLICATIONS_DIR / f"{stamp:%Y-%m-%d}-outlook-{slug}.md"
+        out.write_text(text, encoding="utf-8")
+
+        with config.HISTORY_PATH.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({
+                "disseminated": stamp.isoformat(),
+                "type": "market_outlook",
+                "period": meta["period"],
+                "regime": meta["regime"],
+                "publication": out.name,
+            }) + "\n")
+
+        print(f"  Saved  : {out}")
+        print(f"  Logged : {config.HISTORY_PATH.name}  (your 12-month history)\n")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         prog="publish.py",
@@ -434,6 +576,9 @@ def main() -> int:
 
     p = sub.add_parser("new", help="create a draft with the required front matter")
     p.add_argument("path", type=Path)
+    p.add_argument("--type", choices=("instrument", "outlook"), default="instrument",
+                    help="'instrument' (default): single-name thesis. "
+                         "'outlook': weekly market/sector review.")
 
     p = sub.add_parser("check", help="scan a draft for personalisation")
     p.add_argument("path", type=Path)
@@ -449,7 +594,7 @@ def main() -> int:
         if args.cmd == "data":
             return show_data(args.ticker)
         if args.cmd == "new":
-            return cmd_new(args.path)
+            return cmd_new(args.path, args.type)
         if args.cmd == "check":
             return cmd_check(args.path)
         if args.cmd == "render":
