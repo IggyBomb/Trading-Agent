@@ -126,6 +126,13 @@ def parse_draft(path: Path) -> Dict[str, Any]:
             meta[key] = [] if key in _LIST_KEYS and not value else value
         elif key and isinstance(meta.get(key), str):
             meta[key] = (meta[key] + " " + raw.strip()).strip()
+        elif (key and key in _LIST_KEYS and isinstance(meta.get(key), list)
+              and meta[key] and raw.startswith((" ", "\t"))):
+            # Wrapped continuation of the last "- " list item (e.g. a long
+            # source citation or position line split over two lines). Without
+            # this, the wrapped tail is silently dropped — a source or a
+            # position disclosure would ship truncated with no error.
+            meta[key][-1] = (meta[key][-1] + " " + raw.strip()).strip()
 
     meta["body"] = body.strip()
     return meta
