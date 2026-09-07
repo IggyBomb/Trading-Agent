@@ -1,0 +1,47 @@
+{
+  "created": "2026-09-07",
+  "source": "/scan 2026-09-07 — CONFIRMED (High conviction + Fair/Undervalued fundamentals)",
+  "note": "Paper tracking only — no real capital allocated, not logged in trade_logger.py or the real account.",
+  "positions": [
+    {
+      "ticker": "REYN",
+      "entry_date": "2026-09-07",
+      "entry_price": 21.85,
+      "stop": 21.2239,
+      "target": 22.7892,
+      "setup": "reversal",
+      "f_score": 53.3,
+      "rating": "Fair"
+    },
+    {
+      "ticker": "TSN",
+      "entry_date": "2026-09-07",
+      "entry_price": 51.42,
+      "stop": 50.0305,
+      "target": 53.5042,
+      "setup": "reversal",
+      "f_score": 49.9,
+      "rating": "Fair"
+    },
+    {
+      "ticker": "KLAC",
+      "entry_date": "2026-09-07",
+      "entry_price": 185.60,
+      "stop": 177.94,
+      "target": 197.09,
+      "setup": "breakout",
+      "f_score": 48.8,
+      "rating": "Fair"
+    },
+    {
+      "ticker": "ON",
+      "entry_date": "2026-09-07",
+      "entry_price": 74.38,
+      "stop": 71.6236,
+      "target": 78.5146,
+      "setup": "breakout",
+      "f_score": 45.9,
+      "rating": "Fair"
+    }
+  ]
+}
