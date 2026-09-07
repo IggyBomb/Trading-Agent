@@ -1,7 +1,7 @@
 {
+  "name": "test",
+  "description": "Running paper-tracking portfolio for /scan CONFIRMED picks. Grows over time as new scans add entries \u2014 this is not a single snapshot. No real capital, never logged in trade_logger.py, never read by the publishing track's position disclosures.",
   "created": "2026-09-07",
-  "source": "/scan 2026-09-07 — CONFIRMED (High conviction + Fair/Undervalued fundamentals)",
-  "note": "Paper tracking only — no real capital allocated, not logged in trade_logger.py or the real account.",
   "positions": [
     {
       "ticker": "REYN",
@@ -11,7 +11,8 @@
       "target": 22.7892,
       "setup": "reversal",
       "f_score": 53.3,
-      "rating": "Fair"
+      "rating": "Fair",
+      "source": "/scan 2026-09-07 CONFIRMED"
     },
     {
       "ticker": "TSN",
@@ -21,17 +22,19 @@
       "target": 53.5042,
       "setup": "reversal",
       "f_score": 49.9,
-      "rating": "Fair"
+      "rating": "Fair",
+      "source": "/scan 2026-09-07 CONFIRMED"
     },
     {
       "ticker": "KLAC",
       "entry_date": "2026-09-07",
-      "entry_price": 185.60,
+      "entry_price": 185.6,
       "stop": 177.94,
       "target": 197.09,
       "setup": "breakout",
       "f_score": 48.8,
-      "rating": "Fair"
+      "rating": "Fair",
+      "source": "/scan 2026-09-07 CONFIRMED"
     },
     {
       "ticker": "ON",
@@ -41,7 +44,8 @@
       "target": 78.5146,
       "setup": "breakout",
       "f_score": 45.9,
-      "rating": "Fair"
+      "rating": "Fair",
+      "source": "/scan 2026-09-07 CONFIRMED"
     }
   ]
 }
