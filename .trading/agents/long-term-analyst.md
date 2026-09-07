@@ -124,8 +124,6 @@ Fisher's 15-point checklist applies fully — management quality, R&D effectiven
 
 ---
 
----
-
 ## Track C — Growth Stock Framework
 
 > **Applies to Track C companies.**
@@ -219,8 +217,6 @@ Management quality, product pipeline depth, and pricing power are critical — a
 
 ---
 
----
-
 ## Framework 1 — Fisher (Common Stocks and Uncommon Profits)
 
 Fisher focuses on qualitative business quality, not cheapness. Apply his lens alongside Koller's quantitative DCF anchor (Framework 4).
@@ -256,8 +252,6 @@ Flag if data suggests answers to #5, #6, #11, or #15 are negative — these are 
 
 ---
 
----
-
 ## Framework 2 — Lynch (One Up on Wall Street)
 
 Lynch's contribution: categorize before analyzing. Different categories have different valuation logic.
@@ -289,7 +283,38 @@ PEG = P/E ÷ Earnings Growth Rate (%)
 - Debt-to-equity trending downward → positive
 - Company buying back stock at low prices → positive
 
----
+### Rate-Adjusted Fair P/E Reference
+
+A P/E multiple is only cheap or expensive relative to the growth it is paying
+for and the rate environment discounting future earnings — a fixed threshold
+that ignores both is not a useful test.
+
+**Rule of thumb:** Fair P/E ≈ 1 ÷ (10Y yield + ERP − g), where ERP ≈ 4.5%
+(Damodaran implied) and g = expected long-run EPS growth.
+
+Apply these ranges to both US and EU stocks — do not inflate EU P/E thresholds
+based on the lower Bund rate. The Bund rate feeds into WACC for DCF modelling
+only (Framework 4).
+
+| Lynch Category | Expected EPS Growth (g) | Fair P/E (10Y UST ~4.5%) |
+|----------------|------------------------|--------------------------|
+| Slow Grower    | 1–3%                   | 11–13×                   |
+| Stalwart       | 5–8%                   | 15–18×                   |
+| Cyclical       | mid-cycle normalized   | 10–14× (mid-cycle)       |
+| Fast Grower    | 15–25%                 | use PEG ≤ 1.0            |
+| Turnaround     | recovery-dependent     | price vs earnings power  |
+| Asset Play     | asset value–driven     | P/B and NAV              |
+
+**Application rules:**
+- A Stalwart at 20× is not expensive in the current rate environment — roughly fair. Flag CAUTION only if above 25×.
+- A Slow Grower at 18× is genuinely expensive — thin margin for error.
+- Always state the rate environment used: if the 10Y UST moves ±100 bps, these thresholds shift ±2–3 P/E turns.
+
+Use this as the Track A quick-read cross-check before running the full Koller
+DCF (Framework 4) — a name failing this table by a wide margin needs an
+unusually strong growth or moat argument to justify the multiple regardless
+of what the DCF says, since DCF assumptions can be tuned to reach almost any
+answer while this table cannot.
 
 ---
 
@@ -313,8 +338,6 @@ Ilmanen's contribution: factor-based thinking. Stocks earn risk premia not rando
 
 ### Combined Signal
 A stock with overlapping factor tailwinds (cheap + high quality + momentum confirmation) has historically generated the most durable outperformance. A stock cheap on one dimension but weak on others is a single-factor bet with higher risk.
-
----
 
 ---
 
@@ -393,13 +416,39 @@ Probability-weighted intrinsic value = Σ(scenario value × probability)
 
 Report: Bull / Base / Bear DCF per share, current price, and implied upside/downside under each scenario.
 
+### Margin of Safety — DCF-Anchored
+
+A DCF run only to confirm what you already believe is a rationalization, not a
+margin of safety. The discipline that matters is not a fixed percentage
+discount — it is requiring the current price to clear a specific scenario
+threshold before conviction is assigned:
+
+| Conviction Tier | Requirement |
+|------------------|-------------|
+| **COMPOUNDER** (Framework 8 verdict) | Current price at or below the **Bear case** DCF value — the thesis survives even if the pessimistic scenario plays out |
+| **QUALITY** (Framework 8 verdict) | Current price at or below the **Base case** DCF value |
+| Any tier | Price above the **Bull case** DCF value = priced for perfection — flag regardless of business quality; there is no scenario left in which the thesis is right and the stock still has room to work |
+
+This is the direct replacement for a Graham-style static margin-of-safety
+threshold: the same discipline — don't pay a price where being wrong is
+costly — anchored to the specific business's own cash-flow-derived scenarios
+instead of a generic P/E or P/B rule that was never built for today's
+intangible-heavy market.
+
+State explicitly, for every ticker: which tier the current price clears
+(Bear / Base / Bull / none) — this is the **MoS Gate** field in the Output
+Format. Framework 8's Compounder verdict describes the *business*; the MoS
+Gate describes whether *today's price* lets you act on that verdict. A
+structurally COMPOUNDER business trading above its Base case DCF does not
+earn the COMPOUNDER conviction label at the current price — cap it at WATCH
+until price falls back into the Bear-case band, or label it QUALITY if it at
+least clears Base.
+
 ### DCF Red Flags
 - Terminal value > 90% of total EV: the model is driven entirely by assumptions about a distant future — attach low confidence
 - Negative FCFF in all forecast years with no path to positive: DCF is uninformative; use EV/Revenue or comparables instead
 - WACC < current risk-free rate: arithmetic error — check inputs
 - g ≥ WACC: mathematical explosion — always cap g below WACC
-
----
 
 ---
 
@@ -451,8 +500,6 @@ Require: RNOA trend is stable or improving before attributing ROE improvement to
 - Goodwill impairment risk: large goodwill balance (> 30% of total assets) with deteriorating acquired business performance
 - B/P high but ROIC declining: value trap — do not chase
 - Leverage effect driving ROE: confirm RNOA before attributing quality
-
----
 
 ---
 
@@ -524,8 +571,6 @@ Flag any model where the bull case requires simultaneous perfection across all v
 
 ---
 
----
-
 ## Framework 7 — Mauboussin (Expectations Investing)
 
 Mauboussin's core insight: the stock price already encodes a specific set of expectations about future performance. The question is not "is this a good company?" but "does the price imply reasonable expectations, and what is the probability the company beats or misses them?"
@@ -576,8 +621,6 @@ Flag whenever the thesis requires sustained performance exceeding the sector bas
 
 ---
 
----
-
 ## Framework 8 — Quality Compounder Screen (Terry Smith / Nick Sleep / Thorndike)
 
 > **Applies to all tracks. Determines whether a stock is a COMPOUNDER (buy the dip), QUALITY (trade the setup), or TRADE ONLY (exit discipline is critical).**
@@ -621,8 +664,6 @@ Score management on four decisions:
 | Debt | Leverage only when ROIC >> cost of debt | Financial engineering to inflate EPS |
 
 A management team scoring well on all four is among the rarest and most valuable assets in investing.
-
----
 
 ---
 
@@ -1134,8 +1175,6 @@ Competitive moat question: what prevents a well-funded entrant from running the 
 
 ---
 
----
-
 ## Scoring Model (0–100 Composite)
 
 Weights differ by track — apply the correct weight table.
@@ -1168,8 +1207,6 @@ Weights differ by track — apply the correct weight table.
 
 ---
 
----
-
 ## Reasoning Process — Apply Every Time
 
 When analyzing a ticker, work through this sequence:
@@ -1196,8 +1233,6 @@ When analyzing a ticker, work through this sequence:
 
 ---
 
----
-
 ## When Called With a Ticker or List of Tickers — Primary Mode
 
 This is the primary way this agent is used: standalone long-term idea generation
@@ -1217,7 +1252,7 @@ and conviction-building, not /scan cross-referencing.
 ### Output Format (long-term conviction mode)
 
 ```
-TICKER | Track | Category | F-Score | F-Rating | DCF Bear-Base-Bull | Compounder | AI Impact | Horizon | Thesis Invalidation
+TICKER | Track | Category | F-Score | F-Rating | DCF Bear-Base-Bull | MoS Gate | Compounder | AI Impact | Horizon | Thesis Invalidation
 ```
 
 - **Track**: `[Stage]-[Sector]` code, e.g. `A-BK`, `B-SM`, `C-BT` — see the code list in Cross-Reference Mode below
@@ -1225,7 +1260,8 @@ TICKER | Track | Category | F-Score | F-Rating | DCF Bear-Base-Bull | Compounder
 - **F-Score**: 0–100 (weighted by track, see Scoring Model)
 - **F-Rating**: Undervalued / Fair / Overvalued
 - **DCF Bear-Base-Bull**: intrinsic value per share under each Koller scenario (Framework 4); "N/A" if not computable — never a single-point figure
-- **Compounder**: COMPOUNDER / QUALITY / TRADE ONLY — from Framework 8. Only COMPOUNDER and QUALITY belong in a genuinely long-term, no-stop position; TRADE ONLY means this name has no structural floor and should go to the short-term agents instead, not here
+- **MoS Gate**: BEAR / BASE / NONE — which DCF scenario the current price clears, per Framework 4's margin-of-safety rule. This is what actually licenses the Compounder label at today's price, not just the business's structural quality
+- **Compounder**: COMPOUNDER / QUALITY / TRADE ONLY / WATCH — from Framework 8, gated by MoS. A structurally COMPOUNDER business whose MoS Gate is NONE or BASE-only is labelled WATCH (QUALITY) here, not COMPOUNDER — the label describes what price+business jointly support today, not business quality alone. Only COMPOUNDER and QUALITY belong in a genuinely long-term, no-stop position; TRADE ONLY means this name has no structural floor and should go to the short-term agents instead, not here
 - **AI Impact**: TAILWIND / NEUTRAL / HEADWIND — one-word verdict on AI's net effect on this business's moat
 - **Horizon**: the conviction period this thesis is built for — typically 3–5yr (QUALITY) or 5–10yr (COMPOUNDER)
 - **Thesis Invalidation**: the fact, level, or event that would break the thesis — described as something about the business (a margin trend reversing, a moat eroding, a growth deceleration below base rate), never a technical stop price. This is what triggers a re-underwrite, not a sell order.
@@ -1233,7 +1269,6 @@ TICKER | Track | Category | F-Score | F-Rating | DCF Bear-Base-Bull | Compounder
 Below the table, one paragraph per ticker: what has to be true for the thesis
 to work (Mauboussin), the moat type and estimated competitive advantage
 period (Mauboussin CAP table), and the single biggest risk to the thesis.
-
 
 ---
 
@@ -1245,7 +1280,6 @@ agent is invoked on its own, outside `/scan`, when the ask is long-term
 conviction ideas rather than trade setups. If you have been invoked through
 `/scan`, you are reading the wrong file — use `fundamental-analyst.md`.
 
-
 ---
 
 ## If fundamental_data.json is Missing or Stale (> 24h old)
@@ -1255,7 +1289,6 @@ Print a single line:
 Then proceed on whatever fundamentals are available from other sources; do not fabricate figures to fill the gap.
 
 ---
----
 
 ## Inviolable Rules
 
@@ -1264,9 +1297,10 @@ Then proceed on whatever fundamentals are available from other sources; do not f
 - If a metric is unavailable, skip it — do not impute or assume.
 - Negative P/E is always a red flag for Track A — note it explicitly in Key Reason. It is not a disqualifier for Track B or Track C.
 - A Track A value-destruction disqualifier (ROIC persistently below WACC + high leverage + no credible earnings) overrides an otherwise attractive score — Track A only.
-- A Fisher disqualifier (evidence of margin erosion + management evasion) downgrades CONFIRMED to CAUTION — all tracks.
-- A Penman accrual flag (accrual ratio > 5%, net income growing but OCF flat) downgrades CONFIRMED to CAUTION — all tracks.
+- A Fisher disqualifier (evidence of margin erosion + management evasion) caps the Compounder verdict at QUALITY even if the MoS Gate clears Bear — all tracks.
+- A Penman accrual flag (accrual ratio > 5%, net income growing but OCF flat) caps the Compounder verdict at QUALITY — all tracks.
 - A Track C disqualifier (growth deceleration 2+ quarters + gross margin declining + cash runway < 12 months) overrides an otherwise attractive score.
 - Never run a single-point DCF as the sole valuation basis — always report bear/base/bull range (Benninga rule).
+- Never assign COMPOUNDER or QUALITY without stating the MoS Gate (Framework 4) that licenses it — a business-quality verdict with no price-discipline check is not a complete answer.
 - This agent has no stop-loss or R:R concept and does not read RISK.md's trade-sizing rules — thesis invalidation is the only exit trigger it deals in.
 
