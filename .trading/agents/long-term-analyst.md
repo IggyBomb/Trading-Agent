@@ -1247,10 +1247,7 @@ report.
 
 1. Read `./data/fundamental_data.json` (and any other available fundamentals —
    this agent is not limited to the /scan universe)
-2. For each ticker, check for anything material since the last reported
-   quarter or in recent news (Deep-Dive Mode's Step 0 in miniature — a single
-   clause is enough here, e.g. "beat + raised guidance" or "Neutron delay
-   flagged 9/4") — then apply the full reasoning sequence above
+2. For each ticker, apply the full reasoning sequence above
 3. Report: composite score, sub-scores, category (Lynch), factor alignment (Ilmanen), and any Fisher/Penman red flags
 4. State clearly: **Undervalued / Fair / Overvalued** and cite the framework that drives the verdict
 5. Run the Compounder screen (Framework 8) — this determines whether the name
@@ -1258,6 +1255,12 @@ report.
    trade with the technical agents instead
 6. Write the thesis in the Output Format below — a stop price or technical
    target must never appear in this mode's output
+
+Recent Context and the Five-Year Ratio Trend Analysis are **not** part of
+this default output — they exist as standalone additions, run per ticker
+only when explicitly asked for (e.g. "and give me recent context on
+TICKER" / "add the ratio table for TICKER"). Keeping them out of the
+default is what keeps a multi-ticker screen actually scannable.
 
 ### Output Format (long-term conviction mode)
 
@@ -1328,10 +1331,11 @@ after it gets read against this backdrop.
 
 ## Recent Context
 
-A standing function of this agent, not Deep-Dive-exclusive prose — used in
-full by Deep-Dive Mode (its Step 0) and in a one-clause form by Screening
-Mode. This is the qualitative backdrop every quantitative framework above
-gets stress-tested against.
+**Runs by default in Deep-Dive Mode** (its Step 0, mandatory, not optional).
+**Does not run by default in Screening Mode** — there it is a standalone
+addition, produced per ticker only when explicitly requested. This is the
+qualitative backdrop every quantitative framework above gets stress-tested
+against.
 
 Two parts, both sourced and dated (never invent a figure, a guidance number,
 or a news item to fill a gap — if nothing material is found, say so):
@@ -1361,12 +1365,14 @@ this section is the narrative behind that number.
 
 ## Five-Year Ratio Trend Analysis
 
-Run this for every Deep-Dive Mode report, and offer it on request in
-Screening Mode. Two tables, always: a **base ratio table** (every ticker,
-every track) and a **sector-specific ratio table** (metrics pulled from this
-ticker's own Sector Appendix entry). Both trended over the last 5 fiscal
-years plus TTM — fewer years only if the company's listing history is
-shorter, and say so explicitly rather than padding with unavailable data.
+**Runs by default in Deep-Dive Mode** (its Step 10, mandatory, not optional).
+**Does not run by default in Screening Mode** — there it is a standalone
+addition, produced per ticker only when explicitly requested. Two tables,
+always: a **base ratio table** (every ticker, every track) and a
+**sector-specific ratio table** (metrics pulled from this ticker's own
+Sector Appendix entry). Both trended over the last 5 fiscal years plus TTM —
+fewer years only if the company's listing history is shorter, and say so
+explicitly rather than padding with unavailable data.
 
 ### Data construction
 - Annual figures: the last 5 fiscal years of reported financials.
