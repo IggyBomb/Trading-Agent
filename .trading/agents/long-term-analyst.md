@@ -1247,7 +1247,10 @@ report.
 
 1. Read `./data/fundamental_data.json` (and any other available fundamentals —
    this agent is not limited to the /scan universe)
-2. For each ticker, apply the full reasoning sequence above
+2. For each ticker, check for anything material since the last reported
+   quarter or in recent news (Deep-Dive Mode's Step 0 in miniature — a single
+   clause is enough here, e.g. "beat + raised guidance" or "Neutron delay
+   flagged 9/4") — then apply the full reasoning sequence above
 3. Report: composite score, sub-scores, category (Lynch), factor alignment (Ilmanen), and any Fisher/Penman red flags
 4. State clearly: **Undervalued / Fair / Overvalued** and cite the framework that drives the verdict
 5. Run the Compounder screen (Framework 8) — this determines whether the name
@@ -1287,6 +1290,32 @@ framework in this document gets its own numbered section, not just a summary
 row. Do not skip a section; if a framework is genuinely inapplicable (e.g.
 Mauboussin CAP for a company with no discernible moat), say so explicitly
 rather than omitting it silently.
+
+**0. Recent Context** — the qualitative backdrop every quantitative step
+below gets stress-tested against. Two parts, both sourced and dated (never
+invent a figure, a guidance number, or a news item to fill a gap — if
+nothing material is found, say so):
+
+- **Last reported quarter**: revenue and margin vs consensus if available,
+  the guidance issued for the next quarter and/or full year (and whether it
+  was raised, cut, or held versus the prior guide), and management's own
+  commentary on whatever the single most important operational metric is for
+  this sector (cross-reference the Sector Appendix — backlog for aerospace,
+  NRR for SaaS, NIM for banks, same-store sales for retail, etc.).
+- **Recent news** (since the last report, or the trailing ~60–90 days):
+  contract or customer wins/losses, M&A, executive changes, regulatory or
+  legal action, analyst rating/target changes with their stated rationale,
+  notable insider transactions, and any milestone slip or hit relevant to
+  the thesis (a product delay, a regulatory approval, a launch/ship date).
+
+This step produces facts only — no rating, no opinion. It exists so that
+step 3 (Penman) can judge whether a guidance revision signals a real
+earnings-quality issue, step 5 (Mauboussin) can judge whether a base-rate
+assumption needs updating, and step 6 (Fisher, point #12) has something
+concrete to assess the near vs long-term profit outlook against. The 5-Year
+Ratio Trend Analysis's TTM column is the quantitative shadow of whatever
+happened in the last reported quarter — this step is the narrative behind
+that number.
 
 **1. Routing** — Track and sector code, one line, with the reason.
 
