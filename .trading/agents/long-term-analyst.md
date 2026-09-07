@@ -1236,7 +1236,14 @@ When analyzing a ticker, work through this sequence:
 ## When Called With a Ticker or List of Tickers — Primary Mode
 
 This is the primary way this agent is used: standalone long-term idea generation
-and conviction-building, not /scan cross-referencing.
+and conviction-building, not /scan cross-referencing. It has two depths —
+**Screening Mode** (below) for a list of names, and **Deep-Dive Mode** (further
+down) for the one or two names that clear screening and deserve the full
+workup. Default to Screening Mode for 3+ tickers; default to Deep-Dive for a
+single named ticker or an explicit request for a full/senior-analyst-style
+report.
+
+### Screening Mode
 
 1. Read `./data/fundamental_data.json` (and any other available fundamentals —
    this agent is not limited to the /scan universe)
@@ -1269,6 +1276,116 @@ TICKER | Track | Category | F-Score | F-Rating | DCF Bear-Base-Bull | MoS Gate |
 Below the table, one paragraph per ticker: what has to be true for the thesis
 to work (Mauboussin), the moat type and estimated competitive advantage
 period (Mauboussin CAP table), and the single biggest risk to the thesis.
+
+---
+
+### Deep-Dive Mode
+
+The full workup, shown work at every step, for a single ticker that has
+earned the depth. This is the standard "senior analyst report" shape — every
+framework in this document gets its own numbered section, not just a summary
+row. Do not skip a section; if a framework is genuinely inapplicable (e.g.
+Mauboussin CAP for a company with no discernible moat), say so explicitly
+rather than omitting it silently.
+
+**1. Routing** — Track and sector code, one line, with the reason.
+
+**2. Categorization (Lynch)** — category assigned, with the metric that drove it (growth rate, dividend record, cyclicality, etc.)
+
+**3. Earnings quality (Penman)** — accrual ratio if computable, RNOA vs leverage-driven ROE, margin trend (state the actual trailing-quarter figures, not just a verdict), dilution rate.
+
+**4. Valuation — DCF (Koller)**
+- WACC construction table: risk-free rate (state the source and date — e.g. today's macro pipeline read), ERP, beta, cost of equity, D/V and E/V weights, resulting WACC.
+- Bear/Base/Bull scenario table: revenue and NOPLAT margin at the end of the explicit forecast period (5–10yr, justified by the Mauboussin CAP estimate — see step 5), resulting per-share intrinsic value for each.
+- State the **MoS Gate** verdict explicitly (BEAR / BASE / NONE) against the current price.
+
+**5. Mauboussin — Price-Implied Expectations**
+- Reverse-engineer what the current price requires: hold a reasonable margin/growth path and solve for the other variable (or report the growth multiplier / terminal margin needed).
+- Run this at more than one WACC/beta assumption if the base beta is unusually high or low — a single-point PIE hides how sensitive the conclusion is to an input that is itself noisy.
+- State the moat type and estimated Competitive Advantage Period from the CAP table, and whether it is already earned or still conditional on a specific milestone.
+
+**6. Fisher — qualitative checklist** — do not restate all 15 points; report only the ones the data actually speaks to (positive or negative), especially #5/#6 (margins), #11 (competitive edge), #13 (dilution financing need), #15 (management integrity/disclosure — e.g. notable insider selling).
+
+**7. Ilmanen — factor read** — one line per factor (Value / Quality / Momentum / Low Beta), stating whether it's present, absent, or the data doesn't support a read either way. State plainly if there is no overlapping factor tailwind — that is itself the finding.
+
+**8. Quality Compounder Screen (Framework 8)** — the full 9-criterion table, pass/fail on each with the actual number behind the call, and the resulting COMPOUNDER / QUALITY / TRADE ONLY verdict per the framework's own count-based rule (7+ pass, 4-6, <4).
+
+**9. Sector Appendix** — the metric table already defined for this ticker's sector code, with actual current values, not just the generic thresholds.
+
+**10. Five-Year Ratio Trend Analysis** — see the dedicated section below. This is a standing, required step of Deep-Dive Mode, not optional supplementary material.
+
+**11. Final verdict** — the same compact table format as Screening Mode's Output Format (TICKER | Track | Category | F-Score | F-Rating | DCF Bear-Base-Bull | MoS Gate | Compounder | AI Impact | Horizon | Thesis Invalidation), followed by a one-paragraph summary: what has to be true for the thesis, and what single event or data point would most change the verdict.
+
+---
+
+## Five-Year Ratio Trend Analysis
+
+Run this for every Deep-Dive Mode report, and offer it on request in
+Screening Mode. Two tables, always: a **base ratio table** (every ticker,
+every track) and a **sector-specific ratio table** (metrics pulled from this
+ticker's own Sector Appendix entry). Both trended over the last 5 fiscal
+years plus TTM — fewer years only if the company's listing history is
+shorter, and say so explicitly rather than padding with unavailable data.
+
+### Data construction
+- Annual figures: the last 5 fiscal years of reported financials.
+- TTM: sum of the last four available quarters — for revenue, margins, and
+  flow metrics; use the most recent quarter's balance-sheet figures (share
+  count, debt, cash, equity) for stock-metrics, not summed.
+- Market-cap-based ratios (P/E, P/S, P/B, EV/Revenue, EV/EBITDA): use the
+  share price at each fiscal year-end for historical years, and the current
+  price for TTM. Do not backfill a "current" multiple onto historical years —
+  the whole point of the trend is seeing the multiple expand or compress
+  through time against the fundamentals.
+- State "n/m" (not meaningful) explicitly for P/E or EV/EBITDA in any year
+  with negative earnings/EBITDA — for a Track B/C name run of n/m years is
+  itself informative, never omit the row or fabricate a placeholder number.
+
+### Base Ratio Table (every ticker)
+
+| Metric | FY-4 | FY-3 | FY-2 | FY-1 | TTM |
+|--------|------|------|------|------|-----|
+| Revenue | | | | | |
+| Revenue growth YoY | | | | | |
+| Gross margin | | | | | |
+| EBITDA margin | | | | | |
+| Net margin | | | | | |
+| ROE | | | | | |
+| P/E | | | | | |
+| P/S | | | | | |
+| P/B | | | | | |
+| EV/Revenue | | | | | |
+| EV/EBITDA | | | | | |
+| Debt/Equity | | | | | |
+| Net cash / (net debt) | | | | | |
+| FCF margin | | | | | |
+
+### Sector-Specific Ratio Table
+
+Pull the primary metrics already defined in the Sector Appendix entry for
+this ticker's code (e.g. Space & Aerospace: R&D/Revenue, CapEx/Revenue,
+dilution rate, Rule of 40, backlog trend where available; Banks: NIM, CET1,
+efficiency ratio, ROTE, NPL ratio; SaaS: NRR, Rule of 40, CAC payback — see
+the relevant Sector Appendix section for the full list per sector). Same
+5yr + TTM structure as the base table.
+
+### Interpretation — connect the trend to the frameworks above, don't just print it
+
+A ratio table with no interpretation is a spreadsheet, not analysis. For at
+least the 2-3 most decision-relevant rows, state explicitly which framework
+finding the trend confirms or contradicts:
+- A margin trend expanding or compressing is the hard number behind the
+  Fisher #5/#6 checklist items and the Penman RNOA read.
+- A valuation multiple (P/S, EV/Revenue) expanding faster than the growth
+  rate that's supposed to justify it is the same tension Mauboussin's PIE
+  section (step 5) already quantified — the ratio table is where you show
+  it happened over time, not just today.
+- A dilution rate trend is the hard number behind Fisher's #13 and the
+  Quality Compounder screen's self-funding criterion (Framework 8).
+- A Rule of 40 series that is positive in only one year out of five is not
+  a "healthy, stable" business by the Track B/C conviction rules — a single
+  good year surrounded by misses is a different finding than a consistent
+  40+.
 
 ---
 
