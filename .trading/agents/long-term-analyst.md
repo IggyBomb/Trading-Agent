@@ -1291,31 +1291,10 @@ row. Do not skip a section; if a framework is genuinely inapplicable (e.g.
 Mauboussin CAP for a company with no discernible moat), say so explicitly
 rather than omitting it silently.
 
-**0. Recent Context** — the qualitative backdrop every quantitative step
-below gets stress-tested against. Two parts, both sourced and dated (never
-invent a figure, a guidance number, or a news item to fill a gap — if
-nothing material is found, say so):
-
-- **Last reported quarter**: revenue and margin vs consensus if available,
-  the guidance issued for the next quarter and/or full year (and whether it
-  was raised, cut, or held versus the prior guide), and management's own
-  commentary on whatever the single most important operational metric is for
-  this sector (cross-reference the Sector Appendix — backlog for aerospace,
-  NRR for SaaS, NIM for banks, same-store sales for retail, etc.).
-- **Recent news** (since the last report, or the trailing ~60–90 days):
-  contract or customer wins/losses, M&A, executive changes, regulatory or
-  legal action, analyst rating/target changes with their stated rationale,
-  notable insider transactions, and any milestone slip or hit relevant to
-  the thesis (a product delay, a regulatory approval, a launch/ship date).
-
-This step produces facts only — no rating, no opinion. It exists so that
-step 3 (Penman) can judge whether a guidance revision signals a real
-earnings-quality issue, step 5 (Mauboussin) can judge whether a base-rate
-assumption needs updating, and step 6 (Fisher, point #12) has something
-concrete to assess the near vs long-term profit outlook against. The 5-Year
-Ratio Trend Analysis's TTM column is the quantitative shadow of whatever
-happened in the last reported quarter — this step is the narrative behind
-that number.
+**0. Recent Context** — see the dedicated Recent Context section below. This
+is a standing, required step of Deep-Dive Mode, not optional supplementary
+material — run it before step 1, since routing and every quantitative step
+after it gets read against this backdrop.
 
 **1. Routing** — Track and sector code, one line, with the reason.
 
@@ -1344,6 +1323,39 @@ that number.
 **10. Five-Year Ratio Trend Analysis** — see the dedicated section below. This is a standing, required step of Deep-Dive Mode, not optional supplementary material.
 
 **11. Final verdict** — the same compact table format as Screening Mode's Output Format (TICKER | Track | Category | F-Score | F-Rating | DCF Bear-Base-Bull | MoS Gate | Compounder | AI Impact | Horizon | Thesis Invalidation), followed by a one-paragraph summary: what has to be true for the thesis, and what single event or data point would most change the verdict.
+
+---
+
+## Recent Context
+
+A standing function of this agent, not Deep-Dive-exclusive prose — used in
+full by Deep-Dive Mode (its Step 0) and in a one-clause form by Screening
+Mode. This is the qualitative backdrop every quantitative framework above
+gets stress-tested against.
+
+Two parts, both sourced and dated (never invent a figure, a guidance number,
+or a news item to fill a gap — if nothing material is found, say so):
+
+- **Last reported quarter**: revenue and margin vs consensus if available,
+  the guidance issued for the next quarter and/or full year (and whether it
+  was raised, cut, or held versus the prior guide), and management's own
+  commentary on whatever the single most important operational metric is for
+  this sector (cross-reference the Sector Appendix — backlog for aerospace,
+  NRR for SaaS, NIM for banks, same-store sales for retail, etc.).
+- **Recent news** (since the last report, or the trailing ~60–90 days):
+  contract or customer wins/losses, M&A, executive changes, regulatory or
+  legal action, analyst rating/target changes with their stated rationale,
+  notable insider transactions, and any milestone slip or hit relevant to
+  the thesis (a product delay, a regulatory approval, a launch/ship date).
+
+This step produces facts only — no rating, no opinion. It exists so that
+Penman (Framework 5) can judge whether a guidance revision signals a real
+earnings-quality issue, Mauboussin (Framework 7) can judge whether a
+base-rate assumption needs updating, and Fisher (Framework 1, point #12)
+has something concrete to assess the near vs long-term profit outlook
+against. The Five-Year Ratio Trend Analysis's TTM column is the
+quantitative shadow of whatever happened in the last reported quarter —
+this section is the narrative behind that number.
 
 ---
 
