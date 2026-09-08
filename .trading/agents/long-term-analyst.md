@@ -1296,36 +1296,59 @@ rather than omitting it silently.
 
 **0. Recent Context** — see the dedicated Recent Context section below. This
 is a standing, required step of Deep-Dive Mode, not optional supplementary
-material — run it before step 1, since routing and every quantitative step
-after it gets read against this backdrop.
+material — run it first, since the business overview, routing, and every
+quantitative step after it gets read against this backdrop.
 
-**1. Routing** — Track and sector code, one line, with the reason.
+**1. Business Overview** — before any classification or valuation, establish
+what the company actually does. Purely descriptive: no rating, no opinion.
+Three parts:
 
-**2. Categorization (Lynch)** — category assigned, with the metric that drove it (growth rate, dividend record, cyclicality, etc.)
+- **Business segments/branches**: the company's own reporting segments (from
+  its 10-K/annual report or investor presentation), what each one does, and
+  its relative revenue and/or profit contribution. For a single-segment
+  business, say so — don't force a breakdown that doesn't exist.
+- **Principal markets**: geographic revenue mix, primary customer base or
+  channel (consumer / enterprise / government), and the named competitive
+  set with market position where disclosed.
+- **TAM (Total Addressable Market)**: the company's own disclosed TAM
+  estimate if it gives one — cite the source and date. If it doesn't, a
+  reasoned estimate from independent industry data is acceptable, but state
+  the methodology and source explicitly; never fabricate a figure. Report
+  current penetration (revenue ÷ TAM) where computable.
 
-**3. Earnings quality (Penman)** — accrual ratio if computable, RNOA vs leverage-driven ROE, margin trend (state the actual trailing-quarter figures, not just a verdict), dilution rate.
+This is the context every later step reads against — routing needs to know
+what the business actually is before it can be classified, Mauboussin's CAP
+and PIE (step 6) need market-size and competitive context, and Ilmanen's
+factor read (step 8) benefits from knowing where the company sits
+competitively.
 
-**4. Valuation — DCF (Koller)**
+**2. Routing** — Track and sector code, one line, with the reason.
+
+**3. Categorization (Lynch)** — category assigned, with the metric that drove it (growth rate, dividend record, cyclicality, etc.)
+
+**4. Earnings quality (Penman)** — accrual ratio if computable, RNOA vs leverage-driven ROE, margin trend (state the actual trailing-quarter figures, not just a verdict), dilution rate.
+
+**5. Valuation — DCF (Koller)**
 - WACC construction table: risk-free rate (state the source and date — e.g. today's macro pipeline read), ERP, beta, cost of equity, D/V and E/V weights, resulting WACC.
-- Bear/Base/Bull scenario table: revenue and NOPLAT margin at the end of the explicit forecast period (5–10yr, justified by the Mauboussin CAP estimate — see step 5), resulting per-share intrinsic value for each.
+- Bear/Base/Bull scenario table: revenue and NOPLAT margin at the end of the explicit forecast period (5–10yr, justified by the Mauboussin CAP estimate — see step 6), resulting per-share intrinsic value for each.
 - State the **MoS Gate** verdict explicitly (BEAR / BASE / NONE) against the current price.
 
-**5. Mauboussin — Price-Implied Expectations**
+**6. Mauboussin — Price-Implied Expectations**
 - Reverse-engineer what the current price requires: hold a reasonable margin/growth path and solve for the other variable (or report the growth multiplier / terminal margin needed).
 - Run this at more than one WACC/beta assumption if the base beta is unusually high or low — a single-point PIE hides how sensitive the conclusion is to an input that is itself noisy.
 - State the moat type and estimated Competitive Advantage Period from the CAP table, and whether it is already earned or still conditional on a specific milestone.
 
-**6. Fisher — qualitative checklist** — do not restate all 15 points; report only the ones the data actually speaks to (positive or negative), especially #5/#6 (margins), #11 (competitive edge), #13 (dilution financing need), #15 (management integrity/disclosure — e.g. notable insider selling).
+**7. Fisher — qualitative checklist** — do not restate all 15 points; report only the ones the data actually speaks to (positive or negative), especially #5/#6 (margins), #11 (competitive edge), #13 (dilution financing need), #15 (management integrity/disclosure — e.g. notable insider selling).
 
-**7. Ilmanen — factor read** — one line per factor (Value / Quality / Momentum / Low Beta), stating whether it's present, absent, or the data doesn't support a read either way. State plainly if there is no overlapping factor tailwind — that is itself the finding.
+**8. Ilmanen — factor read** — one line per factor (Value / Quality / Momentum / Low Beta), stating whether it's present, absent, or the data doesn't support a read either way. State plainly if there is no overlapping factor tailwind — that is itself the finding.
 
-**8. Quality Compounder Screen (Framework 8)** — the full 9-criterion table, pass/fail on each with the actual number behind the call, and the resulting COMPOUNDER / QUALITY / TRADE ONLY verdict per the framework's own count-based rule (7+ pass, 4-6, <4).
+**9. Quality Compounder Screen (Framework 8)** — the full 9-criterion table, pass/fail on each with the actual number behind the call, and the resulting COMPOUNDER / QUALITY / TRADE ONLY verdict per the framework's own count-based rule (7+ pass, 4-6, <4).
 
-**9. Sector Appendix** — the metric table already defined for this ticker's sector code, with actual current values, not just the generic thresholds.
+**10. Sector Appendix** — the metric table already defined for this ticker's sector code, with actual current values, not just the generic thresholds.
 
-**10. Five-Year Ratio Trend Analysis** — see the dedicated section below. This is a standing, required step of Deep-Dive Mode, not optional supplementary material.
+**11. Five-Year Ratio Trend Analysis** — see the dedicated section below. This is a standing, required step of Deep-Dive Mode, not optional supplementary material.
 
-**11. Final verdict** — the same compact table format as Screening Mode's Output Format (TICKER | Track | Category | F-Score | F-Rating | DCF Bear-Base-Bull | MoS Gate | Compounder | AI Impact | Horizon | Thesis Invalidation), followed by a one-paragraph summary: what has to be true for the thesis, and what single event or data point would most change the verdict.
+**12. Final verdict** — the same compact table format as Screening Mode's Output Format (TICKER | Track | Category | F-Score | F-Rating | DCF Bear-Base-Bull | MoS Gate | Compounder | AI Impact | Horizon | Thesis Invalidation), followed by a one-paragraph summary: what has to be true for the thesis, and what single event or data point would most change the verdict.
 
 ---
 
@@ -1425,7 +1448,7 @@ finding the trend confirms or contradicts:
   Fisher #5/#6 checklist items and the Penman RNOA read.
 - A valuation multiple (P/S, EV/Revenue) expanding faster than the growth
   rate that's supposed to justify it is the same tension Mauboussin's PIE
-  section (step 5) already quantified — the ratio table is where you show
+  section (step 6) already quantified — the ratio table is where you show
   it happened over time, not just today.
 - A dilution rate trend is the hard number behind Fisher's #13 and the
   Quality Compounder screen's self-funding criterion (Framework 8).
