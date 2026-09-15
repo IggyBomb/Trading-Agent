@@ -1504,17 +1504,22 @@ long-run anchor.
 ### Inputs
 
 Read-only, produced by the existing pipeline — refresh all three before
-writing if they're more than a session old:
+writing if they're more than a session old. Use the **full** contents of
+each file, not just the top-level summary fields — `sentiment_data.json`
+in particular carries far more than composite_score/label; a Macro Mode
+report that skips its VIX term-structure, breadth-ratio, safe-haven, and
+credit blocks is reading a fraction of what's already been fetched for
+free.
 
 | File | What to take from it |
 |---|---|
-| `../data/sentiment_data.json` | composite score/label, VIX, breadth, put/call, safe-haven, credit |
+| `../data/sentiment_data.json` | composite score/label/delta, CNN Fear & Greed (score + weekly **and** monthly delta — these can diverge sharply, show both per the Recent Context absolute+%-with-labelled-window rule), VIX (spot, percentile, term structure, 9D/3M spread), market internals (QQQ/SPY and IWM/SPY ratios and trend), safe-haven (TLT/GLD/UUP + interpretation), credit (HYG/LQD/JNK + interpretation), put/call if present, and the full `eu_internals` block (DAX/FTSE/CAC40/FTSEMIB vs MA50/MA200, EUR/USD, EU composite) |
 | `../data/macro_regime.json` | growth/inflation classification, regime label, confidence, yield curve, Minsky score, Dalio cycle |
 | `../data/sector_rotation.json` | leading/lagging sectors, US and EU |
 
 ### Output Format
 
-Four parts, in this order:
+Six parts, in this order:
 
 **1. Regime read** — growth/inflation classification and the regime label
 (e.g. REFLATION), its confidence, the yield curve shape (10Y-3M spread,
@@ -1523,7 +1528,25 @@ position. State the actual current figures, not just the label — a
 "REFLATION, HIGH confidence" call means something different at a 10Y
 yield of 3.5% than at 5.5%.
 
-**2. Rate-sensitivity translation — the piece specific to this agent**:
+**2. Sentiment & Volatility** — composite score/label with its delta;
+CNN Fear & Greed with **both** the weekly and monthly delta stated
+together (a -9 weekly move sitting on top of a -34 monthly move is a
+different story than either number alone — don't report just one); VIX
+spot plus its 1-year percentile and term structure (contango/backwardation)
+plus the 9D and 3M spreads — spot level alone hides whether the market is
+pricing calm or stress into the near vs far dated contracts; breadth via
+the QQQ/SPY and IWM/SPY ratios and their trend, stated plainly (e.g.
+"small caps have underperformed the market by X% over 20 days").
+
+**3. Safe Haven & Credit** — TLT/GLD/UUP returns with the pipeline's own
+interpretation, and explicitly flag any anomaly against the textbook
+pattern (e.g. gold falling while Fear & Greed is deepening is not the
+classic flight-to-safety signature — say so, don't silently pass over
+it). HYG/LQD/JNK credit returns with interpretation — credit spreads
+widening is a real risk-off tell independent of what equity indices are
+doing.
+
+**4. Rate-sensitivity translation — the piece specific to this agent**:
 what does today's rate level imply for DCF outputs across the Tracks?
 Rerun the WACC formula (Framework 4) at today's actual risk-free rate and
 compare to a recent prior reading if available, stating the delta in
@@ -1533,16 +1556,26 @@ more rate-sensitive" as an unquantified truism). This is the section that
 turns a generic macro read into something this agent's own DCF machinery
 can use.
 
-**3. Sector rotation and breadth** — leading/lagging sectors (US and EU
-where available), and whether breadth confirms or contradicts the
-composite sentiment score (as seen in prior sessions, a rising composite
-alongside narrowing breadth is a real tension to name, not smooth over).
+**5. Sector rotation and EU-specific read** — leading/lagging US and EU
+sectors, and whether breadth confirms or contradicts the composite
+sentiment score (as seen in prior sessions, a rising composite alongside
+narrowing breadth is a real tension to name, not smooth over). Separately,
+the EU block on its own: DAX/FTSE/CAC40/FTSEMIB positions vs MA50/MA200
+(name explicitly if any index has fallen below its MA200 — that's a
+materially different signal than "below MA50"), EUR/USD trend and what it
+means for EUR-denominated exposure, and the EU composite score set
+directly against the US composite score rather than reported in
+isolation. Cross-reference known macro events already tracked elsewhere
+in this session (e.g. French political risk) when an EU index's
+underperformance lines up with one, rather than treating it as
+unexplained.
 
-**4. What it means for Deep-Dives run soon after** — one paragraph:
-given the current regime and rate level, which Tracks/sectors currently
-carry more embedded rate risk in their valuations, and whether the
-sentiment/breadth backdrop argues for more or less skepticism than usual
-toward a Bull-case DCF scenario clearing the MoS Gate.
+**6. What it means for Deep-Dives run soon after** — one paragraph:
+given the current regime, rate level, and the sentiment/credit/breadth
+picture from sections 2-3, which Tracks/sectors currently carry more
+embedded rate risk in their valuations, and whether the backdrop argues
+for more or less skepticism than usual toward a Bull-case DCF scenario
+clearing the MoS Gate.
 
 No ticker, no rating, no position sizing — this mode never recommends
 acting on a specific name. Facts and regime interpretation only, same
