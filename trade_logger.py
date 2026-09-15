@@ -15,7 +15,7 @@ import json, sys, os, argparse, uuid
 from datetime import date, datetime
 from pathlib import Path
 
-from config import ACCOUNT_SIZE, TRADES_PATH
+from config import ACCOUNT_SIZE, TRADES_PATH, RR_RATIO
 
 LOGS_PATH      = TRADES_PATH
 SENTIMENT_PATH = "./data/sentiment_data.json"
@@ -153,8 +153,8 @@ def cmd_entry(args):
         risk    = abs(price - stop)
         reward  = abs(target - price)
         rr_planned = round(reward / risk, 2) if risk else None
-        if rr_planned and rr_planned < 1.5:
-            flags.append(f"LOW_RR: planned R:R {rr_planned:.2f} below RISK.md minimum 1.5")
+        if rr_planned and rr_planned < RR_RATIO:
+            flags.append(f"LOW_RR: planned R:R {rr_planned:.2f} below RISK.md minimum {RR_RATIO}")
 
     trade = {
         "id":           trade_id(),

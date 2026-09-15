@@ -25,14 +25,14 @@ _load_env()
 ACCOUNT_SIZE = int(os.getenv("ACCOUNT_SIZE", "100000"))   # EUR
 
 # ── Risk / sizing ─────────────────────────────────────────────────────────────
-RR_RATIO     = 1.5             # minimum risk/reward ratio (RISK.md)
+RR_RATIO     = 1.4             # minimum risk/reward ratio (RISK.md)
 
 # ── Fetch / filter thresholds ────────────────────────────────────────────────
 MIN_PRICE         = 0.50       # skip penny stocks below this
-MIN_AVG_VOLUME    = 500_000    # min 20-day avg volume — US stocks
-MIN_ATR_PCT       = 2.0        # min ATR% — US stocks
-EU_MIN_AVG_VOLUME = 100_000    # EU stocks trade thinner
-EU_MIN_ATR_PCT    = 1.5        # EU stocks less volatile than US
+MIN_AVG_VOLUME    = 300_000    # min 20-day avg volume — US stocks
+MIN_ATR_PCT       = 2.5        # min ATR% — US stocks
+EU_MIN_AVG_VOLUME = 67_500    # EU stocks trade thinner
+EU_MIN_ATR_PCT    = 1.8        # EU stocks less volatile than US
 SR_WINDOW         = 10         # days for support/resistance lookback
 LOOKBACK_DAYS     = 60         # days of OHLCV history to pull
 MAX_TICKERS       = 3200       # safety cap on watchlist size
@@ -53,7 +53,7 @@ EU_SUFFIXES = {
 JP_SUFFIXES = {".T"}
 
 # ── Japan-specific thresholds ─────────────────────────────────────────────────
-JP_MIN_AVG_VOLUME = 500_000    # JPY-denominated stocks trade high share volumes
+JP_MIN_AVG_VOLUME = 150_000    # JPY-denominated stocks trade high share volumes
 JP_MIN_ATR_PCT    = 1.5        # similar volatility profile to EU
 JP_BATCH_SIZE     = 20
 JP_BATCH_PAUSE    = 4
@@ -62,7 +62,7 @@ JP_BATCH_PAUSE    = 4
 CA_SUFFIXES = {".TO", ".V"}
 
 # ── Canada-specific thresholds ────────────────────────────────────────────────
-CA_MIN_AVG_VOLUME = 200_000    # TSX trades lower volumes than US
+CA_MIN_AVG_VOLUME = 100_000    # TSX trades lower volumes than US
 CA_MIN_ATR_PCT    = 2.0        # energy/mining stocks — similar volatility to US
 CA_BATCH_SIZE     = 20
 CA_BATCH_PAUSE    = 4
@@ -71,7 +71,7 @@ CA_BATCH_PAUSE    = 4
 BR_SUFFIXES = {".SA"}
 
 # ── Brazil-specific thresholds ────────────────────────────────────────────────
-BR_MIN_AVG_VOLUME = 1_000_000  # BRL-denominated stocks trade very high volumes
+BR_MIN_AVG_VOLUME = 750_000  # BRL-denominated stocks trade very high volumes
 BR_MIN_ATR_PCT    = 2.0        # volatile market, similar to US threshold
 BR_BATCH_SIZE     = 20
 BR_BATCH_PAUSE    = 4
