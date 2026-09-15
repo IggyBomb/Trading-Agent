@@ -1368,12 +1368,33 @@ or a news item to fill a gap — if nothing material is found, say so):
   was raised, cut, or held versus the prior guide), and management's own
   commentary on whatever the single most important operational metric is for
   this sector (cross-reference the Sector Appendix — backlog for aerospace,
-  NRR for SaaS, NIM for banks, same-store sales for retail, etc.).
+  NRR for SaaS, NIM for banks, same-store sales for retail, per-unit cost for
+  miners, etc.).
 - **Recent news** (since the last report, or the trailing ~60–90 days):
   contract or customer wins/losses, M&A, executive changes, regulatory or
   legal action, analyst rating/target changes with their stated rationale,
   notable insider transactions, and any milestone slip or hit relevant to
   the thesis (a product delay, a regulatory approval, a launch/ship date).
+
+**Every metric here gets both the absolute/nominal figure and the % change —
+never just one.** A lone percentage hides the base it's computed from and
+invites exactly the kind of confusion a bare number causes: reporting only
+"+74%" without "$1.97/lb" gives no sense of the actual magnitude, and
+reporting only "$1.97/lb" without the prior-period comparison gives no sense
+of the trend. State the absolute number, the prior-period absolute number,
+and the resulting %, together, e.g. "unit cash cost $1.97/lb, up from $1.13/lb
+(+74% YoY)".
+
+**State explicitly which period the comparison uses — QoQ, YoY, or vs a
+full-year figure — and never let two different comparison windows sit
+side by side unlabelled.** These can diverge sharply and each is
+legitimate for a different question: a single quarter's YoY move (e.g.
++74%, reflecting that quarter's fixed-cost under-absorption from a
+temporary volume drop) can look nothing like the full-year average YoY
+move (e.g. +15%, diluted across quarters with more normal production) —
+both are real, but they answer different questions, and conflating them
+produces a materially misleading read. When in doubt, show more than one
+window rather than picking one and hiding the others.
 
 This step produces facts only — no rating, no opinion. It exists so that
 Penman (Framework 5) can judge whether a guidance revision signals a real
