@@ -1241,7 +1241,9 @@ and conviction-building, not /scan cross-referencing. It has two depths —
 down) for the one or two names that clear screening and deserve the full
 workup. Default to Screening Mode for 3+ tickers; default to Deep-Dive for a
 single named ticker or an explicit request for a full/senior-analyst-style
-report.
+report. A third, tickerless mode — **Macro Mode** (see the dedicated section
+below) — covers regime/rate/sector-rotation context on its own, standalone,
+not folded into either of the two ticker-level modes above.
 
 ### Screening Mode
 
@@ -1477,6 +1479,75 @@ finding the trend confirms or contradicts:
   a "healthy, stable" business by the Track B/C conviction rules — a single
   good year surrounded by misses is a different finding than a consistent
   40+.
+
+---
+
+## Macro Mode
+
+A third, tickerless mode alongside Screening and Deep-Dive — standalone
+regime/rate/sector context, not folded into either ticker-level mode and
+not a substitute for either. Run it on its own request, or before a batch
+of Deep-Dives when the regime itself hasn't been checked recently.
+
+**Why this belongs in the long-term track specifically, not just in
+sentiment/macro-analyst.md's short-term read**: every Deep-Dive's WACC,
+DCF scenario spread, and MoS Gate verdict is a function of the rate
+environment — this session's own FCX work showed a Bear-to-Bull DCF range
+moving by double-digit percentages on a ~1pp risk-free rate change, and a
+name's terminal-value share of EV (i.e. how rate-sensitive its valuation
+is) tracks its Track: B/C growth names sit on 85–95% terminal value,
+Track A defensive names sit lower. Macro Mode's job is to make that
+backdrop explicit once, so every Deep-Dive that follows can be read
+against it instead of silently assuming today's rates are the right
+long-run anchor.
+
+### Inputs
+
+Read-only, produced by the existing pipeline — refresh all three before
+writing if they're more than a session old:
+
+| File | What to take from it |
+|---|---|
+| `../data/sentiment_data.json` | composite score/label, VIX, breadth, put/call, safe-haven, credit |
+| `../data/macro_regime.json` | growth/inflation classification, regime label, confidence, yield curve, Minsky score, Dalio cycle |
+| `../data/sector_rotation.json` | leading/lagging sectors, US and EU |
+
+### Output Format
+
+Four parts, in this order:
+
+**1. Regime read** — growth/inflation classification and the regime label
+(e.g. REFLATION), its confidence, the yield curve shape (10Y-3M spread,
+steepening/flattening/inverted), Minsky fragility score, Dalio cycle
+position. State the actual current figures, not just the label — a
+"REFLATION, HIGH confidence" call means something different at a 10Y
+yield of 3.5% than at 5.5%.
+
+**2. Rate-sensitivity translation — the piece specific to this agent**:
+what does today's rate level imply for DCF outputs across the Tracks?
+Rerun the WACC formula (Framework 4) at today's actual risk-free rate and
+compare to a recent prior reading if available, stating the delta in
+basis points and what it does to a representative Track B/C name's
+Bull-case terminal value (a concrete number, not just "growth stocks are
+more rate-sensitive" as an unquantified truism). This is the section that
+turns a generic macro read into something this agent's own DCF machinery
+can use.
+
+**3. Sector rotation and breadth** — leading/lagging sectors (US and EU
+where available), and whether breadth confirms or contradicts the
+composite sentiment score (as seen in prior sessions, a rising composite
+alongside narrowing breadth is a real tension to name, not smooth over).
+
+**4. What it means for Deep-Dives run soon after** — one paragraph:
+given the current regime and rate level, which Tracks/sectors currently
+carry more embedded rate risk in their valuations, and whether the
+sentiment/breadth backdrop argues for more or less skepticism than usual
+toward a Bull-case DCF scenario clearing the MoS Gate.
+
+No ticker, no rating, no position sizing — this mode never recommends
+acting on a specific name. Facts and regime interpretation only, same
+sourcing discipline as Recent Context: every figure dated, nothing
+invented if the pipeline data is missing or stale.
 
 ---
 
