@@ -46,6 +46,39 @@
       "f_score": 45.9,
       "rating": "Fair",
       "source": "/scan 2026-09-07 CONFIRMED"
+    },
+    {
+      "ticker": "INSP",
+      "entry_date": "2026-09-15",
+      "entry_price": 74.32,
+      "stop": 71.14,
+      "target": 78.77,
+      "setup": "breakout",
+      "f_score": 40.4,
+      "rating": "Fair",
+      "source": "/scan 2026-09-15 CONFIRMED"
+    },
+    {
+      "ticker": "MKC",
+      "entry_date": "2026-09-15",
+      "entry_price": 50.39,
+      "stop": 48.99,
+      "target": 52.35,
+      "setup": "reversal",
+      "f_score": 43.6,
+      "rating": "Fair",
+      "source": "/scan 2026-09-15 CONFIRMED"
+    },
+    {
+      "ticker": "7013.T",
+      "entry_date": "2026-09-15",
+      "entry_price": 2772.5,
+      "stop": 2645.39,
+      "target": 2950.45,
+      "setup": "breakout",
+      "f_score": 50.7,
+      "rating": "Fair",
+      "source": "/scan 2026-09-15 CONFIRMED"
     }
   ]
 }
