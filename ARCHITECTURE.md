@@ -89,7 +89,8 @@ trading_agent/
 | Script | Reads | Writes | Purpose |
 |---|---|---|---|
 | `pre_market_scanner.py` | `data/market_data.json`, open positions, yfinance | `data/premarket_gaps.json` | Scans up to 300 EU tickers + open positions for overnight gaps (±2% default), run ~08:30 CET |
-| `price_alert_monitor.py` | Yahoo v8 chart endpoint directly (bypasses yfinance to dodge rate-limit conflicts with fetch_data.py) | `data/price_cache.json` (fallback cache) | Live price alerts, shows `[cached]` tag if live fetch fails |
+| `price_alert_monitor.py` | Yahoo v8 chart endpoint directly (bypasses yfinance to dodge rate-limit conflicts with fetch_data.py) | `data/price_cache.json` (fallback cache) | Live price alerts, shows `[cached]` tag if live fetch fails. Only watches **open** positions from `trades.jsonl`. |
+| `watchlist_monitor.py` | `data/market_data.json` (`--auto`), yfinance (both modes) | terminal (`--json` for programmatic use) | Added for `/scan` Step 12. Watches **pre-entry** candidates against a key level (support/resistance/MA) + a time-normalized volume-confirmation threshold. `--auto` flags HIGH-conviction tickers with a `DUAL_SIGNAL` (long setup + live short_setup on the same ticker) or `STRUCTURAL_GATE` (tight ATR proximity to MA50/MA200) — deliberately narrow; a blind "near support/resistance" filter was tried and discarded because every scanned entry is close to its own pivot by construction. Explicit mode: `TICKER --level L --direction above\|below --entry E --stop S --target T [--vol-threshold 1.5]`. **Volume methodology**: projects a full session's volume from the elapsed fraction of the NYSE session (9:30–16:00 ET) before comparing to the 20-day average — raw same-day-volume-vs-20d-average reads "thin" all day regardless of real participation (found live: a 1-minute cron loop reported false "thin volume" for ~15 consecutive checks before this fix). No standalone monitoring daemon — invoked ad hoc or via `loop`/`CronCreate`, which are session-bound (7-day hard cap); use `/schedule` for a watch that must survive session closure. |
 | `fetch_transcript.py` | Motley Fool / Seeking Alpha (scrape) | `data/transcripts/TICKER_latest.txt` | Earnings call transcript for `investor-relations.md` |
 
 ### Position management (run anytime, standalone)
@@ -159,6 +160,11 @@ Step 9  → risk-manager.md — final sizing/stop/APPROVE-CAUTION-REJECT, fed RI
 Step 10 → short-screener.md — CONDITIONAL on macro-analyst Directional Bias (NEUTRAL/SHORT only)
 Step 11 → contrarian-analyst.md — OPTIONAL companion, invoked by /contrarian
           (always separate from Steps 1–10; momentum and contrarian outputs never merged)
+Step 12 → Live Watch — OPTIONAL, offered (never auto-started) after Steps 0–10 complete.
+          watchlist_monitor.py --auto flags HIGH-conviction DUAL_SIGNAL / STRUCTURAL_GATE
+          candidates; Steps 7–9's own "don't chase" / "wait for X" judgment calls add
+          more. User picks which (if any) to watch; default cadence 15 min via
+          loop/CronCreate (session-bound — use /schedule for durability past session end).
 ```
 
 Hard rule baked into the command: Steps 5–8 are never skipped for HIGH conviction tickers; missing data flags and continues, never blocks — same "flag not block" principle as the rest of the system.
@@ -220,3 +226,4 @@ watchlist_ranker.py (reads all above) ──► watchlist_ranked.json
 - `RISK.local.md`'s `personalRiskFile` / `brokerConfig: "broker.json"` pointer in `settings.local.json` — `broker.json` does not exist anywhere in the repo. Referenced but never created.
 - Congressional trading (`alt_data.py` → Quiver) is fetched and stored in `alt_data.json` but excluded from scoring as of 2026-06-23 — both free sources (Quiver, Finnhub) gated it behind paid plans. Financial Modeling Prep is the untested candidate to bring it back free.
 - `data/eu_market_data.json`, `data/ticker_data_20260611.json`, `data/scan_results_2026-05-07.txt` — orphaned one-off files from earlier sessions, not read by any current script.
+- `/scan` Step 12 (Live Watch, added 2026-08-24) has no durable/standalone daemon — `watchlist_monitor.py` is invoked ad hoc or via the session-bound `loop`/`CronCreate` mechanism, which dies when the Claude Code session ends (7-day hard cap regardless of session length). If a watch needs to survive closing the session, use `/schedule`'s cloud mechanism instead — nothing currently does this automatically.

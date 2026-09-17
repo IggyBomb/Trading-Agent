@@ -17,7 +17,10 @@ import json
 import os
 import sys
 import time
+import math
 from datetime import datetime, timedelta
+import logging
+log = logging.getLogger("fetch_data")
 
 # ── Install yfinance if missing ──────────────────────────────────────────────
 try:
@@ -33,13 +36,17 @@ except ImportError:
     os.system(f"{sys.executable} -m pip install numpy --quiet")
     import numpy as np
 
+# ── Schema contract (schemas.py) ─────────────────────────────────────────────
+from pydantic import ValidationError
+from schemas import TickerSignal
+
 # ── Config ───────────────────────────────────────────────────────────────────
 from config import (
     EU_SUFFIXES, JP_SUFFIXES, CA_SUFFIXES, BR_SUFFIXES,
     MIN_PRICE, MIN_AVG_VOLUME, EU_MIN_AVG_VOLUME, JP_MIN_AVG_VOLUME,
     CA_MIN_AVG_VOLUME, BR_MIN_AVG_VOLUME,
     MIN_ATR_PCT, EU_MIN_ATR_PCT, JP_MIN_ATR_PCT, CA_MIN_ATR_PCT, BR_MIN_ATR_PCT,
-    SR_WINDOW, RR_RATIO, MAX_TICKERS,
+    SR_WINDOW, RR_RATIO, ATR_STOP_MULT, MAX_TICKERS,
     LOOKBACK_DAYS, BATCH_SIZE, BATCH_PAUSE, EU_BATCH_SIZE, EU_BATCH_PAUSE,
     JP_BATCH_SIZE, JP_BATCH_PAUSE, CA_BATCH_SIZE, CA_BATCH_PAUSE,
     BR_BATCH_SIZE, BR_BATCH_PAUSE,
@@ -78,15 +85,18 @@ def is_brazilian(ticker):
 # Loads tickers from watchlist.txt (skips blanks and '#' comment lines), capped at MAX_TICKERS.
 def load_watchlist(path):
     if not os.path.exists(path):
-        print(f"ERROR: Watchlist not found at {path}")
+        log.error(f"watchlist not found at {path} — aborting")
         sys.exit(1)
     with open(path) as f:
         tickers = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-    print(f"Loaded {len(tickers)} tickers from watchlist")
+    log.info(f"loaded {len(tickers)} tickers from {path}")
+    if len(tickers) > MAX_TICKERS:
+        log.warning(f"watchlist has {len(tickers)} tickers — capping at MAX_TICKERS={MAX_TICKERS}")
     return tickers[:MAX_TICKERS]
 
 # Volatility: Average True Range over `period` days. Used twice — the ATR%
-# tradability filter in process_ticker(), and stop/target placement (price ± 1 ATR).
+# tradability filter in process_ticker(), and stop placement (price ± ATR_STOP_MULT x ATR).
+# Target is NOT ATR-based — see process_ticker()'s target/short_target block.
 def atr(highs, lows, closes, period=14):
     """Average True Range over `period` days."""
     if len(closes) < period + 1:
@@ -124,7 +134,10 @@ def trend_direction(closes):
 
 # 20-day average daily volume, excluding today. Liquidity-filter input.
 def avg_volume(volumes):
-    """20-day average volume."""
+    """20-day average volume. Drops missing (NaN) days first, then requires
+    21 valid observations — otherwise np.mean over a slice containing NaN
+    returns NaN and crashes round(avg_vol) downstream (see GATO, 2026-07)."""
+    volumes = volumes[~np.isnan(volumes)]   # drop missing days on a local copy
     if len(volumes) < 21:
         return None
     return float(np.mean(volumes[-21:-1]))
@@ -329,7 +342,16 @@ def week52_high(highs):
 # conviction, and assembles the JSON record.
 def process_ticker(ticker, hist):
     """Extract all metrics for one ticker."""
+    # Yahoo sometimes returns a trailing row for the most recent session with
+    # real volume but NaN OHLC (not yet backfilled at fetch time) — drop any
+    # such trailing rows so price/ATR/etc. come from the last fully-populated
+    # session instead of NaN-ing out every downstream metric.
+    if hist is not None and not hist.empty:
+        hist = hist.dropna(subset=["Close"])
+
     if hist is None or hist.empty or len(hist) < SR_WINDOW + 5:
+        bars = 0 if hist is None else len(hist)
+        log.debug(f"{ticker}: dropped — insufficient history ({bars} bars < {SR_WINDOW + 5})")
         return None
 
     closes  = hist["Close"].values
@@ -338,7 +360,13 @@ def process_ticker(ticker, hist):
     volumes = hist["Volume"].values
 
     price = round(float(closes[-1]), 4)
+    # NOTE: a NaN price is deliberately NOT dropped here — round(nan, 4) returns
+    # nan without crashing, so the record builds and the schema (price has
+    # allow_inf_nan=False) rejects it into schema_rejected_details, keeping it
+    # visible/auditable. Contrast avg_volume, which MUST clean at source because
+    # round(nan) there crashes before any record exists.
     if price < MIN_PRICE:
+        log.debug(f"{ticker}: dropped — price {price} < MIN_PRICE {MIN_PRICE}")
         return None
 
     if is_japanese(ticker):
@@ -360,14 +388,17 @@ def process_ticker(ticker, hist):
     # Liquidity filter
     avg_vol = avg_volume(volumes)
     if avg_vol is None or avg_vol < min_vol:
+        log.debug(f"{ticker}: dropped — avg_volume {avg_vol} < min {min_vol}")
         return None
 
     # ATR filter — skip names without enough daily range
     atr14 = atr(highs, lows, closes, period=14)
     if atr14 is None:
+        log.debug(f"{ticker}: dropped — ATR unavailable (need {14 + 1} bars)")
         return None
     atr_pct = round(atr14 / price * 100, 2)
     if atr_pct < min_atr:
+        log.debug(f"{ticker}: dropped — ATR% {atr_pct} < min {min_atr}")
         return None
 
     prev_close  = round(float(closes[-2]), 4) if len(closes) > 1 else price
@@ -380,17 +411,36 @@ def process_ticker(ticker, hist):
     setup        = setup_type(closes, volumes, support, resistance)
     conv         = conviction(setup, vol_ratio, dist_res, dist_sup, trend)
 
-    # Long: ATR-based stop below entry, RR_RATIO target above
-    stop   = round(price - atr14, 4)
-    risk   = price - stop
-    target = round(price + risk * RR_RATIO, 4)
+    # Long: ATR-based stop below entry. Target is a REAL chart level, not a
+    # mechanical RR_RATIO multiple of risk — RR_RATIO is RISK.md's MINIMUM bar
+    # to clear, not a target-generator. Using it as the latter made `rr` a
+    # tautology: target = price + risk*RR_RATIO algebraically forces
+    # (target-price)/risk == RR_RATIO for every single ticker, always, so the
+    # "rr" field never actually measured anything about the setup (fixed
+    # 2026-08-25 — every prior scan showed rr=1.5 across the board).
+    # "breakout" sits AT/NEAR resistance by construction (setup_type's own
+    # near_resistance test), so resistance itself isn't a usable forward
+    # target — project a measured move instead (pattern height added above
+    # the breakout, Bulkowski's measure rule, same one strategy-analyst.md
+    # already references). Every other long setup (pullback/reversal/
+    # consolidation/neutral) sits near SUPPORT, not the ceiling, so window
+    # resistance itself is a real, not-yet-reached target for those.
+    stop        = round(price - ATR_STOP_MULT * atr14, 4)
+    risk        = price - stop
+    base_height = resistance - support
+    long_target_level = (resistance + base_height) if setup == "breakout" else resistance
+    target      = round(long_target_level, 4)
 
-    # Short: ATR-based stop above entry, RR_RATIO target below
+    # Short: ATR-based stop above entry, same real-target logic mirrored
+    # below support — "breakdown" sits AT/NEAR support by construction, so it
+    # gets the measured-move projection; other short setups target the
+    # window support directly.
     s_setup = short_setup_type(closes, volumes, support, resistance)
     s_conv  = short_conviction(s_setup, vol_ratio, dist_res, trend)
-    short_stop   = round(price + atr14, 4)
-    short_risk   = short_stop - price
-    short_target = round(price - short_risk * RR_RATIO, 4)
+    short_stop  = round(price + ATR_STOP_MULT * atr14, 4)
+    short_risk  = short_stop - price
+    short_target_level = (support - base_height) if s_setup == "breakdown" else support
+    short_target = round(short_target_level, 4)
     
     
     result = {
@@ -416,6 +466,11 @@ def process_ticker(ticker, hist):
         "52w_high":         week52_high(highs),
         "rsi":              rsi(closes, 14),
         "rr":               round((target - price) / (price - stop), 2) if price > stop else None,
+        # Target distance in ATRs — independent of ATR_STOP_MULT. This is what
+        # scan.md's Steps 5-9 gate reads (>= 1.5): with the old 1-ATR stop,
+        # rr >= 1.5 was algebraically the same test, so the funnel is unchanged
+        # by the stop widening; rr itself now reports the true R:R at the wider stop.
+        "target_atr":       round((target - price) / atr14, 2),
         # Short-side fields
         "short_setup":      s_setup,
         "short_conviction": s_conv,
@@ -426,6 +481,7 @@ def process_ticker(ticker, hist):
         result["short_stop"]   = short_stop
         result["short_target"] = short_target
         result["short_rr"]     = round((price - short_target) / short_risk, 2) if short_risk > 0 else None
+        result["short_target_atr"] = round((price - short_target) / atr14, 2)
 
     return result
 
@@ -435,9 +491,25 @@ def process_ticker(ticker, hist):
 # Orchestration: batch-downloads 1y of history per region (US/EU/JP/CA/BR),
 # runs process_ticker() on each, sorts by conviction, writes data/market_data.json.
 def main():
-    print(f"\n{'='*60}")
-    print(f"  Market Data Fetcher — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print(f"{'='*60}\n")
+    # Logging setup — INFO to console + a fresh logfile each run. Flip to
+    # logging.DEBUG to see the per-ticker drop reasons from process_ticker().
+    os.makedirs("logs", exist_ok=True)
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")   # so em-dashes render on any Windows console
+    except Exception:
+        pass
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)-7s %(name)s  %(message)s",
+        datefmt="%H:%M:%S",
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler("logs/fetch_data.log", mode="w", encoding="utf-8"),
+        ],
+    )
+    log.info("=" * 60)
+    log.info(f"Market Data Fetcher — {datetime.now():%Y-%m-%d %H:%M}")
+    log.info("=" * 60)
 
     all_tickers = load_watchlist(WATCHLIST_PATH)
     results = []
@@ -449,12 +521,15 @@ def main():
     ca_tickers       = [t for t in all_tickers if is_canadian(t)]
     br_tickers       = [t for t in all_tickers if is_brazilian(t)]
 
+    log.info(f"regions — US:{len(standard_tickers)} EU:{len(eu_tickers)} "
+             f"JP:{len(jp_tickers)} CA:{len(ca_tickers)} BR:{len(br_tickers)}")
+
     # ── Standard tickers — batch download ────────────────────────────────────
     batches = [standard_tickers[i:i+BATCH_SIZE] for i in range(0, len(standard_tickers), BATCH_SIZE)]
     total   = len(batches)
 
     for idx, batch in enumerate(batches, 1):
-        print(f"Fetching batch {idx}/{total} ({len(batch)} tickers)...", end=" ", flush=True)
+        log.info(f"US batch {idx}/{total} ({len(batch)} tickers) — downloading...")
 
         try:
             raw = yf.download(
@@ -467,7 +542,8 @@ def main():
                 threads=True,
             )
         except Exception as e:
-            print(f"ERROR: {e}")
+            log.error(f"US batch {idx}/{total} download failed "
+                      f"({len(batch)} tickers, first={batch[0]}): {e}", exc_info=True)
             errors.extend(batch)
             continue
 
@@ -475,16 +551,21 @@ def main():
             try:
                 if len(batch) == 1:
                     hist = raw
+                elif ticker in raw.columns.get_level_values(0):
+                    hist = raw[ticker]
                 else:
-                    hist = raw[ticker] if ticker in raw.columns.get_level_values(0) else None
+                    log.warning(f"{ticker}: absent from download response — skipped")
+                    errors.append(ticker)
+                    continue
 
                 result = process_ticker(ticker, hist)
                 if result:
                     results.append(result)
-            except Exception:
+            except Exception as e:
+                log.warning(f"{ticker}: processing failed: {e}", exc_info=True)
                 errors.append(ticker)
 
-        print(f"done. ({len(results)} processed so far)")
+        log.info(f"US batch {idx}/{total} done — {len(results)} records so far")
 
         if idx < total:
             time.sleep(BATCH_PAUSE)
@@ -493,10 +574,10 @@ def main():
     if eu_tickers:
         eu_batches = [eu_tickers[i:i+EU_BATCH_SIZE] for i in range(0, len(eu_tickers), EU_BATCH_SIZE)]
         eu_total   = len(eu_batches)
-        print(f"\nFetching {len(eu_tickers)} EU tickers in {eu_total} batches of {EU_BATCH_SIZE}...")
+        log.info(f"EU: {len(eu_tickers)} tickers in {eu_total} batches of {EU_BATCH_SIZE}")
 
         for idx, batch in enumerate(eu_batches, 1):
-            print(f"  EU batch {idx}/{eu_total} ({len(batch)} tickers)...", end=" ", flush=True)
+            log.info(f"EU batch {idx}/{eu_total} ({len(batch)} tickers) — downloading...")
             try:
                 raw = yf.download(
                     batch,
@@ -508,7 +589,8 @@ def main():
                     threads=True,
                 )
             except Exception as e:
-                print(f"ERROR: {e}")
+                log.error(f"batch download failed ({len(batch)} tickers, "
+                          f"first={batch[0]}): {e}", exc_info=True)
                 errors.extend(batch)
                 continue
 
@@ -516,15 +598,20 @@ def main():
                 try:
                     if len(batch) == 1:
                         hist = raw
+                    elif ticker in raw.columns.get_level_values(0):
+                        hist = raw[ticker]
                     else:
-                        hist = raw[ticker] if ticker in raw.columns.get_level_values(0) else None
+                        log.warning(f"{ticker}: absent from download response — skipped")
+                        errors.append(ticker)
+                        continue
                     result = process_ticker(ticker, hist)
                     if result:
                         results.append(result)
-                except Exception:
+                except Exception as e:
+                    log.warning(f"{ticker}: processing failed: {e}", exc_info=True)
                     errors.append(ticker)
 
-            print(f"done. ({len(results)} processed so far)")
+            log.info(f"batch done — {len(results)} records so far")
             if idx < eu_total:
                 time.sleep(EU_BATCH_PAUSE)
 
@@ -532,10 +619,10 @@ def main():
     if jp_tickers:
         jp_batches = [jp_tickers[i:i+JP_BATCH_SIZE] for i in range(0, len(jp_tickers), JP_BATCH_SIZE)]
         jp_total   = len(jp_batches)
-        print(f"\nFetching {len(jp_tickers)} JP tickers in {jp_total} batches of {JP_BATCH_SIZE}...")
+        log.info(f"JP: {len(jp_tickers)} tickers in {jp_total} batches of {JP_BATCH_SIZE}")
 
         for idx, batch in enumerate(jp_batches, 1):
-            print(f"  JP batch {idx}/{jp_total} ({len(batch)} tickers)...", end=" ", flush=True)
+            log.info(f"JP batch {idx}/{jp_total} ({len(batch)} tickers) — downloading...")
             try:
                 raw = yf.download(
                     batch,
@@ -547,7 +634,8 @@ def main():
                     threads=True,
                 )
             except Exception as e:
-                print(f"ERROR: {e}")
+                log.error(f"batch download failed ({len(batch)} tickers, "
+                          f"first={batch[0]}): {e}", exc_info=True)
                 errors.extend(batch)
                 continue
 
@@ -555,15 +643,20 @@ def main():
                 try:
                     if len(batch) == 1:
                         hist = raw
+                    elif ticker in raw.columns.get_level_values(0):
+                        hist = raw[ticker]
                     else:
-                        hist = raw[ticker] if ticker in raw.columns.get_level_values(0) else None
+                        log.warning(f"{ticker}: absent from download response — skipped")
+                        errors.append(ticker)
+                        continue
                     result = process_ticker(ticker, hist)
                     if result:
                         results.append(result)
-                except Exception:
+                except Exception as e:
+                    log.warning(f"{ticker}: processing failed: {e}", exc_info=True)
                     errors.append(ticker)
 
-            print(f"done. ({len(results)} processed so far)")
+            log.info(f"batch done — {len(results)} records so far")
             if idx < jp_total:
                 time.sleep(JP_BATCH_PAUSE)
 
@@ -571,10 +664,10 @@ def main():
     if ca_tickers:
         ca_batches = [ca_tickers[i:i+CA_BATCH_SIZE] for i in range(0, len(ca_tickers), CA_BATCH_SIZE)]
         ca_total   = len(ca_batches)
-        print(f"\nFetching {len(ca_tickers)} CA tickers in {ca_total} batches of {CA_BATCH_SIZE}...")
+        log.info(f"CA: {len(ca_tickers)} tickers in {ca_total} batches of {CA_BATCH_SIZE}")
 
         for idx, batch in enumerate(ca_batches, 1):
-            print(f"  CA batch {idx}/{ca_total} ({len(batch)} tickers)...", end=" ", flush=True)
+            log.info(f"CA batch {idx}/{ca_total} ({len(batch)} tickers) — downloading...")
             try:
                 raw = yf.download(
                     batch,
@@ -586,7 +679,8 @@ def main():
                     threads=True,
                 )
             except Exception as e:
-                print(f"ERROR: {e}")
+                log.error(f"batch download failed ({len(batch)} tickers, "
+                          f"first={batch[0]}): {e}", exc_info=True)
                 errors.extend(batch)
                 continue
 
@@ -594,15 +688,20 @@ def main():
                 try:
                     if len(batch) == 1:
                         hist = raw
+                    elif ticker in raw.columns.get_level_values(0):
+                        hist = raw[ticker]
                     else:
-                        hist = raw[ticker] if ticker in raw.columns.get_level_values(0) else None
+                        log.warning(f"{ticker}: absent from download response — skipped")
+                        errors.append(ticker)
+                        continue
                     result = process_ticker(ticker, hist)
                     if result:
                         results.append(result)
-                except Exception:
+                except Exception as e:
+                    log.warning(f"{ticker}: processing failed: {e}", exc_info=True)
                     errors.append(ticker)
 
-            print(f"done. ({len(results)} processed so far)")
+            log.info(f"batch done — {len(results)} records so far")
             if idx < ca_total:
                 time.sleep(CA_BATCH_PAUSE)
 
@@ -610,10 +709,10 @@ def main():
     if br_tickers:
         br_batches = [br_tickers[i:i+BR_BATCH_SIZE] for i in range(0, len(br_tickers), BR_BATCH_SIZE)]
         br_total   = len(br_batches)
-        print(f"\nFetching {len(br_tickers)} BR tickers in {br_total} batches of {BR_BATCH_SIZE}...")
+        log.info(f"BR: {len(br_tickers)} tickers in {br_total} batches of {BR_BATCH_SIZE}")
 
         for idx, batch in enumerate(br_batches, 1):
-            print(f"  BR batch {idx}/{br_total} ({len(batch)} tickers)...", end=" ", flush=True)
+            log.info(f"BR batch {idx}/{br_total} ({len(batch)} tickers) — downloading...")
             try:
                 raw = yf.download(
                     batch,
@@ -625,7 +724,8 @@ def main():
                     threads=True,
                 )
             except Exception as e:
-                print(f"ERROR: {e}")
+                log.error(f"batch download failed ({len(batch)} tickers, "
+                          f"first={batch[0]}): {e}", exc_info=True)
                 errors.extend(batch)
                 continue
 
@@ -633,17 +733,41 @@ def main():
                 try:
                     if len(batch) == 1:
                         hist = raw
+                    elif ticker in raw.columns.get_level_values(0):
+                        hist = raw[ticker]
                     else:
-                        hist = raw[ticker] if ticker in raw.columns.get_level_values(0) else None
+                        log.warning(f"{ticker}: absent from download response — skipped")
+                        errors.append(ticker)
+                        continue
                     result = process_ticker(ticker, hist)
                     if result:
                         results.append(result)
-                except Exception:
+                except Exception as e:
+                    log.warning(f"{ticker}: processing failed: {e}", exc_info=True)
                     errors.append(ticker)
 
-            print(f"done. ({len(results)} processed so far)")
+            log.info(f"batch done — {len(results)} records so far")
             if idx < br_total:
                 time.sleep(BR_BATCH_PAUSE)
+
+    # ── Schema validation — every record must match schemas.TickerSignal ─────
+    # Valid records continue down the pipeline; invalid ones are quarantined
+    # with the ticker name and which field(s) failed, and never reach the JSON.
+    validated = []
+    rejected  = []   # each entry: {"ticker": ..., "error": "field: reason; ..."}
+    for record in results:
+        try:
+            TickerSignal.model_validate(record)
+            validated.append(record)
+        except ValidationError as e:
+            msg = "; ".join(
+                f"{err['loc'][0] if err['loc'] else 'record'}: {err['msg']}"
+                for err in e.errors()
+            )
+            rejected.append({"ticker": record.get("ticker", "?"), "error": msg})
+            log.warning(f"{record.get('ticker', '?')}: schema rejected — {msg}")
+    results = validated
+    log.info(f"schema validation — {len(validated)} passed, {len(rejected)} rejected")
 
     conviction_order = {"High": 0, "Medium": 1, "Low": 2}
     results.sort(key=lambda x: (conviction_order.get(x["conviction"], 3), x["ticker"]))
@@ -670,6 +794,8 @@ def main():
             "rr_ratio":           RR_RATIO,
         },
         "tickers_with_errors": errors[:50],
+        "schema_rejected":     len(rejected),
+        "schema_rejected_details": rejected[:50],
     }
 
     output = {"summary": summary, "signals": results}
@@ -678,15 +804,15 @@ def main():
     with open(OUTPUT_PATH, "w") as f:
         json.dump(output, f, indent=2)
 
-    print(f"\n{'='*60}")
-    print(f"  DONE")
-    print(f"  Standard : {len(standard_tickers)}  |  EU : {len(eu_tickers)}  |  JP : {len(jp_tickers)}  |  CA : {len(ca_tickers)}  |  BR : {len(br_tickers)}")
-    print(f"  Processed : {len(results)} tickers  (filtered by vol + ATR)")
-    print(f"  LONG  — High: {len(high_conv)}  Medium: {len(medium_conv)}")
-    print(f"  SHORT — High: {len(short_high_conv)}  Medium: {len(short_medium_conv)}")
-    print(f"  Errors : {len(errors)}")
-    print(f"  Output saved to : {OUTPUT_PATH}")
-    print(f"{'='*60}")
+    log.info("=" * 60)
+    log.info(f"DONE — output saved to {OUTPUT_PATH}")
+    log.info(f"  processed: {len(results)} records  (after vol/ATR filters + schema)")
+    log.info(f"  LONG  — High: {len(high_conv)}  Medium: {len(medium_conv)}")
+    log.info(f"  SHORT — High: {len(short_high_conv)}  Medium: {len(short_medium_conv)}")
+    log.info(f"  errors: {len(errors)}  |  schema-rejected: {len(rejected)}")
+    log.info("=" * 60)
+
+    # ── Report (for the human reader — stays print, not telemetry) ──────────
     print(f"\nTop LONG high-conviction setups:")
     print(f"{'─'*60}")
     for r in high_conv[:10]:

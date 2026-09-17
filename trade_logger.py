@@ -15,7 +15,10 @@ import json, sys, os, argparse, uuid
 from datetime import date, datetime
 from pathlib import Path
 
-from config import ACCOUNT_SIZE, TRADES_PATH, RR_RATIO
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8")
+
+from config import ACCOUNT_SIZE, TRADES_PATH
 
 LOGS_PATH      = TRADES_PATH
 SENTIMENT_PATH = "./data/sentiment_data.json"
@@ -133,11 +136,12 @@ def fmt_pct(v):
 def cmd_entry(args):
     ticker = args.ticker.upper()
     price  = float(args.price)
-    qty    = int(args.qty)
+    qty    = float(args.qty)
     stop   = float(args.stop) if args.stop else None
     target = float(args.target) if args.target else None
     conv      = args.conviction.upper() if args.conviction else None
     setup     = args.setup if args.setup else None
+    strategy  = args.strategy.upper() if args.strategy else None
     notes     = args.notes or ""
     direction = (args.direction or "LONG").upper()
     grade     = args.grade.upper() if args.grade else None
@@ -171,6 +175,7 @@ def cmd_entry(args):
         "rr_planned":   rr_planned,
         "conviction":   conv,
         "setup_type":   setup,
+        "strategy":     strategy,
         "setup_grade":  grade,
         "track":        track,
         "sizing_tier":  tier,
@@ -386,11 +391,12 @@ def main():
     p_entry = sub.add_parser("entry", help="Log a new trade entry")
     p_entry.add_argument("ticker")
     p_entry.add_argument("price", type=float)
-    p_entry.add_argument("--qty",        "-q",  type=int,   required=True)
+    p_entry.add_argument("--qty",        "-q",  type=float, required=True)
     p_entry.add_argument("--stop",       "-s",  type=float, default=None)
     p_entry.add_argument("--target",     "-t",  type=float, default=None)
     p_entry.add_argument("--conviction", "-c",  default=None, help="H/M/L or HIGH/MEDIUM/LOW")
     p_entry.add_argument("--setup",             default=None, help="breakout/pullback/momentum/reversal/event")
+    p_entry.add_argument("--strategy",          default=None, help="MOMENTUM/SWING/POSITION/TURNAROUND/EVENT (from strategy-analyst) — drives the time-stop window, distinct from --setup")
     p_entry.add_argument("--direction",         default="LONG", help="LONG or SHORT")
     p_entry.add_argument("--grade",      "-g",  default=None, help="Setup grade: A/B/C (from technical-analyst)")
     p_entry.add_argument("--track",             default=None, help="Fundamental track: A/B/C (from fundamental-analyst)")

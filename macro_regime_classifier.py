@@ -61,7 +61,17 @@ INDICATORS = {
 }
 
 
-def fetch_indicator(ticker: str, days: int = 130) -> dict | None:
+# Longest lookback any metric below needs is ma(200) — 200 TRADING rows, not
+# calendar days. Markets trade ~252 days/year, so 200 rows ≈ 290 calendar days;
+# 400 yields ~276 rows, a comfortable margin for holidays and thin history.
+# Do NOT lower this below ~300: ma200 and ret_6m go silently null (no error, no
+# log), which strips the above_ma200 signal out of classify_growth() and the
+# ret_6m checks out of minsky_score() — the regime is then called on short
+# windows only, and minsky_score floors at 0.
+FETCH_DAYS = 400
+
+
+def fetch_indicator(ticker: str, days: int = FETCH_DAYS) -> dict | None:
     end   = datetime.today()
     start = end - timedelta(days=days)
     try:
@@ -174,6 +184,71 @@ def classify_regime(growth: str, inflation: str) -> tuple[str, list]:
     return "UNCLEAR", ["Reduce exposure until clearer signal"]
 
 
+# REVIEW(scoring): classify_regime() above picks favored_sectors purely from a
+# static growth/inflation textbook matrix — it never looks at how those sectors
+# are actually trading. That let it flag "Technology" as favored during the
+# Aug-2026 AI/chip selloff while XLK sat -4% for the month, below its own 50MA.
+# This maps the matrix's loose labels to the real sector_rotation.json ETF
+# tickers and flags any favored sector whose live 1M return + 50MA position
+# contradicts the theoretical call, so the mismatch is visible instead of
+# silently passed through.
+SECTOR_ETF_MAP = {
+    "Technology":             "XLK",
+    "Growth":                 "XLK",
+    "Consumer Discret.":      "XLY",
+    "Consumer":               "XLY",
+    "Financials":             "XLF",
+    "Banks":                  "XLF",
+    "Energy":                 "XLE",
+    "Materials":              "XLB",
+    "Healthcare":              "XLV",
+    "Industrials":            "XLI",
+    "Utilities":              "XLU",
+    "Real Estate":            "XLRE",
+    "Communication Services": "XLC",
+}
+
+
+def load_sector_rotation(path: str = "./data/sector_rotation.json") -> dict:
+    try:
+        with open(path) as f:
+            return json.load(f).get("us_sectors", {})
+    except Exception:
+        return {}
+
+
+def cross_check_favored_sectors(favored_sectors: list, us_sectors: dict) -> list:
+    """Cross-check theoretical favored_sectors against actual sector_rotation.json
+    performance. CONTRADICTED = the matrix calls it favored but the sector is
+    both down over 1M and below its own 50-day average right now."""
+    results = []
+    for label in favored_sectors:
+        ticker = SECTOR_ETF_MAP.get(label)
+        sector_data = us_sectors.get(ticker) if ticker else None
+        if not sector_data:
+            results.append({"sector": label, "ticker": ticker, "status": "NO_DATA"})
+            continue
+
+        ret_1m     = sector_data.get("ret_1m")
+        above_ma50 = sector_data.get("above_ma50")
+        if ret_1m is not None and above_ma50 is not None and ret_1m < 0 and not above_ma50:
+            status = "CONTRADICTED"
+        elif ret_1m is not None and above_ma50 is not None and ret_1m > 0 and above_ma50:
+            status = "CONFIRMED"
+        else:
+            status = "MIXED"
+
+        results.append({
+            "sector":     label,
+            "ticker":     ticker,
+            "status":     status,
+            "ret_1m":     ret_1m,
+            "above_ma50": above_ma50,
+            "rank":       sector_data.get("rank"),
+        })
+    return results
+
+
 def minsky_score(data: dict) -> tuple[int, list]:
     score  = 0
     checks = []
@@ -215,6 +290,14 @@ def dalio_cycle(data: dict, tnx_level: float | None) -> str:
 
 
 def main():
+    # run_pipeline.sh exports PYTHONUTF8=1, but the documented standalone usage
+    # (`python macro_regime_classifier.py`) inherits a cp1252 console on Windows
+    # and dies on the ✓/✗ glyphs below. Same guard as sentiment_agent.py.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
     print(f"\n  Fetching macro indicators...", flush=True)
     data: dict = {}
     for ticker, name in INDICATORS.items():
@@ -231,6 +314,10 @@ def main():
     regime, favored_sectors           = classify_regime(growth_state, inflation_state)
     minsky_pts, minsky_checks         = minsky_score(data)
 
+    us_sectors   = load_sector_rotation()
+    sector_check = cross_check_favored_sectors(favored_sectors, us_sectors)
+    contradicted = [c for c in sector_check if c["status"] == "CONTRADICTED"]
+
     tnx_level = (data.get("^TNX") or {}).get("last")
     dalio_pos = dalio_cycle(data, tnx_level)
 
@@ -244,6 +331,11 @@ def main():
     print(f"\n  ──────────────────────────────────────────────────────────")
     print(f"  REGIME:     {regime}  [{confidence} confidence]")
     print(f"  Favoured:   {', '.join(favored_sectors)}")
+    if contradicted:
+        print(f"  ⚠ SECTOR CROSS-CHECK: {len(contradicted)} favoured sector(s) contradicted by actual price action")
+        for c in contradicted:
+            print(f"    └─ {c['sector']} ({c['ticker']}): {c['ret_1m']:+.2f}% 1M, below 50MA — "
+                  f"regime theory says favoured, live sector data disagrees")
 
     # Key yield data
     if tnx_level:
@@ -298,6 +390,7 @@ def main():
         "growth":          growth_state,
         "inflation":       inflation_state,
         "favored_sectors": favored_sectors,
+        "sector_cross_check": sector_check,
         "minsky_score":    minsky_pts,
         "dalio_cycle":     dalio_pos,
         "indicators":      data,

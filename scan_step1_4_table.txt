@@ -1,0 +1,125 @@
+Total High/Medium technical signals: 117
+CONFIRMED: 33  CAUTION: 25  NO FUND DATA: 59
+
+=== CONFIRMED (sorted by f_score desc) ===
+EOG        consolidation  entry=147.36     stop=143.9936   target=149.13     tech=Medium  f_score=83.4   rating=Undervalued  vol_ratio=1.11   atr%=2.28   trend=sideways  rr=0.53
+DVN        consolidation  entry=50.23      stop=49.0536    target=50.24      tech=Medium  f_score=79.9   rating=Undervalued  vol_ratio=0.99   atr%=2.34   trend=sideways  rr=0.01
+INCY       pullback       entry=121.47     stop=118.2393   target=130.0      tech=Medium  f_score=75.2   rating=Undervalued  vol_ratio=1.16   atr%=2.66   trend=up        rr=2.64
+OXY        consolidation  entry=61.46      stop=60.0327    target=62.24      tech=Medium  f_score=73.3   rating=Undervalued  vol_ratio=1.09   atr%=2.32   trend=sideways  rr=0.55
+COP        consolidation  entry=137.35     stop=134.44     target=138.89     tech=Medium  f_score=70.0   rating=Undervalued  vol_ratio=0.86   atr%=2.12   trend=up        rr=0.53
+CBOE       pullback       entry=281.04     stop=270.8492   target=315.9423   tech=Medium  f_score=68.6   rating=Undervalued  vol_ratio=0.75   atr%=3.63   trend=up        rr=3.42
+XOM        consolidation  entry=165.99     stop=162.5857   target=167.37     tech=Medium  f_score=66.7   rating=Undervalued  vol_ratio=0.82   atr%=2.05   trend=down      rr=0.41
+MSFT       pullback       entry=495.63     stop=485.5721   target=517.78     tech=Medium  f_score=63.7   rating=Undervalued  vol_ratio=0.68   atr%=2.03   trend=up        rr=2.2
+ROP        pullback       entry=388.52     stop=379.1557   target=429.6      tech=Medium  f_score=60.9   rating=Fair         vol_ratio=0.86   atr%=2.41   trend=up        rr=4.39
+FANG       consolidation  entry=204.97     stop=199.4886   target=207.57     tech=Medium  f_score=59.9   rating=Fair         vol_ratio=0.91   atr%=2.67   trend=down      rr=0.47
+SPGI       pullback       entry=410.71     stop=398.5709   target=454.92     tech=Medium  f_score=56.1   rating=Fair         vol_ratio=0.84   atr%=2.96   trend=up        rr=3.64
+TRI        pullback       entry=97.35      stop=93.2707    target=112.77     tech=Medium  f_score=56.0   rating=Fair         vol_ratio=0.68   atr%=4.19   trend=up        rr=3.78
+QLYS       reversal       entry=150.28     stop=141.7664   target=190.52     tech=High    f_score=54.5   rating=Fair         vol_ratio=1.95   atr%=5.67   trend=down      rr=4.73
+AMGN       pullback       entry=377.35     stop=366.3536   target=445.82     tech=Medium  f_score=54.1   rating=Fair         vol_ratio=0.88   atr%=2.91   trend=up        rr=6.23
+CI         consolidation  entry=280.76     stop=274.9224   target=285.5      tech=Medium  f_score=54.0   rating=Fair         vol_ratio=0.96   atr%=2.08   trend=up        rr=0.81
+BRO        pullback       entry=66.19      stop=64.4079    target=74.0       tech=Medium  f_score=53.5   rating=Fair         vol_ratio=0.72   atr%=2.69   trend=up        rr=4.38
+MCO        pullback       entry=474.95     stop=463.49     target=517.14     tech=Medium  f_score=53.5   rating=Fair         vol_ratio=1.17   atr%=2.41   trend=up        rr=3.68
+AAPL       consolidation  entry=332.27     stop=324.425    target=336.22     tech=Medium  f_score=52.1   rating=Fair         vol_ratio=1.21   atr%=2.36   trend=up        rr=0.5
+VEEV       pullback       entry=262.4      stop=250.7421   target=290.47     tech=Medium  f_score=52.0   rating=Fair         vol_ratio=0.47   atr%=4.44   trend=up        rr=2.41
+DHR        pullback       entry=200.14     stop=194.9314   target=217.04     tech=Medium  f_score=50.9   rating=Fair         vol_ratio=1.17   atr%=2.6    trend=up        rr=3.24
+ICE        pullback       entry=157.4      stop=154.1636   target=164.66     tech=Medium  f_score=50.3   rating=Fair         vol_ratio=0.75   atr%=2.06   trend=up        rr=2.24
+RMD        pullback       entry=218.27     stop=212.2007   target=242.4      tech=Medium  f_score=49.5   rating=Fair         vol_ratio=0.68   atr%=2.78   trend=up        rr=3.98
+TGT        pullback       entry=155.83     stop=151.725    target=166.06     tech=Medium  f_score=49.0   rating=Fair         vol_ratio=0.57   atr%=2.63   trend=up        rr=2.49
+LH         pullback       entry=311.54     stop=304.0563   target=337.69     tech=Medium  f_score=47.3   rating=Fair         vol_ratio=1.24   atr%=2.4    trend=up        rr=3.49
+AMT        consolidation  entry=177.85     stop=173.8643   target=179.39     tech=Medium  f_score=46.9   rating=Fair         vol_ratio=0.96   atr%=2.24   trend=up        rr=0.39
+VRTX       pullback       entry=515.44     stop=504.3514   target=560.25     tech=Medium  f_score=46.2   rating=Fair         vol_ratio=0.86   atr%=2.15   trend=up        rr=4.04
+CHRW       consolidation  entry=152.78     stop=148.9781   target=155.0      tech=Medium  f_score=45.1   rating=Fair         vol_ratio=0.68   atr%=2.49   trend=up        rr=0.58
+FDS        pullback       entry=259.71     stop=247.8277   target=320.48     tech=Medium  f_score=42.7   rating=Fair         vol_ratio=1.12   atr%=4.58   trend=up        rr=5.11
+TYL        pullback       entry=336.67     stop=323.3364   target=393.53     tech=Medium  f_score=42.7   rating=Fair         vol_ratio=0.53   atr%=3.96   trend=up        rr=4.26
+MRSH       pullback       entry=176.91     stop=173.3371   target=194.62     tech=Medium  f_score=42.6   rating=Fair         vol_ratio=0.85   atr%=2.02   trend=up        rr=4.96
+AON        reversal       entry=302.69     stop=292.5114   target=358.71     tech=High    f_score=42.0   rating=Fair         vol_ratio=1.79   atr%=3.36   trend=down      rr=5.5
+WELL       pullback       entry=235.62     stop=230.8329   target=242.97     tech=Medium  f_score=41.8   rating=Fair         vol_ratio=0.82   atr%=2.03   trend=up        rr=1.54
+ELV        breakout       entry=418.72     stop=407.7937   target=463.6736   tech=High    f_score=40.1   rating=Fair         vol_ratio=1.41   atr%=2.61   trend=up        rr=4.11
+
+=== CAUTION (sorted by volume_ratio desc) ===
+KHC        pullback       entry=24.6       stop=23.9729    target=26.024     tech=Medium  f_score=20.2   rating=Overvalued   vol_ratio=7.68   atr%=2.55   trend=up        rr=2.27
+KMB        reversal       entry=98.15      stop=95.8954    target=110.0692   tech=High    f_score=33.5   rating=Overvalued   vol_ratio=2.26   atr%=2.3    trend=down      rr=5.29
+KR         breakout       entry=58.49      stop=57.0457    target=63.33      tech=High    f_score=30.0   rating=Overvalued   vol_ratio=2.1    atr%=2.47   trend=up        rr=3.35
+SWKS       neutral        entry=88.35      stop=84.3321    target=92.3       tech=Medium  f_score=26.9   rating=Overvalued   vol_ratio=1.87   atr%=4.55   trend=sideways  rr=0.98
+VTRS       neutral        entry=16.51      stop=16.0786    target=17.28      tech=Medium  f_score=20.1   rating=Overvalued   vol_ratio=1.59   atr%=2.61   trend=up        rr=1.78
+KDP        pullback       entry=31.39      stop=30.74      target=33.17      tech=Medium  f_score=29.9   rating=Overvalued   vol_ratio=1.19   atr%=2.07   trend=up        rr=2.74
+WMB        pullback       entry=72.85      stop=70.8407    target=76.3059    tech=Medium  f_score=32.3   rating=Overvalued   vol_ratio=1.14   atr%=2.76   trend=up        rr=1.72
+IFF        pullback       entry=83.61      stop=81.9414    target=88.64      tech=Medium  f_score=8.4    rating=Overvalued   vol_ratio=0.99   atr%=2.0    trend=up        rr=3.01
+BDX        pullback       entry=177.85     stop=173.9249   target=190.6358   tech=Medium  f_score=30.8   rating=Overvalued   vol_ratio=0.97   atr%=2.21   trend=up        rr=3.26
+NWSA       pullback       entry=29.44      stop=28.8373    target=31.3944    tech=Medium  f_score=34.2   rating=Overvalued   vol_ratio=0.97   atr%=2.05   trend=up        rr=3.24
+EFX        pullback       entry=169.0      stop=162.2757   target=197.3298   tech=Medium  f_score=32.6   rating=Overvalued   vol_ratio=0.93   atr%=3.98   trend=up        rr=4.21
+GIS        pullback       entry=35.85      stop=34.5879    target=42.2       tech=Medium  f_score=18.6   rating=Overvalued   vol_ratio=0.89   atr%=3.52   trend=up        rr=5.03
+NWS        pullback       entry=32.71      stop=32.0032    target=35.3536    tech=Medium  f_score=30.8   rating=Overvalued   vol_ratio=0.88   atr%=2.16   trend=up        rr=3.74
+AJG        pullback       entry=240.32     stop=233.2097   target=270.5471   tech=Medium  f_score=33.5   rating=Overvalued   vol_ratio=0.82   atr%=2.96   trend=up        rr=4.25
+SOLV       pullback       entry=87.45      stop=85.4199    target=94.16      tech=Medium  f_score=32.0   rating=Overvalued   vol_ratio=0.8    atr%=2.32   trend=up        rr=3.31
+GILD       pullback       entry=143.72     stop=140.4829   target=152.55     tech=Medium  f_score=4.1    rating=Overvalued   vol_ratio=0.79   atr%=2.25   trend=up        rr=2.73
+SJM        pullback       entry=121.14     stop=117.6007   target=134.4      tech=Medium  f_score=20.0   rating=Overvalued   vol_ratio=0.77   atr%=2.92   trend=up        rr=3.75
+GPC        pullback       entry=133.68     stop=130.7374   target=138.2      tech=Medium  f_score=19.1   rating=Overvalued   vol_ratio=0.71   atr%=2.2    trend=up        rr=1.54
+COR        pullback       entry=321.57     stop=315.1243   target=338.71     tech=Medium  f_score=37.4   rating=Overvalued   vol_ratio=0.7    atr%=2.0    trend=up        rr=2.66
+EL         pullback       entry=97.12      stop=94.016     target=107.0663   tech=Medium  f_score=10.7   rating=Overvalued   vol_ratio=0.65   atr%=3.2    trend=up        rr=3.2
+BEAM       pullback       entry=23.99      stop=22.2845    target=30.5       tech=Medium  f_score=6.8    rating=Overvalued   vol_ratio=0.62   atr%=7.11   trend=up        rr=3.82
+NOW        pullback       entry=132.53     stop=125.9757   target=149.6      tech=Medium  f_score=35.3   rating=Overvalued   vol_ratio=0.62   atr%=4.95   trend=up        rr=2.6
+J          pullback       entry=141.85     stop=138.9457   target=153.01     tech=Medium  f_score=25.1   rating=Overvalued   vol_ratio=0.61   atr%=2.05   trend=up        rr=3.84
+CMG        pullback       entry=36.2       stop=35.1679    target=38.92      tech=Medium  f_score=27.6   rating=Overvalued   vol_ratio=0.57   atr%=2.85   trend=up        rr=2.64
+TRMB       pullback       entry=57.66      stop=56.0721    target=62.0       tech=Medium  f_score=16.0   rating=Overvalued   vol_ratio=0.44   atr%=2.75   trend=up        rr=2.73
+
+=== NO FUNDAMENTAL DATA (59) — included as-is ===
+DELL       breakout       tech=High    vol_ratio=1.69  
+HPE        breakout       tech=High    vol_ratio=1.71  
+IR         reversal       tech=High    vol_ratio=1.78  
+JCI        breakout       tech=High    vol_ratio=2.08  
+ON         breakout       tech=High    vol_ratio=1.53  
+ROK        breakout       tech=High    vol_ratio=1.34  
+T          breakout       tech=High    vol_ratio=1.36  
+ADI        consolidation  tech=Medium  vol_ratio=0.8   
+AME        consolidation  tech=Medium  vol_ratio=0.95  
+ANET       consolidation  tech=Medium  vol_ratio=0.89  
+APH        consolidation  tech=Medium  vol_ratio=0.98  
+AWK        pullback       tech=Medium  vol_ratio=0.66  
+BBY        consolidation  tech=Medium  vol_ratio=0.72  
+BIIB       neutral        tech=Medium  vol_ratio=1.53  
+BILL       pullback       tech=Medium  vol_ratio=0.59  
+BR         pullback       tech=Medium  vol_ratio=0.51  
+BSX        reversal       tech=Medium  vol_ratio=1.36  
+CAH        pullback       tech=Medium  vol_ratio=0.73  
+CAT        consolidation  tech=Medium  vol_ratio=0.77  
+DPZ        pullback       tech=Medium  vol_ratio=0.74  
+DXCM       pullback       tech=Medium  vol_ratio=0.65  
+EBAY       consolidation  tech=Medium  vol_ratio=0.71  
+ECHO       consolidation  tech=Medium  vol_ratio=0.7   
+EQT        pullback       tech=Medium  vol_ratio=0.88  
+ETN        consolidation  tech=Medium  vol_ratio=0.94  
+EW         reversal       tech=Medium  vol_ratio=1.38  
+EXE        pullback       tech=Medium  vol_ratio=1.47  
+FLEX       consolidation  tech=Medium  vol_ratio=1.06  
+FORM       consolidation  tech=Medium  vol_ratio=0.81  
+GS         consolidation  tech=Medium  vol_ratio=0.65  
+HAL        pullback       tech=Medium  vol_ratio=0.92  
+HCA        consolidation  tech=Medium  vol_ratio=1.01  
+HPQ        neutral        tech=Medium  vol_ratio=1.71  
+IBM        consolidation  tech=Medium  vol_ratio=1.02  
+ISRG       neutral        tech=Medium  vol_ratio=1.52  
+JBL        consolidation  tech=Medium  vol_ratio=0.96  
+KEYS       consolidation  tech=Medium  vol_ratio=0.37  
+MAS        reversal       tech=Medium  vol_ratio=1.46  
+MCHP       consolidation  tech=Medium  vol_ratio=1.11  
+MCK        pullback       tech=Medium  vol_ratio=0.99  
+MRK        pullback       tech=Medium  vol_ratio=0.78  
+MS         consolidation  tech=Medium  vol_ratio=1.03  
+NTAP       consolidation  tech=Medium  vol_ratio=1.03  
+NVDA       pullback       tech=Medium  vol_ratio=0.69  
+NXPI       consolidation  tech=Medium  vol_ratio=1.02  
+PAYX       pullback       tech=Medium  vol_ratio=0.78  
+PM         consolidation  tech=Medium  vol_ratio=1.25  
+PWR        consolidation  tech=Medium  vol_ratio=0.92  
+Q          consolidation  tech=Medium  vol_ratio=0.51  
+QCOM       consolidation  tech=Medium  vol_ratio=1.07  
+RJF        pullback       tech=Medium  vol_ratio=0.92  
+ROST       consolidation  tech=Medium  vol_ratio=0.59  
+TEL        consolidation  tech=Medium  vol_ratio=0.89  
+TER        consolidation  tech=Medium  vol_ratio=1.02  
+TXN        consolidation  tech=Medium  vol_ratio=0.97  
+UAL        neutral        tech=Medium  vol_ratio=1.78  
+UHS        consolidation  tech=Medium  vol_ratio=0.8   
+WDAY       pullback       tech=Medium  vol_ratio=0.39  
+YUM        pullback       tech=Medium  vol_ratio=0.92  

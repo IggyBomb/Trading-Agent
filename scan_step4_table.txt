@@ -1,0 +1,313 @@
+=== CONFIRMED (147) ===
+EOG | consolidation | 153.05 | 149.21 | 158.81 | Medium | 83.4 | Undervalued | CONFIRMED
+DVN | consolidation | 49.1 | 47.7621 | 51.1069 | Medium | 79.9 | Undervalued | CONFIRMED
+INCY | consolidation | 127.81 | 124.3093 | 133.0611 | Medium | 75.2 | Undervalued | CONFIRMED
+COP | consolidation | 134.87 | 131.4189 | 140.0466 | Medium | 73.3 | Undervalued | CONFIRMED
+OXY | consolidation | 61.3 | 59.7421 | 63.6368 | Medium | 73.3 | Undervalued | CONFIRMED
+CF | breakout | 129.6 | 124.4887 | 137.267 | High | 70.3 | Undervalued | CONFIRMED
+NVDA | pullback | 214.72 | 208.9693 | 223.346 | Medium | 70.3 | Undervalued | CONFIRMED
+FSLR | pullback | 214.28 | 200.7964 | 234.5054 | Medium | 70.2 | Undervalued | CONFIRMED
+NEM | breakout | 131.58 | 126.5379 | 139.1432 | High | 68.6 | Undervalued | CONFIRMED
+CBOE | consolidation | 300.74 | 291.4271 | 314.7094 | Medium | 68.6 | Undervalued | CONFIRMED
+VLO | consolidation | 348.86 | 337.7271 | 365.5593 | Medium | 68.3 | Undervalued | CONFIRMED
+ALL | reversal | 253.83 | 246.98 | 264.105 | Medium | 67.6 | Undervalued | CONFIRMED
+BESI.AS | pullback | 208.5 | 199.7571 | 221.6144 | Medium | 67.0 | Undervalued | CONFIRMED
+GOOGL | pullback | 344.82 | 336.5279 | 357.2582 | Medium | 67.0 | Undervalued | CONFIRMED
+PLTR | consolidation | 179.94 | 170.3269 | 194.3596 | Medium | 67.0 | Undervalued | CONFIRMED
+CVX | consolidation | 205.27 | 201.0995 | 211.5258 | Medium | 66.7 | Undervalued | CONFIRMED
+LYFT | consolidation | 17.47 | 16.7686 | 18.5221 | Medium | 65.3 | Undervalued | CONFIRMED
+GL | pullback | 171.08 | 167.4343 | 176.5486 | Medium | 64.2 | Undervalued | CONFIRMED
+AMAT | pullback | 492.32 | 465.2158 | 532.9763 | Medium | 63.7 | Undervalued | CONFIRMED
+MSFT | pullback | 483.24 | 472.7253 | 499.0121 | Medium | 63.7 | Undervalued | CONFIRMED
+TXN | pullback | 264.36 | 254.8593 | 278.6111 | Medium | 62.0 | Undervalued | CONFIRMED
+EXPD | consolidation | 187.81 | 182.7736 | 195.3646 | Medium | 61.9 | Fair | CONFIRMED
+ROP | consolidation | 411.79 | 401.88 | 426.655 | Medium | 60.9 | Fair | CONFIRMED
+FRE.DE | pullback | 46.565 | 45.5732 | 48.0527 | Medium | 60.6 | Fair | CONFIRMED
+MPC | consolidation | 360.72 | 348.3283 | 379.3076 | Medium | 59.8 | Fair | CONFIRMED
+UBER | consolidation | 78.8 | 75.8169 | 83.2746 | Medium | 59.4 | Fair | CONFIRMED
+ASM.AS | pullback | 818.6 | 788.2929 | 864.0607 | Medium | 58.7 | Fair | CONFIRMED
+GEV | pullback | 956.85 | 915.0266 | 1019.5851 | Medium | 58.7 | Fair | CONFIRMED
+RIO.L | consolidation | 7669.0 | 7497.2833 | 7926.575 | Medium | 58.7 | Fair | CONFIRMED
+ADI | pullback | 373.09 | 360.7343 | 391.6235 | Medium | 58.6 | Fair | CONFIRMED
+KEYS | pullback | 316.13 | 301.7882 | 337.6427 | Medium | 58.6 | Fair | CONFIRMED
+AIR.PA | pullback | 203.05 | 199.825 | 207.8875 | Medium | 58.5 | Fair | CONFIRMED
+PSX | consolidation | 242.87 | 235.3544 | 254.1434 | Medium | 58.4 | Fair | CONFIRMED
+ADBE | consolidation | 275.3 | 264.7314 | 291.1529 | Medium | 57.8 | Fair | CONFIRMED
+UHS | consolidation | 177.26 | 171.9886 | 185.1671 | Medium | 57.4 | Fair | CONFIRMED
+ASML.AS | pullback | 1488.4 | 1438.4 | 1563.4 | Medium | 57.1 | Fair | CONFIRMED
+DXCM | consolidation | 92.34 | 89.7657 | 96.2015 | Medium | 56.1 | Fair | CONFIRMED
+SPGI | consolidation | 431.29 | 421.8943 | 445.3836 | Medium | 56.1 | Fair | CONFIRMED
+A | breakout | 159.0 | 155.1936 | 164.7096 | High | 56.0 | Fair | CONFIRMED
+GRMN | pullback | 294.85 | 287.6543 | 305.6436 | Medium | 56.0 | Fair | CONFIRMED
+SAP.DE | consolidation | 186.06 | 180.7743 | 193.9885 | Medium | 56.0 | Fair | CONFIRMED
+TRI | consolidation | 105.53 | 99.9032 | 113.9702 | Medium | 56.0 | Fair | CONFIRMED
+ALLE | pullback | 162.31 | 158.465 | 168.0775 | Medium | 55.9 | Fair | CONFIRMED
+GEHC | consolidation | 74.82 | 73.2257 | 77.2114 | Medium | 55.8 | Fair | CONFIRMED
+ABNB | consolidation | 187.3 | 180.3262 | 197.7607 | Medium | 55.4 | Fair | CONFIRMED
+AMZN | pullback | 258.63 | 252.2429 | 268.2106 | Medium | 55.3 | Fair | CONFIRMED
+DSY.PA | consolidation | 22.27 | 21.7121 | 23.1069 | Medium | 55.2 | Fair | CONFIRMED
+SHEL.L | consolidation | 3409.0 | 3357.3429 | 3486.4856 | Medium | 55.2 | Fair | CONFIRMED
+MDT | consolidation | 93.35 | 91.31 | 96.41 | Medium | 54.2 | Fair | CONFIRMED
+DHL.DE | consolidation | 56.0 | 55.0829 | 57.3756 | Medium | 53.9 | Fair | CONFIRMED
+PRU | pullback | 121.15 | 118.4207 | 125.244 | Medium | 53.8 | Fair | CONFIRMED
+AZM.MI | pullback | 38.1 | 37.5279 | 38.9582 | Medium | 53.7 | Fair | CONFIRMED
+BRO | consolidation | 72.92 | 71.1227 | 75.616 | Medium | 53.5 | Fair | CONFIRMED
+MCO | consolidation | 503.32 | 493.0523 | 518.7215 | Medium | 53.5 | Fair | CONFIRMED
+RAND.AS | consolidation | 39.79 | 38.9071 | 41.1144 | Medium | 53.3 | Fair | CONFIRMED
+SHL.DE | consolidation | 40.35 | 39.7186 | 41.2971 | Medium | 53.3 | Fair | CONFIRMED
+ZBH | consolidation | 100.98 | 98.0329 | 105.4007 | Medium | 53.3 | Fair | CONFIRMED
+DB1.DE | consolidation | 284.1 | 279.3929 | 291.1607 | Medium | 52.8 | Fair | CONFIRMED
+CRM | consolidation | 209.17 | 201.395 | 220.8325 | Medium | 52.5 | Fair | CONFIRMED
+RL | pullback | 372.59 | 359.6143 | 392.0535 | Medium | 52.5 | Fair | CONFIRMED
+AOS | consolidation | 63.08 | 61.5179 | 65.4231 | Medium | 52.1 | Fair | CONFIRMED
+EDV.L | consolidation | 4684.5 | 4503.2857 | 4956.3214 | Medium | 52.1 | Fair | CONFIRMED
+HWM | pullback | 271.68 | 262.9212 | 284.8182 | Medium | 52.0 | Fair | CONFIRMED
+STJ.L | consolidation | 1187.5 | 1159.308 | 1229.788 | Medium | 51.9 | Fair | CONFIRMED
+PWR | pullback | 639.34 | 612.0686 | 680.2471 | Medium | 51.7 | Fair | CONFIRMED
+NFLX | consolidation | 79.59 | 77.375 | 82.9125 | Medium | 51.2 | Fair | CONFIRMED
+DHR | consolidation | 218.85 | 212.2314 | 228.7779 | Medium | 50.9 | Fair | CONFIRMED
+PNR | pullback | 64.4 | 62.4514 | 67.3229 | Medium | 50.4 | Fair | CONFIRMED
+REN.AS | consolidation | 30.68 | 29.8027 | 31.9959 | Medium | 50.1 | Fair | CONFIRMED
+INTU | consolidation | 367.0 | 353.2664 | 387.6004 | Medium | 49.4 | Fair | CONFIRMED
+ACN | consolidation | 185.28 | 177.3021 | 197.2468 | Medium | 49.3 | Fair | CONFIRMED
+BEN | breakout | 34.31 | 33.5779 | 35.4082 | High | 48.8 | Fair | CONFIRMED
+HII | pullback | 298.2 | 289.5293 | 311.2061 | Medium | 48.8 | Fair | CONFIRMED
+KLAC | pullback | 183.99 | 174.079 | 198.8565 | Medium | 48.8 | Fair | CONFIRMED
+HSX.L | consolidation | 1808.0 | 1776.2159 | 1855.6762 | Medium | 48.7 | Fair | CONFIRMED
+ARM | pullback | 243.32 | 224.2489 | 271.9266 | Medium | 48.6 | Fair | CONFIRMED
+NXT.L | consolidation | 15365.0 | 15057.5567 | 15826.165 | Medium | 48.6 | Fair | CONFIRMED
+ENR.DE | pullback | 150.86 | 144.99 | 159.665 | Medium | 48.5 | Fair | CONFIRMED
+LDO.MI | pullback | 56.01 | 54.7529 | 57.8957 | Medium | 48.4 | Fair | CONFIRMED
+AMGN | consolidation | 439.33 | 427.3994 | 457.2259 | Medium | 47.5 | Fair | CONFIRMED
+LMT | pullback | 563.57 | 548.3436 | 586.4096 | Medium | 47.4 | Fair | CONFIRMED
+AUTO.L | consolidation | 545.0 | 532.3786 | 563.9321 | Medium | 47.2 | Fair | CONFIRMED
+PTC | consolidation | 154.68 | 149.1393 | 162.9911 | Medium | 47.2 | Fair | CONFIRMED
+EXE | neutral | 96.09 | 93.6748 | 99.7128 | Medium | 47.0 | Fair | CONFIRMED
+PUB.PA | consolidation | 102.45 | 100.4936 | 105.3846 | Medium | 47.0 | Fair | CONFIRMED
+REGN | consolidation | 834.04 | 813.9834 | 864.1249 | Medium | 47.0 | Fair | CONFIRMED
+AMT | consolidation | 175.8 | 171.2079 | 182.6882 | Medium | 46.9 | Fair | CONFIRMED
+ASML | pullback | 1763.76 | 1705.0064 | 1851.8904 | Medium | 46.9 | Fair | CONFIRMED
+MUV2.DE | consolidation | 519.6 | 510.3714 | 533.4429 | Medium | 46.9 | Fair | CONFIRMED
+T | consolidation | 25.29 | 24.7757 | 26.0614 | Medium | 46.8 | Fair | CONFIRMED
+LTMC.MI | consolidation | 24.49 | 23.9829 | 25.2506 | Medium | 46.7 | Fair | CONFIRMED
+DD | pullback | 138.33 | 134.0314 | 144.7779 | Medium | 46.6 | Fair | CONFIRMED
+BAS.DE | consolidation | 51.95 | 51.0971 | 53.2294 | Medium | 46.5 | Fair | CONFIRMED
+FAST | pullback | 51.26 | 50.1621 | 52.9068 | Medium | 46.2 | Fair | CONFIRMED
+RMD | consolidation | 231.52 | 223.7039 | 243.2442 | Medium | 46.2 | Fair | CONFIRMED
+TT | pullback | 453.43 | 442.1707 | 470.3189 | Medium | 46.2 | Fair | CONFIRMED
+VRTX | consolidation | 548.05 | 530.2379 | 574.7681 | Medium | 46.2 | Fair | CONFIRMED
+PH | pullback | 1001.74 | 974.6579 | 1042.3631 | Medium | 46.1 | Fair | CONFIRMED
+BR | consolidation | 182.18 | 175.6157 | 192.0265 | Medium | 46.0 | Fair | CONFIRMED
+AVY | consolidation | 183.71 | 178.7929 | 191.0857 | Medium | 45.9 | Fair | CONFIRMED
+TGT | breakout | 165.44 | 160.5968 | 172.7048 | High | 45.7 | Fair | CONFIRMED
+LH | consolidation | 336.34 | 329.1486 | 347.1271 | Medium | 45.7 | Fair | CONFIRMED
+III.L | consolidation | 2920.0 | 2850.2151 | 3024.6773 | Medium | 45.5 | Fair | CONFIRMED
+GE | pullback | 348.37 | 338.7893 | 362.741 | Medium | 45.3 | Fair | CONFIRMED
+ICE | consolidation | 161.25 | 157.8914 | 166.2879 | Medium | 45.3 | Fair | CONFIRMED
+MTX.DE | pullback | 353.2 | 344.6429 | 366.0356 | Medium | 45.3 | Fair | CONFIRMED
+FCX | breakout | 76.66 | 73.7443 | 81.0335 | High | 45.2 | Fair | CONFIRMED
+DG | consolidation | 123.41 | 119.9107 | 128.6589 | Medium | 45.0 | Fair | CONFIRMED
+IG.MI | consolidation | 8.788 | 8.6483 | 8.9976 | Medium | 45.0 | Fair | CONFIRMED
+BP.L | consolidation | 547.0 | 535.2785 | 564.5822 | Medium | 44.9 | Fair | CONFIRMED
+RWE.DE | pullback | 56.98 | 55.5671 | 59.0993 | Medium | 44.9 | Fair | CONFIRMED
+NTAP | pullback | 192.27 | 184.5186 | 203.8971 | Medium | 44.2 | Fair | CONFIRMED
+MTLN.L | pullback | 48.4 | 46.395 | 51.4075 | Medium | 43.9 | Fair | CONFIRMED
+ADYEN.AS | consolidation | 1076.2 | 1038.4214 | 1132.8679 | Medium | 43.6 | Fair | CONFIRMED
+HST | consolidation | 23.21 | 22.6393 | 24.0661 | Medium | 43.6 | Fair | CONFIRMED
+PYPL | consolidation | 61.55 | 60.033 | 63.8255 | Medium | 43.6 | Fair | CONFIRMED
+HAS | pullback | 93.54 | 91.3216 | 96.8676 | Medium | 43.5 | Fair | CONFIRMED
+TRGP | neutral | 299.1 | 289.6693 | 313.2461 | Medium | 43.5 | Fair | CONFIRMED
+CMCSA | consolidation | 26.85 | 26.24 | 27.765 | Medium | 43.4 | Fair | CONFIRMED
+AKZA.AS | pullback | 60.36 | 59.4529 | 61.7206 | Medium | 43.2 | Fair | CONFIRMED
+ADP | consolidation | 280.81 | 274.3929 | 290.4357 | Medium | 42.8 | Fair | CONFIRMED
+OR.PA | consolidation | 387.55 | 380.8339 | 397.6241 | Medium | 42.8 | Fair | CONFIRMED
+RACE.MI | consolidation | 370.0 | 363.4964 | 379.7554 | Medium | 42.8 | Fair | CONFIRMED
+FDS | consolidation | 299.91 | 289.7921 | 315.0869 | Medium | 42.7 | Fair | CONFIRMED
+IEX | pullback | 234.39 | 229.4457 | 241.8064 | Medium | 42.7 | Fair | CONFIRMED
+STE | consolidation | 237.93 | 231.905 | 246.9675 | Medium | 42.7 | Fair | CONFIRMED
+TYL | consolidation | 350.73 | 337.8093 | 370.1111 | Medium | 42.7 | Fair | CONFIRMED
+WTW | consolidation | 341.99 | 334.4843 | 353.2486 | Medium | 42.7 | Fair | CONFIRMED
+TJX | reversal | 140.53 | 137.055 | 145.7425 | High | 42.6 | Fair | CONFIRMED
+RTX | pullback | 209.91 | 205.3981 | 216.6778 | Medium | 42.6 | Fair | CONFIRMED
+SU.PA | pullback | 295.9 | 290.1429 | 304.5356 | Medium | 42.6 | Fair | CONFIRMED
+GNRC | pullback | 205.98 | 196.6321 | 220.0018 | Medium | 42.5 | Fair | CONFIRMED
+CME | consolidation | 274.98 | 268.9764 | 283.9854 | Medium | 42.2 | Fair | CONFIRMED
+RHM.DE | pullback | 1150.2 | 1104.4143 | 1218.8786 | Medium | 42.0 | Fair | CONFIRMED
+GLW | pullback | 149.84 | 139.6136 | 165.1796 | Medium | 41.9 | Fair | CONFIRMED
+KVUE | consolidation | 19.06 | 18.6457 | 19.6814 | Medium | 41.9 | Fair | CONFIRMED
+PRY.MI | pullback | 122.55 | 117.8714 | 129.5679 | Medium | 41.8 | Fair | CONFIRMED
+WELL | consolidation | 239.22 | 234.3859 | 246.4712 | Medium | 41.8 | Fair | CONFIRMED
+ERF.PA | consolidation | 72.85 | 71.7071 | 74.5643 | Medium | 41.6 | Fair | CONFIRMED
+DIS | consolidation | 107.78 | 105.5121 | 111.1818 | Medium | 40.9 | Fair | CONFIRMED
+KMI | pullback | 30.98 | 30.2343 | 32.0986 | Medium | 40.8 | Fair | CONFIRMED
+SAN.PA | consolidation | 78.78 | 77.4221 | 80.8169 | Medium | 40.8 | Fair | CONFIRMED
+ZTS | consolidation | 77.73 | 74.3907 | 82.739 | Medium | 40.3 | Fair | CONFIRMED
+DIA.MI | consolidation | 75.12 | 73.8086 | 77.0871 | Medium | 40.2 | Fair | CONFIRMED
+ELV | consolidation | 400.54 | 390.8 | 415.15 | Medium | 40.1 | Fair | CONFIRMED
+BALL | consolidation | 63.59 | 62.1893 | 65.6911 | Medium | 40.0 | Fair | CONFIRMED
+TEP.PA | consolidation | 71.34 | 69.0414 | 74.7879 | Medium | 40.0 | Fair | CONFIRMED
+
+=== CAUTION (124) ===
+COIN | neutral | 186.49 | 177.7886 | 199.5421 | Medium | 15.3 | Overvalued | CAUTION
+MSTR | neutral | 119.25 | 113.1443 | 128.4085 | Medium | 9.1 | Overvalued | CAUTION
+DE | breakout | 647.47 | 627.6264 | 677.2354 | High | 25.3 | Overvalued | CAUTION
+EL | breakout | 101.94 | 98.2464 | 107.4804 | High | 10.7 | Overvalued | CAUTION
+WMT | pullback | 103.7 | 100.8351 | 107.9974 | Medium | 26.0 | Overvalued | CAUTION
+MOS | breakout | 24.41 | 23.3121 | 26.0568 | High | 18.3 | Overvalued | CAUTION
+TSLA | breakout | 362.86 | 351.3514 | 380.1229 | High | 28.5 | Overvalued | CAUTION
+MRK | breakout | 152.55 | 148.0529 | 159.2957 | High | 22.5 | Overvalued | CAUTION
+RVTY | breakout | 124.75 | 120.7386 | 130.7671 | High | 26.9 | Overvalued | CAUTION
+ALB | breakout | 143.25 | 137.6443 | 151.6586 | High | 33.5 | Overvalued | CAUTION
+ARE | breakout | 53.49 | 51.2493 | 56.8511 | High | 20.1 | Overvalued | CAUTION
+XYZ | breakout | 82.16 | 79.4109 | 86.2836 | High | 15.7 | Overvalued | CAUTION
+AEP | reversal | 120.94 | 118.3799 | 124.7801 | Medium | 29.0 | Overvalued | CAUTION
+NOC | pullback | 551.03 | 537.6793 | 571.056 | Medium | 36.0 | Overvalued | CAUTION
+SRE | reversal | 82.89 | 80.8979 | 85.8781 | Medium | 38.1 | Overvalued | CAUTION
+BDX | breakout | 192.0 | 187.3786 | 198.9321 | High | 30.8 | Overvalued | CAUTION
+MSI | consolidation | 480.47 | 465.6829 | 502.6507 | Medium | 31.0 | Overvalued | CAUTION
+SJM | consolidation | 124.32 | 121.3514 | 128.7729 | Medium | 10.8 | Overvalued | CAUTION
+WMB | pullback | 70.49 | 68.3457 | 73.7064 | Medium | 32.3 | Overvalued | CAUTION
+ABT | consolidation | 116.64 | 114.2914 | 120.1629 | Medium | 29.4 | Overvalued | CAUTION
+MP | consolidation | 60.05 | 56.4638 | 65.4293 | Medium | 16.7 | Overvalued | CAUTION
+CMG | consolidation | 36.9 | 35.5471 | 38.9293 | Medium | 24.3 | Overvalued | CAUTION
+BA | pullback | 214.2 | 209.0571 | 221.9143 | Medium | 20.9 | Overvalued | CAUTION
+UAL | pullback | 113.17 | 109.4386 | 118.7671 | Medium | 38.2 | Overvalued | CAUTION
+BF-B | consolidation | 28.44 | 27.6571 | 29.6144 | Medium | 38.6 | Overvalued | CAUTION
+WSM | pullback | 237.58 | 231.1136 | 247.2796 | Medium | 38.8 | Overvalued | CAUTION
+DOC | consolidation | 21.4 | 20.9189 | 22.1216 | Medium | 30.7 | Overvalued | CAUTION
+J | consolidation | 150.08 | 146.2489 | 155.8267 | Medium | 25.1 | Overvalued | CAUTION
+AME | pullback | 239.55 | 233.87 | 248.07 | Medium | 39.4 | Overvalued | CAUTION
+CTVA | consolidation | 81.79 | 79.7675 | 84.8238 | Medium | 26.9 | Overvalued | CAUTION
+KR | consolidation | 57.9 | 56.5873 | 59.8691 | Medium | 30.0 | Overvalued | CAUTION
+CRL | consolidation | 295.19 | 283.0707 | 313.369 | Medium | 8.5 | Overvalued | CAUTION
+F | consolidation | 14.41 | 14.0072 | 15.0142 | Medium | 0.0 | Overvalued | CAUTION
+PFE | consolidation | 28.07 | 27.4214 | 29.0429 | Medium | 23.5 | Overvalued | CAUTION
+EFX | consolidation | 192.62 | 186.3379 | 202.0432 | Medium | 32.6 | Overvalued | CAUTION
+JCI | pullback | 143.05 | 138.8843 | 149.2986 | Medium | 39.3 | Overvalued | CAUTION
+SG | consolidation | 6.99 | 6.5469 | 7.6547 | Medium | 5.0 | Overvalued | CAUTION
+AJG | consolidation | 263.81 | 256.6193 | 274.596 | Medium | 33.5 | Overvalued | CAUTION
+NWSA | consolidation | 30.38 | 29.5793 | 31.581 | Medium | 34.2 | Overvalued | CAUTION
+HD | pullback | 335.61 | 326.7286 | 348.9321 | Medium | 30.9 | Overvalued | CAUTION
+NTRA | consolidation | 332.03 | 317.7794 | 353.4059 | Medium | 21.9 | Overvalued | CAUTION
+DASH | consolidation | 223.49 | 215.5234 | 235.4399 | Medium | 31.9 | Overvalued | CAUTION
+IQV | consolidation | 259.82 | 252.0114 | 271.5329 | Medium | 20.9 | Overvalued | CAUTION
+SHW | pullback | 346.59 | 338.2578 | 359.0883 | Medium | 34.2 | Overvalued | CAUTION
+GILD | consolidation | 146.12 | 141.7093 | 152.736 | Medium | 4.1 | Overvalued | CAUTION
+SNPS | pullback | 397.87 | 387.1029 | 414.0207 | Medium | 36.8 | Overvalued | CAUTION
+TMO | consolidation | 629.27 | 614.3007 | 651.7239 | Medium | 36.0 | Overvalued | CAUTION
+INTC | pullback | 90.07 | 84.3636 | 98.6296 | Medium | 21.9 | Overvalued | CAUTION
+NWS | consolidation | 34.55 | 33.5843 | 35.9985 | Medium | 27.5 | Overvalued | CAUTION
+VTR | consolidation | 93.06 | 90.9579 | 96.2132 | Medium | 25.1 | Overvalued | CAUTION
+AMCR | consolidation | 48.59 | 47.3786 | 50.4071 | Medium | 36.6 | Overvalued | CAUTION
+LYV | pullback | 181.82 | 177.9171 | 187.6743 | Medium | 14.0 | Overvalued | CAUTION
+ETN | pullback | 419.2 | 405.4962 | 439.7557 | Medium | 35.3 | Overvalued | CAUTION
+SW | consolidation | 49.39 | 47.9512 | 51.5482 | Medium | 26.8 | Overvalued | CAUTION
+EW | pullback | 89.79 | 87.8657 | 92.6765 | Medium | 32.8 | Overvalued | CAUTION
+KDP | consolidation | 32.04 | 30.9643 | 33.6535 | Medium | 29.9 | Overvalued | CAUTION
+BKR | pullback | 62.34 | 60.7948 | 64.6578 | Medium | 35.3 | Overvalued | CAUTION
+JBL | pullback | 313.21 | 297.322 | 337.042 | Medium | 37.4 | Overvalued | CAUTION
+SOLV | consolidation | 89.57 | 86.7075 | 93.8637 | Medium | 32.0 | Overvalued | CAUTION
+HUBB | pullback | 470.03 | 455.5191 | 491.7963 | Medium | 35.3 | Overvalued | CAUTION
+ROL | consolidation | 36.91 | 36.1138 | 38.1043 | Medium | 39.5 | Overvalued | CAUTION
+CRWV | pullback | 87.85 | 79.8089 | 99.9116 | Medium | 9.9 | Overvalued | CAUTION
+RKLB | pullback | 72.57 | 67.1414 | 80.7129 | Medium | 16.7 | Overvalued | CAUTION
+LVS | consolidation | 47.03 | 45.9471 | 48.6544 | Medium | 36.9 | Overvalued | CAUTION
+IP | consolidation | 41.49 | 40.3331 | 43.2254 | Medium | 20.2 | Overvalued | CAUTION
+AON | consolidation | 355.11 | 347.81 | 366.06 | Medium | 38.7 | Overvalued | CAUTION
+DLR | pullback | 190.62 | 186.0921 | 197.4119 | Medium | 30.1 | Overvalued | CAUTION
+SLB | consolidation | 53.87 | 52.4143 | 56.0536 | Medium | 35.3 | Overvalued | CAUTION
+TMDX | consolidation | 94.77 | 90.136 | 101.721 | Medium | 35.3 | Overvalued | CAUTION
+GIS | consolidation | 39.97 | 38.9564 | 41.4904 | Medium | 18.6 | Overvalued | CAUTION
+KMB | consolidation | 109.31 | 106.5993 | 113.3761 | Medium | 33.5 | Overvalued | CAUTION
+OMC | consolidation | 87.54 | 85.1079 | 91.1882 | Medium | 39.8 | Overvalued | CAUTION
+VTRS | consolidation | 16.32 | 15.81 | 17.085 | Medium | 20.1 | Overvalued | CAUTION
+SYY | consolidation | 84.1 | 82.3471 | 86.7293 | Medium | 33.4 | Overvalued | CAUTION
+TAP | consolidation | 42.94 | 41.6543 | 44.8685 | Medium | 20.1 | Overvalued | CAUTION
+HSIC | pullback | 88.5 | 86.3671 | 91.6994 | Medium | 35.7 | Overvalued | CAUTION
+KHC | consolidation | 25.58 | 24.8351 | 26.6973 | Medium | 20.2 | Overvalued | CAUTION
+CCEP | consolidation | 108.0 | 105.7586 | 111.3621 | Medium | 31.9 | Overvalued | CAUTION
+ECHO | pullback | 86.81 | 83.0229 | 92.4906 | Medium | 0.0 | Overvalued | CAUTION
+SHAK | consolidation | 75.82 | 72.7918 | 80.3623 | Medium | 9.9 | Overvalued | CAUTION
+MCHP | pullback | 76.08 | 72.0536 | 82.1196 | Medium | 25.1 | Overvalued | CAUTION
+SY1.DE | consolidation | 90.36 | 88.9171 | 92.5243 | Medium | 21.9 | Overvalued | CAUTION
+LGEN.L | pullback | 284.85 | 277.5934 | 295.7349 | Medium | 33.4 | Overvalued | CAUTION
+IFX.DE | pullback | 55.48 | 52.9221 | 59.3168 | Medium | 35.9 | Overvalued | CAUTION
+EXO.AS | consolidation | 70.95 | 69.8143 | 72.6535 | Medium | 21.9 | Overvalued | CAUTION
+HO.PA | pullback | 251.9 | 246.95 | 259.325 | Medium | 29.4 | Overvalued | CAUTION
+LR.PA | pullback | 133.95 | 130.9786 | 138.4071 | Medium | 36.0 | Overvalued | CAUTION
+PSH.L | pullback | 3900.6001 | 3821.0233 | 4019.9653 | Medium | 17.0 | Overvalued | CAUTION
+SAF.PA | pullback | 341.4 | 334.95 | 351.075 | Medium | 35.4 | Overvalued | CAUTION
+SDLF.L | consolidation | 922.5 | 906.2854 | 946.8219 | Medium | 13.3 | Overvalued | CAUTION
+STMMI.MI | pullback | 42.91 | 41.2361 | 45.4208 | Medium | 23.5 | Overvalued | CAUTION
+STMPA.PA | pullback | 42.88 | 41.1886 | 45.4171 | Medium | 23.5 | Overvalued | CAUTION
+AAL.L | consolidation | 4090.0 | 3964.7814 | 4277.8279 | Medium | 9.2 | Overvalued | CAUTION
+ABF.L | consolidation | 2064.0 | 2029.5425 | 2115.6862 | Medium | 31.9 | Overvalued | CAUTION
+AZN.L | consolidation | 12169.4004 | 11886.1354 | 12594.2979 | Medium | 36.1 | Overvalued | CAUTION
+BA.L | pullback | 2120.0 | 2076.4286 | 2185.3571 | Medium | 29.3 | Overvalued | CAUTION
+BAB.L | pullback | 1100.5 | 1070.7019 | 1145.1971 | Medium | 26.0 | Overvalued | CAUTION
+BEI.DE | consolidation | 80.2 | 78.3643 | 82.9536 | Medium | 33.6 | Overvalued | CAUTION
+CAP.PA | consolidation | 110.4 | 107.0179 | 115.4732 | Medium | 37.4 | Overvalued | CAUTION
+CCEP.L | consolidation | 7910.0 | 7752.1429 | 8146.7856 | Medium | 31.9 | Overvalued | CAUTION
+CNA.L | pullback | 153.5 | 150.9391 | 157.3414 | Medium | 25.3 | Overvalued | CAUTION
+CRDA.L | consolidation | 3416.0 | 3336.3804 | 3535.4294 | Medium | 31.8 | Overvalued | CAUTION
+DTE.DE | consolidation | 29.13 | 28.5 | 30.075 | Medium | 31.5 | Overvalued | CAUTION
+GLEN.L | consolidation | 598.2 | 582.2511 | 622.1234 | Medium | 35.1 | Overvalued | CAUTION
+GSK.L | consolidation | 1920.5 | 1876.2658 | 1986.8513 | Medium | 32.7 | Overvalued | CAUTION
+HLN.L | consolidation | 364.126 | 357.7715 | 373.6577 | Medium | 35.4 | Overvalued | CAUTION
+IMCD.AS | pullback | 95.52 | 93.4193 | 98.671 | Medium | 37.4 | Overvalued | CAUTION
+KGF.L | pullback | 321.3 | 315.5176 | 329.9736 | Medium | 28.5 | Overvalued | CAUTION
+MRO.L | pullback | 468.6 | 457.5517 | 485.1725 | Medium | 22.5 | Overvalued | CAUTION
+PSON.L | consolidation | 1201.5 | 1178.6082 | 1235.8377 | Medium | 32.0 | Overvalued | CAUTION
+RR.L | pullback | 1499.8 | 1466.9287 | 1549.1069 | Medium | 38.7 | Overvalued | CAUTION
+SGE.L | consolidation | 1090.0 | 1063.0482 | 1130.4277 | Medium | 34.3 | Overvalued | CAUTION
+SSE.L | pullback | 2384.0 | 2343.8186 | 2444.2721 | Medium | 30.0 | Overvalued | CAUTION
+SVT.L | consolidation | 3110.0 | 3056.0 | 3191.0 | Medium | 31.6 | Overvalued | CAUTION
+ULVR.L | consolidation | 4699.0 | 4627.8618 | 4805.7073 | Medium | 26.9 | Overvalued | CAUTION
+WEIR.L | consolidation | 2822.0 | 2757.2857 | 2919.0715 | Medium | 35.9 | Overvalued | CAUTION
+ABDN.L | pullback | 243.4 | 239.3804 | 249.4294 | Medium | 28.8 | Overvalued | CAUTION
+ADM.L | consolidation | 3984.0 | 3891.2857 | 4123.0715 | Medium | 26.9 | Overvalued | CAUTION
+BTRW.L | pullback | 314.2 | 306.9391 | 325.0913 | Medium | 33.2 | Overvalued | CAUTION
+CCC.L | consolidation | 5055.0 | 4954.4756 | 5205.7866 | Medium | 35.3 | Overvalued | CAUTION
+CTEC.L | pullback | 226.4 | 221.2957 | 234.0564 | Medium | 21.8 | Overvalued | CAUTION
+INF.L | pullback | 901.4 | 886.5761 | 923.6358 | Medium | 25.2 | Overvalued | CAUTION
+REL.L | consolidation | 2607.4399 | 2532.0041 | 2720.5936 | Medium | 36.9 | Overvalued | CAUTION
+UU.L | consolidation | 1425.0 | 1400.3321 | 1462.0018 | Medium | 34.9 | Overvalued | CAUTION
+
+=== NO FUND DATA (37) ===
+GS | breakout | 1039.28 | 1014.5671 | 1076.3493 | High | -- | -- |
+HCA | breakout | 429.19 | 417.575 | 446.6125 | High | -- | -- |
+HOOD | breakout | 108.13 | 102.8544 | 116.0434 | High | -- | -- |
+RJF | pullback | 175.2 | 171.6879 | 180.4681 | High | -- | -- |
+YUM | breakout | 152.99 | 148.8343 | 159.2235 | High | -- | -- |
+ABBV | consolidation | 264.96 | 259.4007 | 273.2989 | Medium | -- | -- |
+BAMI.MI | pullback | 16.705 | 16.4082 | 17.1502 | Medium | -- | -- |
+BARC.L | pullback | 492.5 | 484.115 | 505.0775 | Medium | -- | -- |
+BPE.MI | pullback | 13.98 | 13.7536 | 14.3196 | Medium | -- | -- |
+C | pullback | 131.65 | 128.6343 | 136.1736 | Medium | -- | -- |
+CAH | pullback | 229.51 | 222.6757 | 239.7614 | Medium | -- | -- |
+CBK.DE | pullback | 38.95 | 38.2864 | 39.9454 | Medium | -- | -- |
+CCI | consolidation | 75.51 | 73.195 | 78.9825 | Medium | -- | -- |
+CFG | pullback | 69.86 | 68.402 | 72.047 | Medium | -- | -- |
+DBK.DE | pullback | 32.3175 | 31.7964 | 33.0992 | Medium | -- | -- |
+EDEN.PA | consolidation | 29.3 | 28.6761 | 30.2358 | Medium | -- | -- |
+FBK.MI | pullback | 23.59 | 23.1786 | 24.2071 | Medium | -- | -- |
+GLE.PA | pullback | 76.01 | 74.665 | 78.0275 | Medium | -- | -- |
+HBAN | pullback | 17.03 | 16.6864 | 17.5454 | Medium | -- | -- |
+IBKR | consolidation | 93.87 | 91.05 | 98.1 | Medium | -- | -- |
+IHG.L | consolidation | 160.2 | 156.3662 | 165.9507 | Medium | -- | -- |
+INVP.L | pullback | 634.5 | 622.1201 | 653.0699 | Medium | -- | -- |
+IRM | pullback | 122.02 | 117.7743 | 128.3886 | Medium | -- | -- |
+IT | consolidation | 195.9 | 184.4286 | 213.1071 | Medium | -- | -- |
+JKHY | consolidation | 166.2 | 160.9457 | 174.0814 | Medium | -- | -- |
+LOW | pullback | 216.09 | 210.3629 | 224.6807 | Medium | -- | -- |
+MB.MI | pullback | 27.79 | 27.355 | 28.4425 | Medium | -- | -- |
+NTRS | pullback | 183.9 | 180.1429 | 189.5357 | Medium | -- | -- |
+OTIS | pullback | 71.49 | 70.0231 | 73.6903 | Medium | -- | -- |
+PAYX | consolidation | 124.48 | 121.2436 | 129.3346 | Medium | -- | -- |
+PCT.L | pullback | 633.798 | 618.3372 | 656.9892 | Medium | -- | -- |
+SMT.L | consolidation | 1458.0 | 1429.7248 | 1500.4128 | Medium | -- | -- |
+SOFI | consolidation | 18.91 | 18.1732 | 20.0152 | Medium | -- | -- |
+STAN.L | pullback | 2158.0 | 2111.9546 | 2227.0681 | Medium | -- | -- |
+SYF | neutral | 79.47 | 77.6684 | 82.1724 | Medium | -- | -- |
+VRSK | consolidation | 187.5 | 180.7 | 197.7 | Medium | -- | -- |
+WFC | pullback | 83.84 | 82.1383 | 86.3925 | Medium | -- | -- |

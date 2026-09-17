@@ -1,0 +1,155 @@
+{
+  "CF": {
+    "last": 132.15,
+    "entry": 129.6,
+    "pct_vs_entry": 1.97,
+    "stop": 124.4887,
+    "target": 137.267,
+    "rr_now": 0.67,
+    "vol_ratio_today": 0.15
+  },
+  "NEM": {
+    "last": 131.65,
+    "entry": 131.58,
+    "pct_vs_entry": 0.06,
+    "stop": 126.5379,
+    "target": 139.1432,
+    "rr_now": 1.46,
+    "vol_ratio_today": 0.18
+  },
+  "A": {
+    "last": 155.47,
+    "entry": 159.0,
+    "pct_vs_entry": -2.22,
+    "stop": 155.1936,
+    "target": 164.7096,
+    "rr_now": 33.43,
+    "vol_ratio_today": 0.38
+  },
+  "TJX": {
+    "last": 139.79,
+    "entry": 140.53,
+    "pct_vs_entry": -0.52,
+    "stop": 137.055,
+    "target": 145.7425,
+    "rr_now": 2.17,
+    "vol_ratio_today": 0.16
+  },
+  "BEN": {
+    "last": 34.51,
+    "entry": 34.31,
+    "pct_vs_entry": 0.58,
+    "stop": 33.5779,
+    "target": 35.4082,
+    "rr_now": 0.97,
+    "vol_ratio_today": 0.03
+  },
+  "TGT": {
+    "last": 169.87,
+    "entry": 165.44,
+    "pct_vs_entry": 2.67,
+    "stop": 160.5968,
+    "target": 172.7048,
+    "rr_now": 0.31,
+    "vol_ratio_today": 0.32
+  },
+  "FCX": {
+    "last": 77.35,
+    "entry": 76.66,
+    "pct_vs_entry": 0.9,
+    "stop": 73.7443,
+    "target": 81.0335,
+    "rr_now": 1.02,
+    "vol_ratio_today": 0.33
+  },
+  "DE": {
+    "last": 656.07,
+    "entry": 647.47,
+    "pct_vs_entry": 1.33,
+    "stop": 627.6264,
+    "target": 677.2354,
+    "rr_now": 0.74,
+    "vol_ratio_today": 0.18
+  },
+  "EL": {
+    "last": 102.76,
+    "entry": 101.94,
+    "pct_vs_entry": 0.8,
+    "stop": 98.2464,
+    "target": 107.4804,
+    "rr_now": 1.05,
+    "vol_ratio_today": 0.11
+  },
+  "MOS": {
+    "last": 25.03,
+    "entry": 24.41,
+    "pct_vs_entry": 2.56,
+    "stop": 23.3121,
+    "target": 26.0568,
+    "rr_now": 0.59,
+    "vol_ratio_today": 0.22
+  },
+  "TSLA": {
+    "last": 353.67,
+    "entry": 362.86,
+    "pct_vs_entry": -2.53,
+    "stop": 351.3514,
+    "target": 380.1229,
+    "rr_now": 11.38,
+    "vol_ratio_today": 0.24
+  },
+  "MRK": {
+    "last": 150.6,
+    "entry": 152.55,
+    "pct_vs_entry": -1.28,
+    "stop": 148.0529,
+    "target": 159.2957,
+    "rr_now": 3.41,
+    "vol_ratio_today": 0.16
+  },
+  "RVTY": {
+    "last": 122.9,
+    "entry": 124.75,
+    "pct_vs_entry": -1.48,
+    "stop": 120.7386,
+    "target": 130.7671,
+    "rr_now": 3.64,
+    "vol_ratio_today": 0.16
+  },
+  "ALB": {
+    "last": 142.93,
+    "entry": 143.25,
+    "pct_vs_entry": -0.22,
+    "stop": 137.6443,
+    "target": 151.6586,
+    "rr_now": 1.65,
+    "vol_ratio_today": 0.17
+  },
+  "ARE": {
+    "last": 54.51,
+    "entry": 53.49,
+    "pct_vs_entry": 1.91,
+    "stop": 51.2493,
+    "target": 56.8511,
+    "rr_now": 0.72,
+    "vol_ratio_today": 0.05
+  },
+  "XYZ": {
+    "last": 83.16,
+    "entry": 82.16,
+    "pct_vs_entry": 1.22,
+    "stop": 79.4109,
+    "target": 86.2836,
+    "rr_now": 0.83,
+    "vol_ratio_today": 0.22
+  },
+  "BDX": {
+    "last": 192.13,
+    "entry": 192.0,
+    "pct_vs_entry": 0.07,
+    "stop": 187.3786,
+    "target": 198.9321,
+    "rr_now": 1.43,
+    "vol_ratio_today": 0.19
+  }
+}
