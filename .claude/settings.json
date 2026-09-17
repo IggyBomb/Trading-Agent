@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/andreaguida/Trading-Agent/cert_barrier_monitor.py 2>&1 || echo 'cert_barrier_monitor.py failed (likely Yahoo Finance rate-limit) -- run manually: cd \"/Users/andreaguida/Trading-Agent\" && python3 cert_barrier_monitor.py'",
+            "timeout": 30,
+            "statusMessage": "Checking certificate barrier cushions..."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -14,13 +14,24 @@ Usage:
     python3 test_portfolio.py add TICKER ENTRY STOP TARGET SETUP F_SCORE RATING
         e.g. python3 test_portfolio.py add NVDA 185.0 177.0 197.0 breakout 62.1 Undervalued
         (uses today's date and tags the source as a manual add unless
-        --source is passed)
+        --source is passed) — for /scan CONFIRMED picks, which have a real
+        technical stop/target.
     python3 test_portfolio.py add TICKER ENTRY STOP TARGET SETUP F_SCORE RATING --source "/scan 2026-09-10 CONFIRMED"
+    python3 test_portfolio.py add-lt TICKER ENTRY DCF_BEAR DCF_BASE DCF_BULL RATING INVALIDATION
+        e.g. python3 test_portfolio.py add-lt CATL 337.11 321.98 748.79 1597.97 QUALITY
+             "ROIC drops below 13%, or a second YoY revenue decline"
+        For long-term-analyst.md Deep-Dive picks — no stop-loss by design
+        (per the framework: exit is thesis invalidation, not a price level).
+        DCF Bear/Base/Bull replace Stop/Target as the tracked reference
+        levels; INVALIDATION is the thesis-break condition, stored as text,
+        not enforced automatically.
     python3 test_portfolio.py sim [--account 100000]
         Simulated €-sized portfolio: applies RISK.md's dynamic sizing tiers
         (same logic as trade_logger.py) to a notional account, converts
         USD/JPY positions to EUR, and reports position size, € P&L, and
-        RISK.md violations (max 5 concurrent positions, oversize, no-stop).
+        RISK.md violations (max 5 concurrent positions, oversize, no-stop
+        — scan positions only; long-term positions never trigger NO_STOP,
+        that's by design for this kind of entry, not an oversight).
         This is still paper — no real capital, same separation as above.
 """
 
@@ -49,6 +60,8 @@ def ticker_currency(ticker: str) -> str:
         return "JPY"
     if any(ticker.endswith(s) for s in (".MI", ".PA", ".DE", ".AS", ".BR", ".MC", ".LS", ".VI", ".HE")):
         return "EUR"
+    if any(ticker.endswith(s) for s in (".SZ", ".SS")):
+        return "CNY"
     return "USD"
 
 
@@ -94,6 +107,7 @@ def cmd_add(args):
         return 1
 
     entry = {
+        "kind": "scan",
         "ticker": args.ticker.upper(),
         "entry_date": date.today().isoformat(),
         "entry_price": args.entry,
@@ -110,45 +124,107 @@ def cmd_add(args):
     return 0
 
 
+def cmd_add_lt(args):
+    book = load_book()
+    existing = {p["ticker"] for p in book["positions"]}
+    if args.ticker.upper() in existing:
+        print(f"  {args.ticker.upper()} is already in the test portfolio — not adding a duplicate.")
+        print(f"  (edit {DATA_PATH} by hand if you mean to re-enter it.)")
+        return 1
+
+    entry = {
+        "kind": "long_term",
+        "ticker": args.ticker.upper(),
+        "entry_date": date.today().isoformat(),
+        "entry_price": args.entry,
+        "dcf_bear": args.dcf_bear,
+        "dcf_base": args.dcf_base,
+        "dcf_bull": args.dcf_bull,
+        "rating": args.rating,
+        "thesis_invalidation": args.invalidation,
+        "source": args.source or f"long-term-analyst.md Deep-Dive {date.today().isoformat()}",
+    }
+    book["positions"].append(entry)
+    save_book(book)
+    print(f"  Added {entry['ticker']} @ {entry['entry_price']} (long-term, no stop by design — {entry['source']})")
+    return 0
+
+
 def cmd_show(args):
     book = load_book()
     positions = book["positions"]
+    scan_positions = [p for p in positions if p.get("kind", "scan") == "scan"]
+    lt_positions = [p for p in positions if p.get("kind") == "long_term"]
 
     print(f"\n{'='*96}")
     print(f"  TEST PORTFOLIO — {book.get('description', '')}")
     print(f"  Created {book['created']}, {len(positions)} position(s)")
     print(f"{'='*96}\n")
 
-    header = (f"  {'Ticker':<8}{'Entry date':<12}{'Entry':>10}{'Stop':>10}{'Target':>10}"
-              f"{'Price':>10}{'Return':>10}{'vs Stop':>10}{'vs Target':>10}")
-    print(header)
-    print(f"  {'-'*92}")
+    all_returns = []
 
-    returns = []
-    for pos in positions:
-        t = pos["ticker"]
-        entry = pos["entry_price"]
-        stop = pos["stop"]
-        target = pos["target"]
-        price = fetch_price(t)
-        if price is None:
-            print(f"  {t:<8}{'NO DATA':>10}")
-            continue
-        ret = (price / entry - 1) * 100
-        returns.append(ret)
-        stop_dist = (price - stop) / price * 100
-        target_dist = (target - price) / price * 100
-        flag = ""
-        if price <= stop:
-            flag = "  ⚠ STOP HIT"
-        elif price >= target:
-            flag = "  ✓ TARGET HIT"
-        print(f"  {t:<8}{pos['entry_date']:<12}{entry:>10.2f}{stop:>10.2f}{target:>10.2f}"
-              f"{price:>10.2f}{ret:>+9.2f}%{stop_dist:>+9.2f}%{target_dist:>+9.2f}%{flag}")
+    if scan_positions:
+        print(f"  -- /scan positions (technical stop/target) {'-'*(96-45)}")
+        header = (f"  {'Ticker':<8}{'Entry date':<12}{'Entry':>10}{'Stop':>10}{'Target':>10}"
+                  f"{'Price':>10}{'Return':>10}{'vs Stop':>10}{'vs Target':>10}")
+        print(header)
+        print(f"  {'-'*92}")
 
-    if returns:
-        avg = sum(returns) / len(returns)
-        print(f"\n  Equal-weighted return across {len(returns)} position(s): {avg:+.2f}%")
+        for pos in scan_positions:
+            t = pos["ticker"]
+            entry = pos["entry_price"]
+            stop = pos["stop"]
+            target = pos["target"]
+            price = fetch_price(t)
+            if price is None:
+                print(f"  {t:<8}{'NO DATA':>10}")
+                continue
+            ret = (price / entry - 1) * 100
+            all_returns.append(ret)
+            stop_dist = (price - stop) / price * 100
+            target_dist = (target - price) / price * 100
+            flag = ""
+            if price <= stop:
+                flag = "  ⚠ STOP HIT"
+            elif price >= target:
+                flag = "  ✓ TARGET HIT"
+            print(f"  {t:<8}{pos['entry_date']:<12}{entry:>10.2f}{stop:>10.2f}{target:>10.2f}"
+                  f"{price:>10.2f}{ret:>+9.2f}%{stop_dist:>+9.2f}%{target_dist:>+9.2f}%{flag}")
+        print()
+
+    if lt_positions:
+        print(f"  -- long-term / Deep-Dive positions (no stop by design — thesis invalidation is the exit trigger) {'-'*0}")
+        header = (f"  {'Ticker':<12}{'Entry date':<12}{'Entry':>11}{'Price':>11}{'Return':>10}"
+                  f"{'vs Bear':>10}{'vs Base':>10}{'vs Bull':>10}")
+        print(header)
+        print(f"  {'-'*92}")
+
+        for pos in lt_positions:
+            t = pos["ticker"]
+            entry = pos["entry_price"]
+            bear, base, bull = pos["dcf_bear"], pos["dcf_base"], pos["dcf_bull"]
+            price = fetch_price(t)
+            if price is None:
+                print(f"  {t:<12}{'NO DATA':>10}")
+                continue
+            ret = (price / entry - 1) * 100
+            all_returns.append(ret)
+            vs_bear = (price / bear - 1) * 100
+            vs_base = (price / base - 1) * 100
+            vs_bull = (price / bull - 1) * 100
+            flag = ""
+            if price <= bear:
+                flag = "  ⚠ BELOW DCF BEAR — re-check thesis"
+            elif price >= bull:
+                flag = "  ✓ ABOVE DCF BULL"
+            print(f"  {t:<12}{pos['entry_date']:<12}{entry:>11.2f}{price:>11.2f}{ret:>+9.2f}%"
+                  f"{vs_bear:>+9.2f}%{vs_base:>+9.2f}%{vs_bull:>+9.2f}%{flag}")
+            print(f"           rating: {pos['rating']:<20} invalidation: {pos['thesis_invalidation']}")
+        print()
+
+    if all_returns:
+        avg = sum(all_returns) / len(all_returns)
+        print(f"  Equal-weighted return across {len(all_returns)} position(s), all kinds: {avg:+.2f}%")
 
     print(f"\n{'='*96}\n")
     return 0
@@ -167,7 +243,7 @@ def cmd_sim(args):
     print(f"  Sizing tier active: {tier} ({max_pct:.0f}% max/position) — {reason}")
     print(f"{'='*112}\n")
 
-    header = (f"  {'Ticker':<8}{'Entry':>10}{'Ccy':>5}{'Shares':>8}{'Invested €':>13}"
+    header = (f"  {'Ticker':<12}{'Entry':>10}{'Ccy':>5}{'Shares':>8}{'Invested €':>13}"
               f"{'Price':>10}{'Value €':>12}{'P&L €':>12}{'P&L %':>9}{'% of ptf':>10}")
     print(header)
     print(f"  {'-'*108}")
@@ -182,10 +258,11 @@ def cmd_sim(args):
 
     for pos in positions:
         t = pos["ticker"]
+        kind = pos.get("kind", "scan")
         ccy = ticker_currency(t)
         eur_rate = fx_to_eur(ccy)
         entry = pos["entry_price"]
-        stop = pos["stop"]
+        stop = pos.get("stop")  # absent for long_term entries — no stop by design
 
         target_value_eur = account * max_pct / 100
         entry_eur = entry * eur_rate
@@ -194,7 +271,7 @@ def cmd_sim(args):
 
         price = fetch_price(t)
         if price is None:
-            print(f"  {t:<8}{'NO DATA':>10}")
+            print(f"  {t:<12}{'NO DATA':>10}")
             continue
         price_eur = price * eur_rate
         value_eur = shares * price_eur
@@ -205,15 +282,22 @@ def cmd_sim(args):
         total_value += value_eur
 
         flag = ""
-        if price <= stop:
-            flag = "  ⚠ STOP HIT"
-            violations.append(f"{t}: stop hit — should be closed in a real account")
+        if kind == "scan":
+            if stop is not None and price <= stop:
+                flag = "  ⚠ STOP HIT"
+                violations.append(f"{t}: stop hit — should be closed in a real account")
+        else:
+            # long_term: no stop-loss by design (thesis invalidation is the exit trigger,
+            # not a price level) — never flagged as NO_STOP, that's the intended shape.
+            bear = pos.get("dcf_bear")
+            if bear is not None and price <= bear:
+                flag = "  ⚠ BELOW DCF BEAR — re-check thesis, not an automatic exit"
         if shares == 0:
             flag += "  ⚠ ZERO SHARES (position too small vs price)"
             violations.append(f"{t}: target size €{target_value_eur:,.0f} buys 0 whole shares at {ccy} price {entry} — position not really investable at this size")
 
         pct_of_ptf = invested_eur / account * 100
-        print(f"  {t:<8}{entry:>10.2f}{ccy:>5}{shares:>8}{invested_eur:>12,.0f}€"
+        print(f"  {t:<12}{entry:>10.2f}{ccy:>5}{shares:>8}{invested_eur:>12,.0f}€"
               f"{price:>10.2f}{value_eur:>11,.0f}€{pnl_eur:>+11,.0f}€{pnl_pct:>+8.2f}%{pct_of_ptf:>9.2f}%{flag}")
 
     cash_eur = account - total_invested
@@ -249,12 +333,24 @@ def main():
     p.add_argument("rating")
     p.add_argument("--source", default=None, help='e.g. "/scan 2026-09-14 CONFIRMED"')
 
+    p = sub.add_parser("add-lt", help="add a long-term-analyst.md Deep-Dive pick (no stop/target by design)")
+    p.add_argument("ticker")
+    p.add_argument("entry", type=float, help="price at production of the Deep-Dive report")
+    p.add_argument("dcf_bear", type=float)
+    p.add_argument("dcf_base", type=float)
+    p.add_argument("dcf_bull", type=float)
+    p.add_argument("rating", help='e.g. COMPOUNDER / QUALITY / "QUALITY (vicino a COMPOUNDER)"')
+    p.add_argument("invalidation", help="thesis-break condition, e.g. \"ROIC drops below 13%%\"")
+    p.add_argument("--source", default=None, help='e.g. "Deep-Dive 2026-09-15"')
+
     p = sub.add_parser("sim", help="simulate a sized €-account portfolio using RISK.md tiers")
     p.add_argument("--account", type=float, default=100_000, help="notional account size in EUR (default 100,000)")
 
     args = ap.parse_args()
     if args.cmd == "add":
         return cmd_add(args)
+    if args.cmd == "add-lt":
+        return cmd_add_lt(args)
     if args.cmd == "sim":
         return cmd_sim(args)
     return cmd_show(args)

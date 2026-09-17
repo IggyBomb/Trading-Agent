@@ -79,6 +79,18 @@
       "f_score": 50.7,
       "rating": "Fair",
       "source": "/scan 2026-09-15 CONFIRMED"
+    },
+    {
+      "kind": "long_term",
+      "ticker": "300750.SZ",
+      "entry_date": "2026-09-16",
+      "entry_price": 337.11,
+      "dcf_bear": 321.98,
+      "dcf_base": 748.79,
+      "dcf_bull": 1597.97,
+      "rating": "QUALITY (vicino a COMPOUNDER)",
+      "thesis_invalidation": "ROIC che inverte la tendenza e torna sotto 13%, o un secondo anno di calo ricavi non spiegabile da pass-through prezzi",
+      "source": "Deep-Dive 2026-09-15"
     }
   ]
 }
