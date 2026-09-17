@@ -14,6 +14,8 @@ import io
 import logging
 from datetime import datetime, timezone
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "No financial Advice"))
+from disclaimer import OPINION_PREFIX, DISCLAIMER_SUFFIX
 log = logging.getLogger("sentiment_agent")
 
 try:
@@ -1154,13 +1156,18 @@ def main():
     # default codepage (cp1252) cannot encode — without this the write crashes.
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(f"# Sentiment Report — {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n")
+        f.write(f"{OPINION_PREFIX}\n\n")
         f.write("```\n")
         f.write(dashboard_text)
-        f.write("```\n")
+        f.write("```\n\n")
+        f.write(f"{DISCLAIMER_SUFFIX}\n")
 
     # Dashboard stays print() — it is the human-facing report, captured above
     # into dashboard_text and written to the .md file.
     print(dashboard_text)
+    print(f"{DISCLAIMER_SUFFIX}\n")
+    print(f"  Output saved to : {OUTPUT_PATH}")
+    print(f"  Report saved to : {report_path}\n")
 
     log.info(f"output saved to {OUTPUT_PATH}")
     log.info(f"report saved to {report_path}")

@@ -1,0 +1,96 @@
+{
+  "name": "test",
+  "description": "Running paper-tracking portfolio for /scan CONFIRMED picks. Grows over time as new scans add entries \u2014 this is not a single snapshot. No real capital, never logged in trade_logger.py, never read by the publishing track's position disclosures.",
+  "created": "2026-09-07",
+  "positions": [
+    {
+      "ticker": "REYN",
+      "entry_date": "2026-09-07",
+      "entry_price": 21.85,
+      "stop": 21.2239,
+      "target": 22.7892,
+      "setup": "reversal",
+      "f_score": 53.3,
+      "rating": "Fair",
+      "source": "/scan 2026-09-07 CONFIRMED"
+    },
+    {
+      "ticker": "TSN",
+      "entry_date": "2026-09-07",
+      "entry_price": 51.42,
+      "stop": 50.0305,
+      "target": 53.5042,
+      "setup": "reversal",
+      "f_score": 49.9,
+      "rating": "Fair",
+      "source": "/scan 2026-09-07 CONFIRMED"
+    },
+    {
+      "ticker": "KLAC",
+      "entry_date": "2026-09-07",
+      "entry_price": 185.6,
+      "stop": 177.94,
+      "target": 197.09,
+      "setup": "breakout",
+      "f_score": 48.8,
+      "rating": "Fair",
+      "source": "/scan 2026-09-07 CONFIRMED"
+    },
+    {
+      "ticker": "ON",
+      "entry_date": "2026-09-07",
+      "entry_price": 74.38,
+      "stop": 71.6236,
+      "target": 78.5146,
+      "setup": "breakout",
+      "f_score": 45.9,
+      "rating": "Fair",
+      "source": "/scan 2026-09-07 CONFIRMED"
+    },
+    {
+      "ticker": "INSP",
+      "entry_date": "2026-09-15",
+      "entry_price": 74.32,
+      "stop": 71.14,
+      "target": 78.77,
+      "setup": "breakout",
+      "f_score": 40.4,
+      "rating": "Fair",
+      "source": "/scan 2026-09-15 CONFIRMED"
+    },
+    {
+      "ticker": "MKC",
+      "entry_date": "2026-09-15",
+      "entry_price": 50.39,
+      "stop": 48.99,
+      "target": 52.35,
+      "setup": "reversal",
+      "f_score": 43.6,
+      "rating": "Fair",
+      "source": "/scan 2026-09-15 CONFIRMED"
+    },
+    {
+      "ticker": "7013.T",
+      "entry_date": "2026-09-15",
+      "entry_price": 2772.5,
+      "stop": 2645.39,
+      "target": 2950.45,
+      "setup": "breakout",
+      "f_score": 50.7,
+      "rating": "Fair",
+      "source": "/scan 2026-09-15 CONFIRMED"
+    },
+    {
+      "kind": "long_term",
+      "ticker": "300750.SZ",
+      "entry_date": "2026-09-16",
+      "entry_price": 337.11,
+      "dcf_bear": 321.98,
+      "dcf_base": 748.79,
+      "dcf_bull": 1597.97,
+      "rating": "QUALITY (vicino a COMPOUNDER)",
+      "thesis_invalidation": "ROIC che inverte la tendenza e torna sotto 13%, o un secondo anno di calo ricavi non spiegabile da pass-through prezzi",
+      "source": "Deep-Dive 2026-09-15"
+    }
+  ]
+}

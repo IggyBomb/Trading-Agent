@@ -27,7 +27,7 @@ Position size is determined by the full analysis stack: Fear & Greed score, over
 ## Stop-Loss Logic
 - Every trade MUST have a stop-loss set before entry
 - Never move stop-loss against the trade
-- Minimum R:R ratio: 1.5:1
+- Minimum R:R ratio: 1.4:1
 
 ---
 
@@ -43,7 +43,7 @@ Position size is determined by the full analysis stack: Fear & Greed score, over
 - Stop is a price level ABOVE entry — cover immediately if hit
 - Never move stop higher (against the trade)
 - Maximum stop distance: 5% above entry for SHORT-SWING, 8% for SHORT-POSITION
-- Minimum R:R: 1.5:1 — same as longs
+- Minimum R:R: 1.4:1 — same as longs
 
 ### Short Squeeze Pre-Check — mandatory before every short entry
 - Short interest % of float > 20% → DO NOT SHORT
