@@ -87,12 +87,51 @@ per-run agent-call volume back in line with historical runs.
 If a specific CAUTION ticker is worth a full look, run its Steps 5–9 manually on
 request rather than defaulting to it for the whole bucket.
 
-## Step 5 — Market Researcher (mandatory for HIGH conviction CONFIRMED)
+## Steps 5–9 scope — target_atr ≥ 1.5 gate (within CONFIRMED)
+
+Not every CONFIRMED ticker proceeds into Steps 5–9. The gate reads `market_data.json`'s
+`target_atr` field (target distance in ATRs): "consolidation" setups in particular routinely
+target nearby resistance, producing a target well under 1.5 ATR away by construction (found
+live, 2026-09-08: 27 of 58 Medium CONFIRMED tickers failed this gate; all 5 High conviction
+CONFIRMED tickers passed it).
+
+History (2026-09-14): this gate used to read `rr >= 1.5`. With the scanner's original 1-ATR
+stop that was algebraically the same test as `target_atr >= 1.5`. The stop is now
+`ATR_STOP_MULT` (config.py, 2.0) x ATR — the scan test group showed 1-ATR stops being hit by
+ordinary daily noise (40% of rows with stop < 1 ATR stopped out within 4 days) — which halves
+every `rr` value. Gating on `target_atr` keeps the SAME tickers flowing into Steps 5–9 as
+before; `rr` now reports the true R:R at the wider stop and is for risk-manager (Step 9), not
+for this gate.
+
+- CONFIRMED tickers with `target_atr >= 1.5`: proceed to Step 5 onward.
+- CONFIRMED tickers with `target_atr < 1.5`: stop after Step 4. Do not run Steps 5–8 for
+  these — the target is too close to the entry to be worth research budget. Output a one-line
+  Step 9 REJECT citing the target_atr gate; no full Steps 5–9 write-up needed.
+
+This gate also defines the pool Step 5's "top 10 Medium conviction by f_score" selection
+(below) draws from — a ticker that fails this gate is never in the running for a research
+pass, since it cannot be traded regardless of what research would find.
+
+## Step 5 — Market Researcher (mandatory for HIGH conviction CONFIRMED + top 10 Medium conviction CONFIRMED)
 
 For every **CONFIRMED** ticker flagged **HIGH conviction** in Step 4, invoke `market-researcher.md` immediately.
 Do not skip this step — it is not optional for High conviction CONFIRMED names.
 
-Medium conviction CONFIRMED tickers: market-researcher is optional. Call it only if a specific catalyst or risk event warrants it.
+For **Medium conviction CONFIRMED** tickers that passed the R:R ≥ 1.5 gate above: invoke
+`market-researcher.md` for the **top 10 by f_score** (descending) among them — mandatory,
+not optional, for that subset. If fewer than 10 Medium CONFIRMED tickers pass the R:R gate
+that day, research all of them.
+
+Any other Medium conviction CONFIRMED ticker (outside that top 10, or that failed the R:R
+gate): market-researcher remains optional — call it only if a specific catalyst or risk
+event (e.g. earnings within the lookahead window) warrants it. A ticker researched under
+this optional path is not part of the Test Group Log population (see after Step 9) unless
+it also independently qualifies via High conviction or top-10-by-f_score.
+
+Rationale: bounds Step 5's daily research volume to a predictable ~15 tickers (High
+conviction is typically small, plus 10 Medium) rather than scaling with the full CONFIRMED
+list — see the Steps 5–9 CONFIRMED-only rationale above on why unbounded research already
+blew the budget once. This rule also defines the Test Group Log population, below.
 
 ## Step 6 — Alt Data Agent (mandatory for all CONFIRMED tickers)
 
@@ -126,7 +165,125 @@ Pass every **CONFIRMED** ticker with its full analysis stack (strategy verdict +
 
 Provide the current portfolio snapshot (from RISK.local.md or user-supplied screenshot) so the risk manager can check sector concentration, position count, and drawdown status.
 
-## Step 10 — Short Screener (conditional)
+## Step 10 — Buy Analyst
+
+For every ticker `risk-manager.md` marked **APPROVE** in Step 9 — nothing else — invoke
+`buy-analyst.md`. It builds the strongest evidence-based case for entering now, using only
+what Steps 1–9 already produced (no new research). Outputs one BUY CASE block per ticker.
+
+If Step 9 approved nothing, skip Steps 10–12 entirely — there is nothing to adjudicate.
+
+## Step 11 — Not-Buy Analyst
+
+Runs alongside Step 10 (same ticker set, same inputs), invoking `not-buy-analyst.md`. It
+builds the strongest evidence-based case against entering now, and explicitly classifies
+that case as either THESIS IS WRONG or TIMING IS WRONG. Step 10 and Step 11 do not see
+each other's output — both report independently into Step 12. Outputs one NOT-BUY CASE
+block per ticker.
+
+## Step 12 — Final Analyst (the approve mark)
+
+After both Step 10 and Step 11 complete for a ticker, invoke `final-analyst.md`. It is the
+only agent that reads both the bull and bear case together, plus the full Steps 1–9
+context, and issues the verdict that actually governs whether the ticker gets traded today:
+**BUY / BUY — REDUCED / WAIT / PASS**. This can override Step 9's APPROVE (a PASS or WAIT
+here does not mean risk-manager was wrong — it checks sizing/exposure/R:R mechanics, not
+thesis quality; see `final-analyst.md`'s own rationale, and the 2026-09-09 SYK case that
+motivated adding this layer). Outputs one FINAL VERDICT block per ticker, plus a one-line
+session summary of how many APPROVEs became BUY / BUY — REDUCED / WAIT / PASS.
+
+**This is the mark that actually matters** — when presenting results to the user, lead with
+Step 12's verdict, not Step 9's. Step 9's APPROVE only means a ticker was eligible for this
+adjudication, not that it should be bought.
+
+## Test Group Log — write the JSON file
+
+After Step 12 completes for every ticker in the Step 5 research population (all High
+conviction CONFIRMED + the top 10 Medium conviction CONFIRMED by f_score), write the
+results to `data/scan_test_group.json` using the Write tool.
+
+This is a FIXED filename, overwritten every `/scan` run — not dated per day. That's
+deliberate (avoids a pile of per-day files accumulating over a months-long test), but it
+means the file must be read into SQLite before the next `/scan` run overwrites it, or that
+day's results are lost with no trace.
+
+**Immediately after writing the JSON, run `python scan_logger.py`** (same session, same
+step) to load it into `data/scan_tracking.db` before moving on to Step 13. Do not treat
+this as optional or defer it to "later in the session" — the whole point of running it
+now is to close the window where an unread file could get overwritten by a future `/scan`
+run. Report `scan_logger.py`'s own output (inserted / skipped-open / skipped-duplicate
+counts) to the user as part of this step's output.
+
+This captures what this specific `/scan` session actually concluded — the real Steps 5–12
+verdicts, including any override a researched finding produced (e.g. TSN, 2026-09-08:
+mechanically shaped like a TURNAROUND, disqualified by market-researcher's finding of an
+active, worsening guidance-cut cycle; or SYK, 2026-09-09: risk-manager APPROVEd it on a
+scoring error, caught and overridden to REJECT by the Step 10–12 adjudication layer once
+final-analyst weighed the buy/not-buy cases against the CFO's live guidance-risk disclosure
+that the original approval had missed). No script recomputing from `market_data.json` /
+`fundamental_data.json` after the fact can reproduce this — it only exists if this step
+writes it.
+
+Schema — one object per ticker in the test group, every key present (use `null`, never omit
+a key):
+
+```json
+{
+  "scan_date": "2026-09-08",
+  "candidates": [
+    {
+      "ticker": "TSN",
+      "conviction": "High",
+      "setup": "reversal",
+      "entry": 51.42,
+      "stop": 50.03,
+      "target": 58.60,
+      "rr_planned": 5.17,
+      "f_score": 49.9,
+      "rating": "Fair",
+      "sector": "Consumer Defensive",
+      "strategy_type": "TURNAROUND",
+      "alt_data_score": 48,
+      "institutional_score": 50,
+      "institutional_alignment": "CAUTIOUS",
+      "risk_manager_verdict": "REJECT",
+      "final_verdict": null,
+      "final_verdict_reason": null,
+      "research_summary": "2nd FY26 guidance cut in a month (widening beef losses), BofA cut PT, no confirmed reversal signal — disqualified despite mechanical TURNAROUND shape"
+    }
+  ]
+}
+```
+
+Field notes:
+- `conviction` doubles as the selection reason under this rule — "High" means it qualified
+  via the mandatory-High path, "Medium" means it qualified via top-10-by-f_score. There is
+  no third path into this file: a Medium-conviction ticker researched only because of the
+  optional catalyst clause in Step 5 does not go in this log unless it also independently
+  made the top 10.
+- `strategy_type`: the real strategy-analyst.md classification, not a mechanical proxy.
+- `institutional_score` / `institutional_alignment`: from Step 8. With no real 13F /
+  dark-pool / options-flow source wired into this pipeline, this will typically be
+  `50` / `"CAUTIOUS"` (`DATA UNAVAILABLE`) per institutional-flow.md's own fallback rule —
+  write that honestly rather than fabricating a more specific score.
+- `risk_manager_verdict`: exactly Step 9's conclusion (APPROVE / CAUTION / REJECT),
+  including a REJECT driven purely by portfolio exposure (no open slots) — do not filter
+  those out of the file just because the setup itself was sound. Kept as-is even when
+  `final_verdict` overrides it — this is the raw, mechanical read, preserved for audit.
+- `final_verdict`: Step 12's conclusion (BUY / BUY — REDUCED / WAIT / PASS) for tickers
+  that reached Steps 10–12 (i.e. `risk_manager_verdict = APPROVE`); `null` for every ticker
+  that never reached adjudication because Step 9 already said CAUTION or REJECT. This is
+  the field that actually governs whether the ticker gets traded — see `final-analyst.md`.
+- `final_verdict_reason`: Step 12's one-line adjudication (why the verdict landed where it
+  did); `null` alongside a `null` `final_verdict`. Never leave this blank when
+  `final_verdict` is set — a BUY still gets a one-line "why," not just PASS/WAIT.
+- `research_summary`: 1–2 sentences, the key market-researcher finding for that ticker.
+
+Write this file every session Step 9 completes for the test-group population, even if a
+ticker repeats from a prior day's file with an unchanged verdict — each day is a separate
+data point, not a diff.
+
+## Step 13 — Short Screener (conditional)
 
 Run `short-screener.md` only if the macro-analyst output from this session shows Directional Bias = **NEUTRAL** or **SHORT BIAS**.
 
@@ -135,21 +292,21 @@ If macro bias is NEUTRAL or SHORT BIAS: run short-screener against the same mark
 
 ---
 
-## Step 11 — Contrarian Scan (optional companion)
+## Step 14 — Contrarian Scan (optional companion)
 
 After the full momentum scan output is complete, the user may request the contrarian view by invoking `/contrarian`.
 
 The two views are always output separately and never merged. The momentum scan and contrarian scan answer different questions — do not combine their ranked lists.
 
-If the user explicitly requests both views in the same session (`/scan + /contrarian` or "full scan with contrarian"), run `/contrarian` automatically after Step 10 completes. Otherwise, wait for explicit invocation.
+If the user explicitly requests both views in the same session (`/scan + /contrarian` or "full scan with contrarian"), run `/contrarian` automatically after Step 13 completes. Otherwise, wait for explicit invocation.
 
 See `.claude/commands/contrarian.md` for the full contrarian workflow.
 
 ---
 
-## Step 12 — Live Watch (optional, offered after the full pipeline)
+## Step 15 — Live Watch (optional, offered after the full pipeline)
 
-After Steps 0–10 complete (Step 11 is the separate `/contrarian` companion, not a
+After Steps 0–13 complete (Step 14 is the separate `/contrarian` companion, not a
 prerequisite), identify which output tickers are genuinely worth a live price/volume
 watch rather than a static wait-and-recheck-later. Two independent sources feed this:
 

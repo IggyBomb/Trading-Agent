@@ -90,16 +90,17 @@ KEY DESIGN DECISIONS FROM TODAY'S SESSION, IN ORDER:
 6. Dedup behavior: if a ticker is reselected (e.g. BEN CONFIRMED again
    tomorrow) while it ALREADY has an unresolved (outcome IS NULL) row from
    a prior day, compare final_verdict on the ladder BUY > WAIT > PASS >
-   None (see VERDICT_RANK / verdict_rank()). Insert a NEW row only if
-   today's verdict is a strict step UP from the open row's (e.g. WAIT ->
-   BUY, PASS -> WAIT); otherwise SKIP — don't insert, don't update the
-   existing one. Same-level or downgraded reappearances are ignored; the
-   original row stays the tracked sample. After an upgrade the ticker has
-   two open rows (the older non-BUY one is NOT closed) — the resolve step
-   must handle both independently. (Originally a pure skip, chosen among
-   skip / update-in-place / insert linked-by-streak-id; upgraded to the
-   ladder rule on 2026-09-11 so a WAIT that later becomes a BUY is
-   captured as its own sample.)
+   None (see VERDICT_RANK / verdict_rank()). If today's verdict is a
+   strict step UP from the open row's (e.g. WAIT -> BUY, PASS -> WAIT),
+   the old open row is DELETED and today's candidate inserted in its
+   place — tracking restarts from the upgrade (buy) moment with a fresh
+   scan_date/expected_close_date; the old row's data is not kept.
+   Otherwise SKIP — same-level or downgraded reappearances are ignored and
+   the original row stays the tracked sample. Net effect: at most ONE open
+   row per ticker at any time. (Originally a pure skip, chosen among
+   skip / update-in-place / insert linked-by-streak-id; changed to the
+   ladder rule on 2026-09-11, and to delete-and-replace on upgrade on
+   2026-09-12.)
 
 7. expected_close_date: computed at insert time as scan_date + the
    strategy_type's time-stop window in trading days (from
@@ -120,16 +121,13 @@ KEY DESIGN DECISIONS FROM TODAY'S SESSION, IN ORDER:
 
 NOT DONE YET / NEXT STEPS:
 
-- scan_backtest.py (the sibling script) has NOT been updated for this new
-  SQLite schema — it still expects the old logs/scan_candidates.jsonl
-  format from the discarded mechanical version. It needs a full rewrite:
-  read from data/scan_tracking.db's scan_test_group table, resolve rows
-  where outcome IS NULL by walking price history forward (reuse
-  backtest.py's simulate_trade() the way the old version did), and UPDATE
-  the row in place (not insert-elsewhere) with outcome/exit_date/
-  exit_price/days_held/r_achieved/max_favorable_pct/max_adverse_pct/
-  resolved_at. expected_close_date is a natural "is this overdue" signal
-  for that resolve step.
+- scan_backtest.py was DELETED on 2026-09-12 (never rewritten for this
+  schema). Its replacement is scan_daily_update.py: runs once a day after
+  market close, pulls each open ticker's last daily bar from yfinance,
+  tracks max_high/min_low (+ dates) on the row, and closes the row in
+  place (outcome/exit_date/exit_price/days_held/r_achieved/gain_pct) when
+  target or stop is hit; a separate time-stop check against
+  expected_close_date is planned. Still in progress — see that file.
 - The broader, mechanical, ALL-CONFIRMED+CAUTION capture (~107 tickers/day,
   no research, no LLM needed) was explicitly deferred, not abandoned —
   "we will add it later" (user's words). If resurrected, it's a different
@@ -198,14 +196,18 @@ CREATE TABLE IF NOT EXISTS scan_test_group (
     research_summary              TEXT,
     expected_close_date           TEXT,
 
+    max_high                      REAL,
+    max_high_date                 TEXT,
+    min_low                       REAL,
+    min_low_date                  TEXT,
+    day_close_price               REAL,
+
     outcome                       TEXT,
     exit_date                     TEXT,
     exit_price                    REAL,
     days_held                     INTEGER,
     r_achieved                    REAL,
-    max_favorable_pct             REAL,
-    max_adverse_pct               REAL,
-    resolved_at                   TEXT,
+    gain_pct                      REAL,
 
     UNIQUE(scan_date, ticker)
 );
@@ -258,14 +260,17 @@ DESIRED_COLUMNS = [
     ("final_verdict_reason",      "TEXT"),
     ("research_summary",          "TEXT"),
     ("expected_close_date",       "TEXT"),
+    ("max_high",                  "REAL"),   # highest High since scan_date (scan_daily_update.py)
+    ("max_high_date",             "TEXT"),   # the day it printed
+    ("min_low",                   "REAL"),   # lowest Low since scan_date
+    ("min_low_date",              "TEXT"),
+    ("day_close_price",           "REAL"),   # most recent close seen (overwritten daily)
     ("outcome",                   "TEXT"),
     ("exit_date",                 "TEXT"),
     ("exit_price",                "REAL"),
     ("days_held",                 "INTEGER"),
     ("r_achieved",                "REAL"),
-    ("max_favorable_pct",         "REAL"),
-    ("max_adverse_pct",           "REAL"),
-    ("resolved_at",               "TEXT"),
+    ("gain_pct",                  "REAL"),   # (exit_price - entry) / entry * 100
 ]
 
 
@@ -335,7 +340,7 @@ def main():
         "WHERE outcome IS NULL ORDER BY id"
     )}
 
-    inserted, skipped_open, skipped_duplicate = 0, 0, 0
+    inserted, replaced, skipped_open, skipped_duplicate = 0, 0, 0, 0
     for c in candidates:
         # Defensive default for JSON written before the buy/not-buy/final-analyst
         # layer existed, or for a candidate that never reached Step 12 (Step 9
@@ -344,10 +349,17 @@ def main():
         c.setdefault("final_verdict_reason", None)
 
         # Reselection rule: skip unless today's verdict outranks the open row's.
+        # An upgrade before the old row's closing time REPLACES it: the old
+        # data is deleted and tracking restarts from the upgrade (buy) moment.
         if c["ticker"] in open_tickers:
             if verdict_rank(c["final_verdict"]) <= verdict_rank(open_tickers[c["ticker"]]):
                 skipped_open += 1
                 continue
+            conn.execute(
+                "DELETE FROM scan_test_group WHERE ticker = ? AND outcome IS NULL",
+                (c["ticker"],),
+            )
+            replaced += 1
 
         c["scan_date"] = scan_date
         time_stop = STRATEGY_TIME_STOP.get(c.get("strategy_type"), DEFAULT_TIME_STOP)
@@ -365,6 +377,7 @@ def main():
     print(f"  Scan date: {scan_date}")
     print(f"  Candidates in JSON: {len(candidates)}")
     print(f"  Inserted: {inserted}")
+    print(f"  Replaced (open row upgraded, old row deleted): {replaced}")
     print(f"  Skipped (open from a prior day, verdict not upgraded): {skipped_open}")
     print(f"  Skipped (duplicate same-day row, rare): {skipped_duplicate}")
 

@@ -26,6 +26,8 @@ ACCOUNT_SIZE = int(os.getenv("ACCOUNT_SIZE", "100000"))   # EUR
 
 # ── Risk / sizing ─────────────────────────────────────────────────────────────
 RR_RATIO     = 1.5             # minimum risk/reward ratio (RISK.md)
+ATR_STOP_MULT = 2.0            # stop = entry -/+ ATR_STOP_MULT x ATR14 (was 1.0 until 2026-09-14;
+                               # scan test group showed 1-ATR stops hit by ordinary daily noise)
 
 # ── Fetch / filter thresholds ────────────────────────────────────────────────
 MIN_PRICE         = 0.50       # skip penny stocks below this
@@ -99,3 +101,5 @@ WATCHLIST_RANKED_PATH= str(DATA_DIR / "watchlist_ranked.json")
 PREMARKET_GAPS_PATH  = str(DATA_DIR / "premarket_gaps.json")
 TRADES_PATH          = str(LOGS_DIR / "trades.jsonl")
 BACKTEST_PATH        = str(DATA_DIR / "backtest_results.json")
+SCAN_CANDIDATES_PATH = str(LOGS_DIR / "scan_candidates.jsonl")
+SCAN_BACKTEST_PATH   = str(DATA_DIR / "scan_backtest_results.json")

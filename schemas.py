@@ -37,7 +37,8 @@ class TickerSignal(BaseModel):
     week52_high: float = Field(alias="52w_high")   # "52w_high" is not a legal Python name
     rsi: float
 
-    rr: float   
+    rr: float            # true R:R at the ATR_STOP_MULT stop
+    target_atr: float    # target distance in ATRs — scan.md Steps 5-9 gate (>= 1.5)
 
     # short side — string sentinels are inconsistent on purpose:
     # "none" (lowercase) vs "None" (capitalized) is what the live pipeline emits
@@ -221,3 +222,250 @@ class AltDataSnapshot(BaseModel):
     quiver_enabled: bool
     vader_enabled: bool
     tickers: dict[str, AltDataRecord]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  SENTIMENT — sentiment_data.json  (sentiment_agent.py)
+#
+#  ONE document, not a per-ticker dict: market-wide sentiment for a single run.
+#  Every fetch_*() wraps its body in try/except and returns None on failure, so
+#  EVERY top-level section is `... | None`. A null section is a NORMAL run —
+#  main() logs which ones are missing and computes the composite without them.
+#  Inside a section, any field computed with pct_change() is `float | None`,
+#  because pct_change() returns None whenever it lacks two non-zero points.
+# ═══════════════════════════════════════════════════════════════════════════
+
+VixLabel = Literal["complacency", "calm", "elevated", "fear", "extreme_fear"]
+# label_vix() also returns "unknown", but only for v is None — unreachable here,
+# since every caller passes a rounded float or the section fails to None.
+
+RiskLabel = Literal["Risk-On", "Mild Risk-On", "Neutral", "Mild Risk-Off", "Risk-Off"]
+
+
+class FearGreedRecord(BaseModel):
+    """cnn_fear_greed — CNN graphdata endpoint. Single return shape: either all
+    nine fields or the whole section is null. Nothing partial."""
+
+    score: float
+    rating: Literal["Extreme Fear", "Fear", "Neutral", "Greed", "Extreme Greed"]
+    raw_rating: str          # CNN's own wording, not ours — do NOT Literal it
+    prev_1_week: float
+    prev_1_month: float
+    prev_1_year: float
+    weekly_delta: float
+    monthly_delta: float
+    interpretation: str
+
+
+class VixRecord(BaseModel):
+    """vix — ^VIX plus the ^VIX9D / ^VIX3M term structure. The 9D/3M legs go
+    None on empty history, which also nulls both spreads and forces
+    term_structure="unknown"."""
+
+    spot: float
+    prev_close: float
+    change_1d: float | None = None       # pct_change()
+    ma_20: float
+    ma_50: float
+    vs_ma20: float
+    vix_9d: float | None = None
+    vix_3m: float | None = None
+    vix9d_spread: float | None = None
+    vix3m_spread: float | None = None
+    term_structure: Literal["backwardation", "contango", "flat", "unknown"]
+    percentile_1y: float
+    label: VixLabel
+    interpretation: str
+
+
+class IndexRecord(BaseModel):
+    """One US index inside market_internals (SPY/QQQ/IWM)."""
+
+    price: float
+    ma_50: float
+    ma_200: float
+    ma_125: float | None = None
+    above_ma50: bool
+    above_ma200: bool
+    above_ma125: bool | None = None      # None when ma_125 is None
+    pct_from_ma200: float | None = None
+    label: str
+
+
+class RatioRecord(BaseModel):
+    """qqq_spy_ratio / iwm_spy_ratio — ratio_data() always returns all five
+    keys, but every number is None when the series is too short."""
+
+    label: str
+    ratio: float | None = None
+    delta_5d: float | None = None
+    delta_20d: float | None = None
+    trend_5d: Literal["↑", "↓", "→"]   # up / down / flat arrows
+
+
+class MarketInternals(BaseModel):
+    """market_internals — a MIXED dict: three sub-records under their own ticker
+    keys, plus two ratios and a note. All three tickers are required: any one
+    failing raises and takes the whole section to None."""
+
+    SPY: IndexRecord
+    QQQ: IndexRecord
+    IWM: IndexRecord
+    breadth_note: str
+    qqq_spy_ratio: RatioRecord
+    iwm_spy_ratio: RatioRecord
+
+
+class EtfRecord(BaseModel):
+    """One ETF leg inside safe_haven or credit — identical four fields."""
+
+    price: float
+    ret_5d: float | None = None
+    ret_20d: float | None = None
+    label: str
+
+
+class SafeHavenRecord(BaseModel):
+    """safe_haven — TLT/GLD/UUP. Each leg is skipped (`continue`) on empty
+    history, so all three are optional; interpretation is always written."""
+
+    TLT: EtfRecord | None = None
+    GLD: EtfRecord | None = None
+    UUP: EtfRecord | None = None
+    interpretation: str
+
+
+class CreditRecord(BaseModel):
+    """credit — HYG/LQD/JNK, same skip-on-empty rule as safe_haven."""
+
+    HYG: EtfRecord | None = None
+    LQD: EtfRecord | None = None
+    JNK: EtfRecord | None = None
+    interpretation: str
+
+
+class PutCallRecord(BaseModel):
+    """put_call — SPY front-expiry open interest. Returns None rather than a
+    partial record when there are no expiries or zero call OI, so every field
+    here is required."""
+
+    ratio: float
+    calls_oi: int
+    puts_oi: int
+    label: str
+    expiry_used: str
+    interpretation: str
+
+
+class EuIndexRecord(BaseModel):
+    """One EU index inside eu_internals. ma_50/ma_200 come from ma(), which
+    returns None on a short series — and that nulls the above_* flags too."""
+
+    label: str
+    price: float
+    ma_50: float | None = None
+    ma_200: float | None = None
+    above_ma50: bool | None = None
+    above_ma200: bool | None = None
+    pct_from_ma200: float | None = None
+    ret_5d: float | None = None
+    ret_1m: float | None = None
+
+
+class VstoxxRecord(BaseModel):
+    """eu_internals.VSTOXX — ^V2TX with ^VDAX fallback; absent if both empty."""
+
+    spot: float
+    prev: float
+    change_1d: float
+    percentile: float
+    label: VixLabel
+
+
+class EurUsdRecord(BaseModel):
+    """eu_internals.EURUSD — EURUSD=X; absent if no history."""
+
+    price: float
+    ret_5d: float | None = None
+    ret_20d: float | None = None
+    trend: Literal["strengthening", "weakening", "stable"]
+
+
+class EuInternals(BaseModel):
+    """eu_internals — every index / VSTOXX / EURUSD leg has its OWN try/except
+    and is simply omitted on failure, so all of them are optional. Only the
+    three breadth keys are guaranteed.
+
+    Yahoo symbols are not legal Python names, hence the aliases (same trick as
+    TickerSignal.week52_high). The MIB key is "FTSEMIB.MI" — ^FTSEMIB is not
+    available on Yahoo free. Fetch, breadth, composite scoring and display all
+    iterate sentiment_agent.EU_INDEX_SYMBOLS, so the keys stay in sync.
+    """
+
+    dax:     EuIndexRecord | None = Field(default=None, alias="^GDAXI")
+    ftse:    EuIndexRecord | None = Field(default=None, alias="^FTSE")
+    cac:     EuIndexRecord | None = Field(default=None, alias="^FCHI")
+    ftsemib: EuIndexRecord | None = Field(default=None, alias="FTSEMIB.MI")
+
+    VSTOXX: VstoxxRecord | None = None
+    EURUSD: EurUsdRecord | None = None
+
+    eu_breadth: str
+    eu_bull_regime: bool | None = None   # None when no EU index was tracked
+    interpretation: str
+
+
+class RatesRecord(BaseModel):
+    """rates — ^TNX 10Y yield. change_5d/change_20d need 6/21 closes; these are
+    yield DIFFERENCES in points, not percent changes."""
+
+    yield_10y: float
+    prev_close: float
+    change_1d: float
+    change_5d: float | None = None
+    change_20d: float | None = None
+    ma_20: float
+    trend: Literal["rising", "falling", "stable"]
+    interpretation: str
+
+
+class SchemaError(BaseModel):
+    """One entry in schema_errors — written by sentiment_agent's own validation
+    pass, so it never appears in the dict being validated."""
+
+    field: str
+    error: str
+
+
+class SentimentSnapshot(BaseModel):
+    """The whole sentiment_data.json document.
+
+    Validated in main() BEFORE schema_valid/schema_errors are attached, so those
+    two carry defaults: the file on disk always has them, the validated dict
+    never does.
+    """
+
+    generated_at: str
+    composite_score: float
+    composite_label: RiskLabel
+    composite_delta: float | None = None     # None on the first ever run
+
+    cnn_fear_greed:   FearGreedRecord | None = None
+    vix:              VixRecord       | None = None
+    market_internals: MarketInternals | None = None
+    safe_haven:       SafeHavenRecord | None = None
+    credit:           CreditRecord    | None = None
+    put_call:         PutCallRecord   | None = None
+    rates:            RatesRecord     | None = None
+
+    eu_internals:       EuInternals | None = None
+    eu_composite_score: float | None = None   # None when eu_internals is null
+
+    # RiskLabel plus "N/A", which eu_composite_score() returns when eu is null.
+    # Spelled flat rather than `RiskLabel | Literal["N/A"]` to keep it obvious.
+    eu_composite_label: Literal[
+        "Risk-On", "Mild Risk-On", "Neutral", "Mild Risk-Off", "Risk-Off", "N/A"
+    ]
+
+    schema_valid:  bool | None = None
+    schema_errors: list[SchemaError] = []

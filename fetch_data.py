@@ -46,7 +46,7 @@ from config import (
     MIN_PRICE, MIN_AVG_VOLUME, EU_MIN_AVG_VOLUME, JP_MIN_AVG_VOLUME,
     CA_MIN_AVG_VOLUME, BR_MIN_AVG_VOLUME,
     MIN_ATR_PCT, EU_MIN_ATR_PCT, JP_MIN_ATR_PCT, CA_MIN_ATR_PCT, BR_MIN_ATR_PCT,
-    SR_WINDOW, RR_RATIO, MAX_TICKERS,
+    SR_WINDOW, RR_RATIO, ATR_STOP_MULT, MAX_TICKERS,
     LOOKBACK_DAYS, BATCH_SIZE, BATCH_PAUSE, EU_BATCH_SIZE, EU_BATCH_PAUSE,
     JP_BATCH_SIZE, JP_BATCH_PAUSE, CA_BATCH_SIZE, CA_BATCH_PAUSE,
     BR_BATCH_SIZE, BR_BATCH_PAUSE,
@@ -95,7 +95,8 @@ def load_watchlist(path):
     return tickers[:MAX_TICKERS]
 
 # Volatility: Average True Range over `period` days. Used twice — the ATR%
-# tradability filter in process_ticker(), and stop/target placement (price ± 1 ATR).
+# tradability filter in process_ticker(), and stop placement (price ± ATR_STOP_MULT x ATR).
+# Target is NOT ATR-based — see process_ticker()'s target/short_target block.
 def atr(highs, lows, closes, period=14):
     """Average True Range over `period` days."""
     if len(closes) < period + 1:
@@ -341,6 +342,13 @@ def week52_high(highs):
 # conviction, and assembles the JSON record.
 def process_ticker(ticker, hist):
     """Extract all metrics for one ticker."""
+    # Yahoo sometimes returns a trailing row for the most recent session with
+    # real volume but NaN OHLC (not yet backfilled at fetch time) — drop any
+    # such trailing rows so price/ATR/etc. come from the last fully-populated
+    # session instead of NaN-ing out every downstream metric.
+    if hist is not None and not hist.empty:
+        hist = hist.dropna(subset=["Close"])
+
     if hist is None or hist.empty or len(hist) < SR_WINDOW + 5:
         bars = 0 if hist is None else len(hist)
         log.debug(f"{ticker}: dropped — insufficient history ({bars} bars < {SR_WINDOW + 5})")
@@ -403,17 +411,36 @@ def process_ticker(ticker, hist):
     setup        = setup_type(closes, volumes, support, resistance)
     conv         = conviction(setup, vol_ratio, dist_res, dist_sup, trend)
 
-    # Long: ATR-based stop below entry, RR_RATIO target above
-    stop   = round(price - atr14, 4)
-    risk   = price - stop
-    target = round(price + risk * RR_RATIO, 4)
+    # Long: ATR-based stop below entry. Target is a REAL chart level, not a
+    # mechanical RR_RATIO multiple of risk — RR_RATIO is RISK.md's MINIMUM bar
+    # to clear, not a target-generator. Using it as the latter made `rr` a
+    # tautology: target = price + risk*RR_RATIO algebraically forces
+    # (target-price)/risk == RR_RATIO for every single ticker, always, so the
+    # "rr" field never actually measured anything about the setup (fixed
+    # 2026-08-25 — every prior scan showed rr=1.5 across the board).
+    # "breakout" sits AT/NEAR resistance by construction (setup_type's own
+    # near_resistance test), so resistance itself isn't a usable forward
+    # target — project a measured move instead (pattern height added above
+    # the breakout, Bulkowski's measure rule, same one strategy-analyst.md
+    # already references). Every other long setup (pullback/reversal/
+    # consolidation/neutral) sits near SUPPORT, not the ceiling, so window
+    # resistance itself is a real, not-yet-reached target for those.
+    stop        = round(price - ATR_STOP_MULT * atr14, 4)
+    risk        = price - stop
+    base_height = resistance - support
+    long_target_level = (resistance + base_height) if setup == "breakout" else resistance
+    target      = round(long_target_level, 4)
 
-    # Short: ATR-based stop above entry, RR_RATIO target below
+    # Short: ATR-based stop above entry, same real-target logic mirrored
+    # below support — "breakdown" sits AT/NEAR support by construction, so it
+    # gets the measured-move projection; other short setups target the
+    # window support directly.
     s_setup = short_setup_type(closes, volumes, support, resistance)
     s_conv  = short_conviction(s_setup, vol_ratio, dist_res, trend)
-    short_stop   = round(price + atr14, 4)
-    short_risk   = short_stop - price
-    short_target = round(price - short_risk * RR_RATIO, 4)
+    short_stop  = round(price + ATR_STOP_MULT * atr14, 4)
+    short_risk  = short_stop - price
+    short_target_level = (support - base_height) if s_setup == "breakdown" else support
+    short_target = round(short_target_level, 4)
     
     
     result = {
@@ -439,6 +466,11 @@ def process_ticker(ticker, hist):
         "52w_high":         week52_high(highs),
         "rsi":              rsi(closes, 14),
         "rr":               round((target - price) / (price - stop), 2) if price > stop else None,
+        # Target distance in ATRs — independent of ATR_STOP_MULT. This is what
+        # scan.md's Steps 5-9 gate reads (>= 1.5): with the old 1-ATR stop,
+        # rr >= 1.5 was algebraically the same test, so the funnel is unchanged
+        # by the stop widening; rr itself now reports the true R:R at the wider stop.
+        "target_atr":       round((target - price) / atr14, 2),
         # Short-side fields
         "short_setup":      s_setup,
         "short_conviction": s_conv,
@@ -449,6 +481,7 @@ def process_ticker(ticker, hist):
         result["short_stop"]   = short_stop
         result["short_target"] = short_target
         result["short_rr"]     = round((price - short_target) / short_risk, 2) if short_risk > 0 else None
+        result["short_target_atr"] = round((price - short_target) / atr14, 2)
 
     return result
 

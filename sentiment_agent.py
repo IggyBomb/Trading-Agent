@@ -51,6 +51,18 @@ CNN_HEADERS = {
     "Origin":  "https://www.cnn.com",
 }
 
+# ── EU index universe ─────────────────────────────────────────────────────────
+# Single source of truth for the EU indices: fetching, breadth, composite score
+# and dashboard display all iterate this list, so the keys cannot drift apart.
+# NOTE: ^FTSEMIB is not available on Yahoo Finance free — FTSEMIB.MI (the Milan
+# listing) is the key actually written to sentiment_data.json.
+EU_INDEX_SYMBOLS = [
+    ("^GDAXI",     "DAX"),
+    ("^FTSE",      "FTSE100"),
+    ("^FCHI",      "CAC40"),
+    ("FTSEMIB.MI", "FTSEMIB"),
+]
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -474,12 +486,7 @@ def fetch_eu_internals():
         results = {}
 
         # EU equity indices
-        for sym, label in [
-            ("^GDAXI",    "DAX"),
-            ("^FTSE",     "FTSE100"),
-            ("^FCHI",     "CAC40"),
-            ("FTSEMIB.MI","FTSEMIB"),   # ^FTSEMIB not on Yahoo Finance free
-        ]:
+        for sym, label in EU_INDEX_SYMBOLS:
             try:
                 h = yf.Ticker(sym).history(period="1y")
                 if h.empty:
@@ -554,8 +561,7 @@ def fetch_eu_internals():
             log.warning(f"eu_internals: EURUSD failed — omitted: {e}", exc_info=True)
 
         # EU breadth
-        eu_syms      = ["^GDAXI", "^FTSE", "^FCHI", "^FTSEMIB"]
-        tracked      = [s for s in eu_syms if s in results]
+        tracked      = [s for s, _ in EU_INDEX_SYMBOLS if s in results]
         above_200    = [s for s in tracked if results[s].get("above_ma200")]
         bull_regime  = len(above_200) > len(tracked) // 2 if tracked else None
 
@@ -565,7 +571,7 @@ def fetch_eu_internals():
 
         # Summary line
         parts = []
-        for sym in ["^GDAXI", "^FTSE"]:
+        for sym, _ in EU_INDEX_SYMBOLS:
             if sym in results:
                 lbl  = results[sym]["label"]
                 flag = "above" if results[sym].get("above_ma200") else "below"
@@ -631,7 +637,7 @@ def eu_composite_score(eu):
         elif vstoxx > 25: score -= 5
 
     # EU indices vs MA200
-    for sym in ["^GDAXI", "^FTSE", "^FCHI", "^FTSEMIB"]:
+    for sym, _ in EU_INDEX_SYMBOLS:
         d = eu.get(sym)
         if d:
             score += 3 if d.get("above_ma200") else -3
@@ -942,14 +948,15 @@ def print_dashboard(score, label, score_delta, fng, vix, internals, safe_haven, 
         divider("EU MARKET INTERNALS")
 
         if eu_score is not None:
-            p_eu_score = p_eu.get("eu_composite_score")
+            # eu_composite_score is a TOP-LEVEL key, not nested under eu_internals
+            p_eu_score = (previous or {}).get("eu_composite_score")
             row("EU Composite",
                 f"{eu_score} ({eu_label})",
                 f"{_fmt(p_eu_score)}" if p_eu_score else "—",
                 _delta_str(eu_score, p_eu_score) if p_eu_score else "—",
                 "EU-specific sizing applies for EU tickers")
 
-        for sym, lbl in [("^GDAXI","DAX"), ("^FTSE","FTSE100"), ("^FCHI","CAC40"), ("^FTSEMIB","FTSEMIB")]:
+        for sym, lbl in EU_INDEX_SYMBOLS:
             d   = eu.get(sym, {})
             p_d = p_eu.get(sym, {})
             if not d:
