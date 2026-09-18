@@ -262,6 +262,17 @@ def fetch_market_internals():
             ma200_ = round(ma(c, 200), 2)
             ma125_ = round(ma(c, 125), 2)
 
+            # yfinance occasionally returns an unfinalized/NaN close for the
+            # most recent bar (seen live: a post-midnight fetch got NaN for
+            # SPY/QQQ/IWM). NaN comparisons (`NaN > x`) silently evaluate to
+            # False rather than raising, which was flipping above_ma50/200 to
+            # "bearish" for free and corrupting composite_score() by up to 18
+            # points with no warning. Fail loudly instead so the outer
+            # try/except takes the whole section to None, per MarketInternals'
+            # documented "any one failing raises" contract (schemas.py).
+            if any(np.isnan(v) for v in (price, ma50_, ma200_, ma125_)):
+                raise ValueError(f"{sym}: NaN in price/ma50/ma200/ma125 (incomplete/bad data from yfinance)")
+
             above_125    = price > ma125_ if ma125_ else None
             pct_from_200 = pct_change(price, ma200_)
             prices[sym]  = c  # store full series for ratio calculations

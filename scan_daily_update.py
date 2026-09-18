@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+Mamma mia quanto fanno cagare i commenti di Claude. Questi sono tutti da riscrivere.
 scan_daily_update.py — daily tracker for the scan test group.
 
 Runs once a day, after market close. Reads every open (outcome IS NULL) row
@@ -76,26 +77,8 @@ def calculate_outcome(row, data, outcome, exit_price):
     }
 
 
-def check_first_day(conn, row, data):
-    """First tracked day only (day_close_price still NULL). The scan's entry
-    is the previous close, which nobody could actually trade: re-base entry
-    to today's open. If the open is already through the stop, the trade was
-    never enterable -> close as GAPPED_OUT (entry kept as the scan wrote it,
-    so gain_pct shows the gap size). Returns True if closed."""
-    if row["day_close_price"] is not None:
-        return False
-    if data["open"] <= row["stop"]:
-        update_row(conn, row["id"], calculate_outcome(row, data, "GAPPED_OUT", data["open"]))
-        return True
-    row["entry"] = data["open"]
-    update_row(conn, row["id"], {"entry": data["open"]})
-    return False
-
-
 def update_daily_tracking(conn, row, data):
-    """Daily mark for an open row: running high/low (only while the trade is
-    live — a bar beyond the level belongs to the exit), today's close and the
-    metrics valued at that close. Stored high/low is NULL until first update."""
+    """Check for new max/high and min/low. Than update the row's day_close_price and metrics (%gain/loss, day close, etc)."""
     if data["high"] < row["target"] and (row["max_high"] is None or data["high"] > row["max_high"]):
         update_row(conn, row["id"], {"max_high": data["high"], "max_high_date": data["date"]})
     if data["low"] > row["stop"] and (row["min_low"] is None or data["low"] < row["min_low"]):
@@ -105,13 +88,15 @@ def update_daily_tracking(conn, row, data):
 
 
 def check_high_low(conn, row, data):
-    """Close the row if today's bar hit target or stop. Returns True if closed.
+    """Close the row if today's p hit target or stop. Returns True if closed.
     Target wins if both hit the same day (a daily bar can't tell which came first)."""
     if data["high"] >= row["target"]:
-        update_row(conn, row["id"], calculate_outcome(row, data, "TARGET_HIT", row["target"]))
+        update_row(conn, row["id"], {"max_high": row["target"], "max_high_date": data["date"],
+                                     **calculate_outcome(row, data, "TARGET_HIT", row["target"])})
         return True
     elif data["low"] <= row["stop"]:
-        update_row(conn, row["id"], calculate_outcome(row, data, "STOP_HIT", row["stop"]))
+        update_row(conn, row["id"], {"min_low": row["stop"], "min_low_date": data["date"],
+                                     **calculate_outcome(row, data, "STOP_HIT", row["stop"])})
         return True
 
 
@@ -130,9 +115,9 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # rows accessible by column name: row["ticker"]
 
-    open_rows = [dict(r) for r in conn.execute(
+    open_rows = conn.execute(
         "SELECT * FROM scan_test_group WHERE outcome IS NULL"
-    )]
+    ).fetchall()
     tickers = sorted({row["ticker"] for row in open_rows})  # unique, one yfinance call each
 
     print(f"  Open rows to update: {len(open_rows)} ({len(tickers)} tickers)")
@@ -151,8 +136,6 @@ def main():
         data = today_tickers_data.get(row["ticker"])
         if data is None:
             continue   # no bar for this ticker today — leave the row untouched
-        if check_first_day(conn, row, data):
-            continue
         update_daily_tracking(conn, row, data)
         if not check_high_low(conn, row, data):
             check_close_date(conn, row, data)
