@@ -157,8 +157,8 @@ def cmd_entry(args):
         risk    = abs(price - stop)
         reward  = abs(target - price)
         rr_planned = round(reward / risk, 2) if risk else None
-        if rr_planned and rr_planned < 1.5:
-            flags.append(f"LOW_RR: planned R:R {rr_planned:.2f} below RISK.md minimum 1.5")
+        if rr_planned and rr_planned < RR_RATIO:
+            flags.append(f"LOW_RR: planned R:R {rr_planned:.2f} below RISK.md minimum {RR_RATIO}")
 
     trade = {
         "id":           trade_id(),
