@@ -868,6 +868,17 @@ def main():
     results = {}
     total   = len(candidates)
 
+    # TODO(perf): per-ticker cache with TTL. This loop is ~20 min for ~250 tickers
+    # (2/3 of the whole run_pipeline.sh runtime) — 5 network calls + ~1.9 s of
+    # fixed sleeps per ticker. Only news sentiment actually changes day to day:
+    #   short interest  → published twice a month   (TTL ~7 d)
+    #   analyst trend   → monthly buckets            (TTL ~7 d)
+    #   insider / MSPR  → Form 4 filings, sparse     (TTL ~3 d)
+    #   congressional   → reference only, not scored (TTL ~7 d, or drop the call)
+    # Idea: keep data/alt_data_cache.json keyed by ticker with a fetched_at per
+    # signal; on each run reuse a signal if fetched_at is within its TTL and only
+    # refetch news + whatever expired. Would cut this to a few minutes most days.
+    # Noted 2026-09-20.
     for i, ticker in enumerate(candidates, 1):
         # Single .info call reused for short interest
         info = {}

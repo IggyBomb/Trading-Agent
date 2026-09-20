@@ -18,7 +18,7 @@ import os
 import sys
 import time
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import logging
 log = logging.getLogger("fetch_data")
 
@@ -29,6 +29,8 @@ except ImportError:
     print("Installing yfinance...")
     os.system(f"{sys.executable} -m pip install yfinance --quiet")
     import yfinance as yf
+
+import pandas as pd
 
 try:
     import numpy as np
@@ -335,6 +337,108 @@ def week52_high(highs):
         return None
     return round(float(np.max(highs)), 4)
 
+# Fetches the current live price of a ticker, at the time and date of when fetch_data.py is run
+def live_price(ticker):
+    TARGET_DATE = date.today()   # day to look at
+    TARGET_TIME = date.strftime(date.today(), "%H:%M")
+    PRINT_FULL_HISTORY = False   # True → also dump the whole 1-year daily table
+    try:
+        price_raw = yf.download(
+            ticker,
+            period="1d",
+            interval="1m",
+            prepost=True,
+            group_by="ticker",
+            auto_adjust=True,
+            progress=False,
+            threads=True,
+        )
+    except Exception as e:
+        log.error(f"{ticker}: live price download failed — {e}")
+        return None
+    
+    if price_raw.empty:
+        log.warning(f"{ticker}: no intraday bars returned")
+        return None
+    closes = price_raw[ticker]["Close"].dropna()
+    if closes.empty:
+        return None
+    return round(float(closes.iloc[-1]), 4)
+            
+
+# FUUUCK didnt have time to write this so it's all CLAUDE code...to review absolutely.
+
+# Yahoo's DAILY feed for some exchanges (Euronext, XETRA, Borsa Italiana, BME,
+# Nasdaq Stockholm, B3) lags 1-2 sessions behind: the latest rows come back with
+# NaN Close (or are absent entirely) even though the INTRADAY feed already has
+# those sessions. process_ticker drops the NaN rows, so without this the whole
+# metric stack (prev_close, ATR, S/R, trend, RSI) silently runs 1-2 days stale.
+# Rebuild each missing session from its intraday bars and splice it into hist.
+# Only rows that are missing are added — rows Yahoo did return are never touched.
+def backfill_daily(ticker, hist, daily_volume=None):
+    """Fill missing recent daily rows of `hist` from 5d of hourly bars. Returns hist (patched or unchanged).
+
+    daily_volume: the Volume column of the UN-dropped daily frame. Yahoo usually
+    still reports the official volume on the NaN-Close rows, and intraday bars
+    for EU exchanges undercount consolidated volume ~4x, so the official figure
+    is preferred whenever it exists.
+    """
+    try:
+        raw = yf.download(
+            ticker,
+            period="5d",
+            interval="1h",
+            prepost=False,        # regular session only, so rebuilt OHLCV matches official daily bars
+            group_by="ticker",
+            auto_adjust=True,     # NOTE: recent bars are effectively unadjusted; only wrong if a
+            progress=False,       # split/dividend falls inside the 5-day window
+            threads=True,
+        )
+    except Exception as e:
+        log.warning(f"{ticker}: backfill download failed — {e}")
+        return hist
+
+    if raw.empty:
+        log.warning(f"{ticker}: backfill — no intraday bars returned")
+        return hist
+    if isinstance(raw.columns, pd.MultiIndex):
+        raw = raw[ticker]
+    raw = raw.dropna(subset=["Close"])
+    if raw.empty:
+        return hist
+
+    # Collapse intraday bars to one row per session date. Bars arrive in
+    # exchange-local time, so .date gives the correct session for every region.
+    daily = raw.groupby(raw.index.date).agg(
+        Open=("Open", "first"), High=("High", "max"), Low=("Low", "min"),
+        Close=("Close", "last"), Volume=("Volume", "sum"),
+    )
+    daily.index = pd.to_datetime(daily.index)
+    if hist.index.tz is not None:
+        daily.index = daily.index.tz_localize(hist.index.tz)
+    daily = daily.reindex(columns=hist.columns)
+
+    missing = daily.index.difference(hist.index)
+    if len(missing) == 0:
+        return hist
+
+    rows = daily.loc[missing].copy()
+    intraday_vol = []
+    for d in missing:
+        official = daily_volume.get(d) if daily_volume is not None else None
+        if official is not None and not pd.isna(official) and official > 0:
+            rows.loc[d, "Volume"] = official
+        else:
+            intraday_vol.append(d.strftime("%Y-%m-%d"))
+
+    hist = pd.concat([hist, rows]).sort_index()
+    log.info(f"{ticker}: backfilled {len(missing)} daily row(s) from intraday: "
+             f"{', '.join(d.strftime('%Y-%m-%d') for d in missing)}")
+    if intraday_vol:
+        log.warning(f"{ticker}: no official volume for {', '.join(intraday_vol)} — "
+                    f"using intraday sum (EU/BR feeds undercount ~4x)")
+    return hist
+
 
 # REVIEW(scoring): the per-ticker pipeline. Applies the hard filters that decide
 # which tickers survive at all (MIN_PRICE, region min avg volume, region min ATR% —
@@ -346,8 +450,15 @@ def process_ticker(ticker, hist):
     # real volume but NaN OHLC (not yet backfilled at fetch time) — drop any
     # such trailing rows so price/ATR/etc. come from the last fully-populated
     # session instead of NaN-ing out every downstream metric.
+    daily_volume = None
     if hist is not None and not hist.empty:
+        daily_volume = hist["Volume"]           # official volumes survive on NaN-Close rows — keep for backfill
         hist = hist.dropna(subset=["Close"])
+
+    # this fix is there because yfinance sometimes doesnt return the latest (today) close for the EU market, but it takes sometime to upload the data
+    # The risk is than that we use the close price of not today but 1 - 2 days ago and we fuck up all the calculations downstream
+    if hist is not None and not hist.empty and hist.index[-1].date() < date.today():   # last valid daily bar is not today
+        hist = backfill_daily(ticker, hist, daily_volume)   # does its own 5d download
 
     if hist is None or hist.empty or len(hist) < SR_WINDOW + 5:
         bars = 0 if hist is None else len(hist)
@@ -358,8 +469,10 @@ def process_ticker(ticker, hist):
     highs   = hist["High"].values
     lows    = hist["Low"].values
     volumes = hist["Volume"].values
-
-    price = round(float(closes[-1]), 4)
+    
+    live  = live_price(ticker)
+    # If there is no live price, use today's last close price (should be a close value)
+    price = live if live is not None else round(float(closes[-1]), 4)
     # NOTE: a NaN price is deliberately NOT dropped here — round(nan, 4) returns
     # nan without crashing, so the record builds and the schema (price has
     # allow_inf_nan=False) rejects it into schema_rejected_details, keeping it
@@ -396,7 +509,7 @@ def process_ticker(ticker, hist):
     if atr14 is None:
         log.debug(f"{ticker}: dropped — ATR unavailable (need {14 + 1} bars)")
         return None
-    atr_pct = round(atr14 / price * 100, 2)
+    atr_pct = round(atr14 / price * 100, 3)
     if atr_pct < min_atr:
         log.debug(f"{ticker}: dropped — ATR% {atr_pct} < min {min_atr}")
         return None
