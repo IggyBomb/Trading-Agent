@@ -1,0 +1,285 @@
+﻿
+
+
+w14:paraId="66AB14E9" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">CONTEMPORARY AMPEREX TECHNOLOGY (CATL)
+w14:paraId="4C4E1705" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Report Long-Term Conviction — Deep-Dive Mode (Report in Italiano)
+w14:paraId="6AD5F5A1" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Ticker: 300750.SZ (A-share)  |  Track: B-RN  |  Prezzo di produzione: ¥337.11  |  Data: 2026-09-15
+w14:paraId="2D3D0106" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00EB0E83">
+w14:paraId="185D0D70" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">VERDETTO
+w14:paraId="5BE1FD8A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">F-Rating: FAIR-TO-UNDERVALUED   |   MoS Gate: NONE/BEAR (dipende dal prezzo esatto)   |   Compounder: QUALITY (vicino a COMPOUNDER)   |   AI Impact: NEUTRAL-TAILWIND
+w14:paraId="07C88A87" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">DCF Bear / Base / Bull: ¥321.98 / ¥748.79 / ¥1,597.97 per azione — a ¥337.11 il prezzo è appena sopra il Bear case (+4.7%); a ¥316.36 (dato "corrente" Yahoo) sarebbe sotto il Bear case — il verdetto dipende da quale prezzo è quello vero.
+w14:paraId="782F2217" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00EB0E83">
+w14:paraId="433BCD9B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Questa è un'analisi di conviction long-term personale, prodotta dall'agente long-term-analyst.md (Deep-Dive Mode). Non è una pubblicazione per abbonati e non ha alcun apparato di disclosure MAR/regolamentare — quel binario è separato (publishing/). Ogni cifra è sourced e datata; i DCF sono scenario modelling illustrativo, non una previsione precisa.
+w14:paraId="684B99E2" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">
+w14:paraId="375B667E" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Indice
+w14:paraId="4877BF1F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">0. Recent Context — Ultimi Risultati e Notizie
+w14:paraId="34EBEFD0" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">1. Business Overview
+w14:paraId="5A5BD973" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">2. Routing
+w14:paraId="10B1F748" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">3. Categorizzazione (Lynch)
+w14:paraId="16684B38" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">4. Qualità Earnings (Penman)
+w14:paraId="3A1A5074" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">5. Valutazione — DCF (Koller)
+w14:paraId="1E8D32F5" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">6. Mauboussin — Price-Implied Expectations
+w14:paraId="29E8990D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">7. Fisher — Checklist Qualitativa
+w14:paraId="5B445C77" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">8. Ilmanen — Lettura Fattori
+w14:paraId="689C2BC7" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">9. Quality Compounder Screen
+w14:paraId="4A48565F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">10. Sector Appendix
+w14:paraId="542655A0" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">11. Five-Year Ratio Trend Analysis
+w14:paraId="5DAFB02B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">12. Verdetto Finale
+w14:paraId="380641AE" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">
+w14:paraId="631284CE" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">0. Recent Context — Ultimi Risultati e Notizie
+w14:paraId="587DAF72" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Ultima trimestrale (Q2 2026)
+w14:paraId="68C095BB" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Ricavi ¥147.79B, +56.92% YoY (vs ¥94.18B Q2 2025) — finestra trimestrale. Leggermente sotto consensus (¥148.6B attesi).
+w14:paraId="3F3D27A9" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Utile netto ¥22.5B, +36.5% YoY — anche sotto attese (¥23.4B).
+w14:paraId="28275A7C" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">H1 2026 (finestra semestrale): ricavi ¥276.92B (+54.80% YoY), utile netto ¥43.28B (+41.98% YoY).
+w14:paraId="08C70398" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Causa del miss: domanda EV in Cina in indebolimento, parzialmente compensata dal boom energy storage.
+w14:paraId="55E188B4" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Quota di mercato globale batterie EV: 40.2% (era 38% nel 2024, 36% nel 2023).
+w14:paraId="48463ADB" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Contesto storico (necessario per capire il pattern volatile)
+w14:paraId="494CB8C0" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">FY2024: primo calo ricavi mai registrato da CATL — ¥362.0B vs ¥400.9B FY2023 (-9.7% YoY, finestra annuale). Causa: pass-through prezzi litio (materia prima), non calo domanda — le installazioni batterie EV sono salite +47.2% nello stesso anno. Utile netto comunque +15.0%.
+w14:paraId="1F588BBF" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">FY2025-2026: forte riaccelerazione — ricavi FY2025 ¥423.7B (+17.0% YoY), poi H1 2026 al +54.8% YoY.
+w14:paraId="22F5EABE" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Notizie recenti
+w14:paraId="4F3B3205" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Aumento di capitale diluitivo a Hong Kong: 62.4M nuove H-shares a HK$628.20 (sconto 7%) — titolo HK -6.7%/-7.6% all'annuncio. Raccolta: almeno $5B, il più grande collocamento HK del 2026.
+w14:paraId="2CFAD018" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">H-shares (IPO maggio 2025) +137% da IPO nonostante il calo recente — P/E 30.9x, P/B 6.9x vs A-share P/E 16.9x, P/B 3.8x — divario A/H insolito (di norma le A-share cinesi trattano a premio, qui è il contrario).
+w14:paraId="2D0E003D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Piano dividendi: $2.8B annunciato.
+w14:paraId="0D2BDDA2" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00EB0E83"/>
+w14:paraId="66E24F8A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Nota sul prezzo: la chiusura confermata più recente (14/9) è ¥337.11; il campo "prezzo corrente" di Yahoo mostra ¥316.36 (vicino al minimo 52 settimane di ¥316.00), con volume del 15/9 quasi raddoppiato (48M vs media ~26M) — possibile ulteriore calo intraday, coerente col sell-off globale su tech/semiconduttori tracciato oggi in questa sessione. Uso ¥337.11 come prezzo di produzione, ma la differenza è rilevante e va verificata.
+w14:paraId="13124A1C" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00EB0E83">
+w14:paraId="3FB1DA01" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Fonti: Bloomberg, SCMP, IndexBox, Electrek, TechNode, CNBC, Asiabits (lug-set 2026).
+w14:paraId="25053D4B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">
+w14:paraId="550D336C" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">1. Business Overview
+w14:paraId="767A9384" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Segmenti: batterie per veicoli elettrici (power battery, core storico) e sistemi di accumulo energetico (energy storage battery, segmento in più forte crescita oggi). Leader mondiale in entrambi.
+w14:paraId="577A34A0" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Mercati principali: Cina (base storica, domanda EV in rallentamento) + espansione internazionale (BMW, Tesla, Stellantis tra i clienti noti) + stabilimenti in Europa (Germania, Ungheria). La quotazione H-shares a Hong Kong (2025) finanzia esplicitamente l'espansione overseas.
+w14:paraId="0641B9C4" w14:textId="6D1370BB" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">TAM: nessuna cifra ufficiale rivelata da CATL trovata — la narrativa "elettrificazione + accumulo energetico" è ampiamente di terze parti.
+w14:paraId="22804D4D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">2. Routing
+w14:paraId="2F22462F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Track B (crescita, metriche settore-specifiche) — nessuna categoria dedicata "batterie EV" nel Sector Appendix; fit più vicino: Renewables & Clean Energy (Track B/C-RN), usato come riferimento parziale insieme a Koller DCF come ancora primaria.
+w14:paraId="50EB504A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">3. Categorizzazione (Lynch)
+w14:paraId="6E741134" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Fast Grower con una parentesi Cyclical — crescita tipicamente 20%+ ma con un anno (FY2024) di calo ricavi da pass-through prezzi materie prime, non da domanda strutturale.
+w14:paraId="75C4EE6D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">4. Qualità Earnings (Penman)
+w14:paraId="1EFBB313" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">ROIC in miglioramento costante da 4 anni: 11.6% -> 13.9% -> 15.2% -> 16.1% (FY2025) — trend opposto a RKLB/WM/FCX (tutti in calo).
+w14:paraId="3911B3E6" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">FCF/NI eccezionale: 126-134% negli ultimi 3 anni.
+w14:paraId="772F49C8" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Diluizione FY2025: +3.64% — riconducibile direttamente al collocamento H-shares a Hong Kong (causa identificata).
+w14:paraId="6C2E6594" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Nessun segnale di accrual inflation.
+w14:paraId="4AFBDC92" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">
+w14:paraId="3B49A5FB" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">5. Valutazione — DCF (Koller)
+w14:paraId="137158F7" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Nota metodologica importante: il calcolo standard "Invested Capital = Equity + Debito - Cassa" si rompe per un'azienda con cassa così enorme (¥440B) — dava un ROIC assurdo (151%). Ho usato invece l'Invested Capital operativo (¥431.7B, fonte: bilancio), che dà un ROIC sensato (16.1%, coerente con la Sezione 4).
+w14:paraId="7E6EB9D8" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00EB0E83">
+w14:paraId="78DC838F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">WACC
+w14:paraId="3EAFFAF6" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Usato il 10Y cinese (1.68%), non l'UST, dato che l'azienda è denominata in CNY.
+w14:paraId="003B8C82" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Input
+w14:paraId="078A023D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Valore
+w14:paraId="7E5528EE" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Risk-free (10Y Cina)
+w14:paraId="2410355D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">1.68%
+w14:paraId="3CB39A49" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">ERP Cina (assunzione — premio più alto di US/EU)
+w14:paraId="5132BA1C" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">6.0%
+w14:paraId="741DF463" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Beta (Yahoo, 5Y)
+w14:paraId="3C356351" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">0.434 — sospettosamente basso data la volatilità operativa reale (-9.7% a +56.9% in 18 mesi)
+w14:paraId="32340EFC" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Beta stress-testato (usato nel DCF)
+w14:paraId="122FA899" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">0.9
+w14:paraId="12F9EC5A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">WACC (beta 0.9)
+w14:paraId="18ECF757" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">6.70%
+w14:paraId="12061922" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00EB0E83"/>
+w14:paraId="0EFEE6AD" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">ROIC vs WACC: 16.1% vs 6.70% -> spread +9.35pp — tra i migliori di questa sessione.
+w14:paraId="63E42C99" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00EB0E83">
+w14:paraId="438FDACC" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Scenari (5 anni espliciti + terminal value, beta 0.9)
+w14:paraId="00C9AF90" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Scenario
+w14:paraId="5460C68F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Ricavi Y5
+w14:paraId="1FAE2BFA" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Margine NOPLAT
+w14:paraId="77D9D475" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Valore/azione
+w14:paraId="14205755" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Bear
+w14:paraId="37C3183E" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">¥562B
+w14:paraId="5285DD7C" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">11%
+w14:paraId="748ECB84" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">¥321.98
+w14:paraId="3512E476" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Base
+w14:paraId="30D34029" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">¥925B
+w14:paraId="33512EB3" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">17%
+w14:paraId="4C795FA5" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">¥748.79
+w14:paraId="12EF49E2" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Bull
+w14:paraId="00F22139" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">¥1,362B
+w14:paraId="63F12B12" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">22%
+w14:paraId="360E478E" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">¥1,597.97
+w14:paraId="787D8C22" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00EB0E83"/>
+w14:paraId="0375F203" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Prezzo attuale: ¥337.11 — il primo caso in questa sessione dove il prezzo è vicinissimo al Bear case (+4.7%), non lontanissimo sotto.
+w14:paraId="5ED201BA" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00EB0E83">
+w14:paraId="399935F4" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">MoS Gate: borderline NONE/BEAR — dipende dal prezzo esatto
+w14:paraId="45B7B55F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Con ¥337.11: MoS Gate NONE (margine minimo, +4.7% sopra Bear). Con ¥316.36 (se genuino): MoS Gate BEAR, il migliore possibile.
+w14:paraId="33B5CE49" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Red flag onesto sul Bull case: CV% = 101% (arrotondamento, ma sostanzialmente tutto il valore è nel terminal value) — zero valore dai flussi di cassa espliciti, bassissima confidenza su questo scenario.
+w14:paraId="60B79904" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">
+w14:paraId="7E7607C4" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">6. Mauboussin — Price-Implied Expectations
+w14:paraId="1114D7D4" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Dato il MoS Gate borderline, il prezzo di oggi non sta pagando per uno scenario aggressivo — anzi, sta pagando meno del caso Bear se il prezzo più basso (¥316) è quello reale. Insolito: il mercato potrebbe star scontando eccessivamente il rallentamento della domanda EV in Cina, senza dare credito al boom energy storage che sta già trainando i risultati.
+w14:paraId="67A88999" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00EB0E83">
+w14:paraId="47B3AB84" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Moat & Competitive Advantage Period (CAP)
+w14:paraId="52C7C73C" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Leadership di mercato 40.2% (in crescita), scala produttiva enorme, relazioni con case auto globali (switching cost reali per un cliente che ha già qualificato le batterie CATL su una piattaforma). Wide moat, CAP 7-15y.
+w14:paraId="5533324C" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">7. Fisher — Checklist Qualitativa
+w14:paraId="281D5DDC" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">#1 Mercato in crescita strutturale (elettrificazione + storage)
+w14:paraId="09A68902" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">#5/#6 Margini in espansione netta e costante (lordo 20.3%->26.3%, EBIT 10.7%->19.2%)
+w14:paraId="54E2BB29" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">#13 Diluizione FY2025 (+3.64%) da capital raise — non enorme, da monitorare se si ripete
+w14:paraId="1932FEE5" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Nessun segnale di management evasivo o problemi di disclosure nei materiali trovati
+w14:paraId="5469595A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">
+w14:paraId="6895BA71" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">8. Ilmanen — Lettura Fattori
+w14:paraId="531E7EB4" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Fattore
+w14:paraId="53EFB0AE" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Lettura
+w14:paraId="6F30E2F9" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Value
+w14:paraId="41806138" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Presente — P/E 16.9x (A-share) su crescita 50%+ è oggettivamente a sconto
+w14:paraId="2CD8D237" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Quality
+w14:paraId="1505493F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Molto forte — ROIC in salita, FCF/NI >125%, margini in espansione
+w14:paraId="1BBCB89F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Momentum
+w14:paraId="32037232" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Negativo di recente — titolo vicino ai minimi 52 settimane, -32.5% dal massimo
+w14:paraId="52E4031B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Low Beta
+w14:paraId="10580318" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Presente sulla carta (0.434) ma da non fidarsi ciecamente — vedi nota WACC
+w14:paraId="69F20BCE" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Tre fattori positivi su quattro (Value+Quality+nominalmente Low Beta) — il profilo più forte visto in questa sessione.
+w14:paraId="05BBCC49" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">9. Quality Compounder Screen
+w14:paraId="1098B5F5" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Criterio
+w14:paraId="4D893CA3" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Evidenza
+w14:paraId="24E821BE" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Esito
+w14:paraId="1177EB70" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">ROIC 5y >15%
+w14:paraId="408FF2B1" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Media 4 anni 14.2%, ma ultimo anno 16.1% e in salita
+w14:paraId="6D5E4352" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">PARTIAL/PASS
+w14:paraId="236DB32B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">ROIC trend stabile/migliorativo
+w14:paraId="427F2BB9" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">4 anni consecutivi in salita
+w14:paraId="23BD2D67" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">PASS
+w14:paraId="713A0F12" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Operating margin >15%
+w14:paraId="5B612943" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">19.2% (FY2025), 17.8% (FY2024)
+w14:paraId="3978D59E" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">PASS
+w14:paraId="232C21D8" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">FCF conversion >80%
+w14:paraId="6F1B1B3B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">126-134%
+w14:paraId="7DF0965F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">PASS
+w14:paraId="6BBAF7A7" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">CapEx/Revenue <10%
+w14:paraId="7EBBB8A7" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">8.4-14.7%, ultimo anno 10.0% (borderline)
+w14:paraId="02A7C998" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">PARTIAL
+w14:paraId="287393E4" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Crescita auto-finanziata
+w14:paraId="74FD5530" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Sostanzialmente sì, +3.64% dilution isolata (HK raise)
+w14:paraId="35B9F797" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">PARTIAL/PASS
+w14:paraId="7FC0F11B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Management ownership
+w14:paraId="27EE9F9B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Dati insufficienti
+w14:paraId="086DCE76" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">UNCERTAIN
+w14:paraId="575B8C64" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Buyback/dividendi
+w14:paraId="6E25C7E5" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Piano dividendi $2.8B annunciato
+w14:paraId="3A7287CA" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">PASS
+w14:paraId="09FF293F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">M&A discipline
+w14:paraId="1CDE09D1" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Nessuna M&A rilevante recente
+w14:paraId="0D2B45AF" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">N/A
+w14:paraId="0544F3A3" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00EB0E83"/>
+w14:paraId="41436AD6" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Verdetto: QUALITY, vicino a COMPOUNDER
+w14:paraId="52667D8A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">5-6 criteri chiari su 9 (soglia 7+ non ancora raggiunta), ma il trend ROIC in salita costante per 4 anni è raro tra tutti i nomi analizzati oggi.
+w14:paraId="40EB0341" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">
+w14:paraId="12E8B294" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">10. Sector Appendix (riferimento parziale — Renewables & Clean Energy)
+w14:paraId="041782B4" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Metrica
+w14:paraId="14FDE9F1" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Valore
+w14:paraId="6C047F04" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Lettura
+w14:paraId="53B30640" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Quota di mercato
+w14:paraId="16039A12" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">40.2%, in crescita
+w14:paraId="233A6FB2" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Segnale di forza — leadership che si consolida
+w14:paraId="6F855176" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Margine lordo trend
+w14:paraId="689313C0" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">20.3% -> 26.3% in 4 anni
+w14:paraId="6D699E90" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Espansione strutturale
+w14:paraId="5BBA1171" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Cassa netta
+w14:paraId="0C3C1570" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">¥291.2 miliardi, in crescita rapida
+w14:paraId="780F270D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Bilancio fortissimo
+w14:paraId="32DF0E6B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">
+w14:paraId="3238F843" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">11. Five-Year Ratio Trend Analysis
+w14:paraId="4E98F090" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Base Ratio Table
+w14:paraId="5C51B66D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Metrica
+w14:paraId="45D065F0" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">FY2022
+w14:paraId="66E38911" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">FY2023
+w14:paraId="420E4C0F" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">FY2024
+w14:paraId="3988B118" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">FY2025
+w14:paraId="04D15C1A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Ricavi (¥B)
+w14:paraId="6EC70AB0" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">328.6
+w14:paraId="64F1F972" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">400.9
+w14:paraId="31FB7FD4" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">362.0
+w14:paraId="1863B3B2" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">423.7
+w14:paraId="21AF437D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Crescita YoY
+w14:paraId="5BBCE68E" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">—
+w14:paraId="78E5AEBF" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">+22.0%
+w14:paraId="1E6DDB70" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">-9.7%
+w14:paraId="77880983" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">+17.0%
+w14:paraId="4C2C3941" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Margine lordo
+w14:paraId="579D5EF5" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">20.3%
+w14:paraId="4B50CFDE" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">19.2%
+w14:paraId="764362F1" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">24.4%
+w14:paraId="1237BBF4" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">26.3%
+w14:paraId="43A65A28" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Margine EBIT
+w14:paraId="5FDD8F9D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">10.7%
+w14:paraId="51DB6721" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">12.9%
+w14:paraId="691048CF" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">17.8%
+w14:paraId="30C615A7" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">19.2%
+w14:paraId="469B1E68" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Margine netto
+w14:paraId="47EA4656" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">9.4%
+w14:paraId="019920D2" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">11.0%
+w14:paraId="6A8CC804" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">14.0%
+w14:paraId="35E23658" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">17.0%
+w14:paraId="697A7880" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">ROE
+w14:paraId="1A6DBE8A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">18.7%
+w14:paraId="7F336728" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">22.3%
+w14:paraId="72095E1E" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">20.6%
+w14:paraId="6C6C9703" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">21.4%
+w14:paraId="61B97CC9" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">ROIC
+w14:paraId="23F528C0" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">11.6%
+w14:paraId="0F291FA6" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">13.9%
+w14:paraId="37AFEB3D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">15.2%
+w14:paraId="72E04505" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">16.1%
+w14:paraId="37A234DD" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">P/E
+w14:paraId="64D2CBB7" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">28.8x
+w14:paraId="05DE05A0" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">15.1x
+w14:paraId="318A6BF2" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">22.0x
+w14:paraId="265BEBD2" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">22.8x
+w14:paraId="5C7E021E" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">P/B
+w14:paraId="6924258B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">5.4x
+w14:paraId="2AC12DDF" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">3.4x
+w14:paraId="50099ED3" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">4.5x
+w14:paraId="1C1EE430" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">4.9x
+w14:paraId="673DB37E" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Debt/Equity
+w14:paraId="451BD379" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">0.61x
+w14:paraId="578C959C" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">0.63x
+w14:paraId="4754548B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">0.55x
+w14:paraId="093C2E4B" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">0.44x
+w14:paraId="00913A4E" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Cassa netta (¥B)
+w14:paraId="5E767C54" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">90.5
+w14:paraId="028C92FD" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">139.1
+w14:paraId="65EFA523" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">167.1
+w14:paraId="359F1685" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">291.2
+w14:paraId="49BAEABF" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">FCF/NI
+w14:paraId="22CC8AE3" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">42.3%
+w14:paraId="1BF8F6B7" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">134.2%
+w14:paraId="391D9290" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">129.7%
+w14:paraId="3E8C6E1D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">125.9%
+w14:paraId="56114125" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">CapEx/Ricavi
+w14:paraId="6EFD1130" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">14.7%
+w14:paraId="7D895C17" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">8.4%
+w14:paraId="199ECFBA" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">8.6%
+w14:paraId="7C93BF4D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">10.0%
+w14:paraId="7944AE22" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00EB0E83"/>
+w14:paraId="5AD94796" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Interpretazione
+w14:paraId="5C9C1B49" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Pattern opposto a tutto il resto analizzato in questa sessione: qui ROIC, margini e qualità cassa migliorano tutti insieme nel tempo, non divergono dal multiplo. Il P/E è sceso da 28.8x a 22.8x nonostante ROIC e margini siano saliti — il mercato sta pagando meno per una qualità operativa crescente, l'esatto contrario della firma "multiplo scollegato dai fondamentali" vista su WM/RKLB/FCX. Il crollo ricavi FY2024 (-9.7%) è già superato e spiegato (pass-through litio, non domanda), con utile netto che non ha mai smesso di crescere nemmeno in quell'anno.
+w14:paraId="6BCF9888" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">
+w14:paraId="161B9185" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">12. Verdetto Finale
+w14:paraId="3AAA5563" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Campo
+w14:paraId="339A880A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Valore
+w14:paraId="209BEF69" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Ticker
+w14:paraId="193C57E7" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">300750.SZ (A-share)
+w14:paraId="4912B7A9" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Track
+w14:paraId="6E1CBA4A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">B-RN
+w14:paraId="73969FB5" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Categoria (Lynch)
+w14:paraId="7479C582" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Fast Grower (con nota Cyclical)
+w14:paraId="19C91149" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">F-Rating
+w14:paraId="51A8D2A5" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Fair-to-Undervalued
+w14:paraId="78FB01AE" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">DCF Bear-Base-Bull
+w14:paraId="507C6D0A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">¥321.98 / ¥748.79 / ¥1,597.97
+w14:paraId="753C7505" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">MoS Gate
+w14:paraId="2B62248C" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">NONE/BEAR (dipende dal prezzo esatto — verificare)
+w14:paraId="5B32FC38" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Compounder
+w14:paraId="4E02C589" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">QUALITY (vicino a COMPOUNDER)
+w14:paraId="344D598E" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">AI Impact
+w14:paraId="167179F3" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Neutral-Tailwind (storage/elettrificazione)
+w14:paraId="74997250" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Horizon
+w14:paraId="3DC36D42" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">3-5yr
+w14:paraId="6D3DCC63" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRDefault="00000000">Thesis Invalidation
+w14:paraId="76D6DA0A" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">ROIC che inverte la tendenza e torna sotto 13%, o un secondo anno di calo ricavi non spiegabile da pass-through prezzi
+w14:paraId="25E91ECA" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00EB0E83">
+w14:paraId="7B4EF6E8" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Sintesi
+w14:paraId="1F632615" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Il profilo qualitativo migliore incontrato in questa sessione — ROIC, margini e FCF che migliorano insieme da 4 anni, leader di mercato in crescita, bilancio fortissimo (cassa netta ¥291B) — scambiato a un prezzo che, secondo il DCF, non è lontano dallo scenario peggiore. Il rischio principale non è la qualità del business, è verificare quale sia il vero prezzo di oggi (¥337 vs ¥316) prima di trarre conclusioni definitive sul margine di sicurezza.
+w14:paraId="39B8BA96" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00EB0E83">
+w14:paraId="7EDAE6DA" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Cosa cambierebbe il verdetto
+w14:paraId="2ED73BA6" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Conferma del prezzo reale di oggi (se ¥316, il caso per COMPOUNDER si rafforza sensibilmente), un secondo trimestre di conferma che l'energy storage compensa la debolezza EV in Cina, o l'assenza di ulteriori aumenti di capitale diluitivi dopo quello di Hong Kong.
+w14:paraId="12180BED" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00EB0E83">
+w14:paraId="3F8E348D" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">─────────────────────────────
+w14:paraId="4D82DA91" w14:textId="77777777" w:rsidR="00EB0E83" w:rsidRPr="009975F8" w:rsidRDefault="00000000">Disclosure: l'autore non detiene posizioni in CATL alla data di produzione. Questo report non istruisce alcuna azione — è un esercizio di analisi guidato dal framework. In mia opinione, non è consulenza finanziaria, solo il mio punto di vista. Nota anche che i dati fondamentali di una A-share cinese hanno meno standardizzazione/copertura rispetto a un titolo USA/EU, quindi verifica i numeri chiave (specialmente il prezzo) con una fonte diretta prima di agire.

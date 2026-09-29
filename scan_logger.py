@@ -203,6 +203,21 @@ CREATE TABLE IF NOT EXISTS scan_test_group (
     exit_price                    REAL,
     days_held                     INTEGER,
     r_achieved                    REAL,
+
+    -- Daily tracking written by scan_daily_update.py (level-based, added
+    -- 2026-09-23). max_high/min_low are the best/worst PRICE reached while the
+    -- row was open, capped at target/stop; day_close_price + gain_pct are
+    -- refreshed on every run.
+    day_close_price               REAL,
+    gain_pct                      REAL,
+    max_high                      REAL,
+    max_high_date                 TEXT,
+    min_low                       REAL,
+    min_low_date                  TEXT,
+
+    -- Superseded by max_high/min_low above; kept so historical rows stay
+    -- readable. Nothing writes these any more (backtest.py's same-named
+    -- fields are its own dicts, not this table).
     max_favorable_pct             REAL,
     max_adverse_pct               REAL,
     resolved_at                   TEXT,
@@ -263,6 +278,12 @@ DESIRED_COLUMNS = [
     ("exit_price",                "REAL"),
     ("days_held",                 "INTEGER"),
     ("r_achieved",                "REAL"),
+    ("day_close_price",           "REAL"),
+    ("gain_pct",                  "REAL"),
+    ("max_high",                  "REAL"),
+    ("max_high_date",             "TEXT"),
+    ("min_low",                   "REAL"),
+    ("min_low_date",              "TEXT"),
     ("max_favorable_pct",         "REAL"),
     ("max_adverse_pct",           "REAL"),
     ("resolved_at",               "TEXT"),
