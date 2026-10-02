@@ -94,6 +94,21 @@ FUNDAMENTAL_MAX_AGE_DAYS    = 7
 # over several runs instead of bursting ~1,900+ yfinance calls at once.
 FUNDAMENTAL_MAX_NEW_PER_RUN = 400
 
+# -- Alt-data refresh cadence -------------------------------------------------
+# Same problem as fundamental_agent.py, worse multiplier: alt_data.py makes
+# ~4-5 network calls per ticker (2 of them Finnhub, which is both rate-limited
+# AND the free-tier source), not 1. alt_data.py now scores the FULL valid
+# universe (not just CONVICTION_FILTER tickers), via the same staleness-cache
+# pattern. TTL is shorter than fundamentals' because insider/MSPR filings are
+# the fastest-moving SCORED signal here (~3d); news sentiment is technically
+# daily but gets stale along with everything else in this single-TTL version
+# -- true per-signal TTLs would need the 5 fetches decoupled, not done yet
+# (see the TODO left in alt_data.py 2026-09-20).
+ALT_DATA_MAX_AGE_DAYS    = 3
+# Lower cap than FUNDAMENTAL_MAX_NEW_PER_RUN on purpose -- same reasoning,
+# more expensive per ticker (4-5 calls vs 1), so fewer new fetches per run.
+ALT_DATA_MAX_NEW_PER_RUN = 175
+
 # -- Crowded-sector thresholds (watchlist_ranker.regime_penalty) -------------
 # Mechanical, return-only trigger: either one firing is enough. No sector-rank
 # requirement -- a sector can be crowded without being today's single #1.

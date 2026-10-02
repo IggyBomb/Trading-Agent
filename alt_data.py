@@ -75,7 +75,7 @@ except ImportError:
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-from config import CONVICTION_FILTER, MARKET_DATA_PATH, ALT_DATA_PATH
+from config import CONVICTION_FILTER, MARKET_DATA_PATH, ALT_DATA_PATH, ALT_DATA_MAX_AGE_DAYS, ALT_DATA_MAX_NEW_PER_RUN
 
 OUTPUT_PATH       = ALT_DATA_PATH
 REQUEST_PAUSE     = 0.5
@@ -861,11 +861,57 @@ def main():
     with open(MARKET_DATA_PATH, encoding="utf-8") as f:
         market_data = json.load(f)
 
-    candidates = [s["ticker"] for s in market_data["signals"] if s["conviction"] in CONVICTION_FILTER]
-    log.info(f"{len(candidates)} High/Medium conviction tickers to process "
-             f"(of {len(market_data['signals'])} signals)")
+    all_tickers = [s["ticker"] for s in market_data["signals"]]
+    # Still needed below, just for a narrower purpose now: which tickers are
+    # allowed to spend a Quiver call on congressional data (never scored --
+    # see score_and_signal -- so it isn't worth opening to the full universe).
+    conviction_map = {s["ticker"]: s.get("conviction") for s in market_data["signals"]}
+    log.info(f"{len(all_tickers)} tickers in the valid universe")
 
-    results = {}
+    previous = {}
+    if os.path.exists(ALT_DATA_PATH):
+        try:
+            with open(ALT_DATA_PATH, encoding="utf-8") as f:
+                previous = (json.load(f).get("tickers") or {})
+        except Exception:
+            log.warning("could not read previous alt_data.json -- treating cache as empty")
+
+    now = datetime.now()
+    reused: dict = {}
+    never_scored: list = []
+    stale: list = []
+    for ticker in all_tickers:
+        prev = previous.get(ticker)
+        scored_at = prev.get("scored_at") if prev else None
+        age_days = None
+        if scored_at:
+            try:
+                age_days = (now - datetime.fromisoformat(scored_at)).days
+            except Exception:
+                age_days = None
+        if prev and age_days is not None and age_days < ALT_DATA_MAX_AGE_DAYS:
+            reused[ticker] = prev
+        elif prev:
+            stale.append((age_days if age_days is not None else 9999, ticker))
+        else:
+            never_scored.append(ticker)
+
+    stale.sort(key=lambda x: -x[0])
+    stale_tickers      = [t for _, t in stale]
+    candidates_ordered = never_scored + stale_tickers
+    candidates          = candidates_ordered[:ALT_DATA_MAX_NEW_PER_RUN]
+    deferred_candidates = candidates_ordered[ALT_DATA_MAX_NEW_PER_RUN:]
+
+    deferred_stale_set = set(deferred_candidates) & set(stale_tickers)
+    carried_stale       = {t: previous[t] for t in deferred_stale_set}
+    deferred_no_data    = [t for t in deferred_candidates if t not in deferred_stale_set]
+
+    log.info(f"{len(reused)} reused from cache (< {ALT_DATA_MAX_AGE_DAYS}d old), "
+             f"{len(candidates)} to fetch this run, {len(carried_stale)} deferred-but-carried "
+             f"(stale score kept), {len(deferred_no_data)} deferred with no data yet")
+
+    results = dict(reused)
+    results.update(carried_stale)
     total   = len(candidates)
 
     # TODO(perf): per-ticker cache with TTL. This loop is ~20 min for ~250 tickers
@@ -903,8 +949,21 @@ def main():
         analyst = fetch_analyst_trend(ticker)
         time.sleep(0.3)
 
-        congress = fetch_congressional(ticker)  # reference only, not scored
-        time.sleep(0.3)
+        # Congressional (Quiver) is reference-only -- never scored -- so it isn't
+        # worth spending a call on it for the whole universe. Reserved for
+        # High/Medium conviction names; everything else gets a static
+        # placeholder, same shape as the NO_API_KEY path, no network call.
+        if conviction_map.get(ticker) in CONVICTION_FILTER:
+            congress = fetch_congressional(ticker)
+            time.sleep(0.3)
+        else:
+            congress = {
+                "status": "NO_DATA", "net_direction": "UNKNOWN",
+                "notable": [], "recent_trades": [],
+                "interpretation": "Skipped -- congressional data is reference-only "
+                                   "and reserved for High/Medium conviction tickers "
+                                   "to conserve Quiver API quota.",
+            }
 
         news = fetch_news_sentiment(ticker)
         time.sleep(REQUEST_PAUSE)
@@ -937,6 +996,7 @@ def main():
             "analyst_trend":    analyst,
             "congressional":    congress,
             "news_sentiment":   news,
+            "scored_at":        now.isoformat(),
         }
         
     # ── Schema validation — every record must match schemas.AltDataRecord ────
@@ -996,6 +1056,10 @@ def main():
     output = {
         "generated_at":    datetime.now(timezone.utc).isoformat(),
         "total_tickers":   len(results),
+        "reused_from_cache":     len(reused),
+        "fetched_this_run":      len(candidates),
+        "deferred_stale_carried": len(carried_stale),
+        "deferred_no_data_yet":   len(deferred_no_data),
         "finnhub_enabled": bool(FINNHUB_API_KEY),
         "quiver_enabled":  bool(QUIVER_API_KEY),
         "vader_enabled":   _VADER,
