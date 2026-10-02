@@ -81,6 +81,29 @@ BR_BATCH_PAUSE    = 4
 # ── Scan / agent filters ──────────────────────────────────────────────────────
 CONVICTION_FILTER = {"High", "Medium"}  # tickers passed to fundamental + alt data agents
 
+# -- Fundamental refresh cadence ----------------------------------------------
+# Fundamentals (FCF, income, PE, revenue growth) move at earnings pace, not
+# daily -- re-scoring the same ticker every scan wastes yfinance calls for no
+# fresher signal. fundamental_agent.py now scores the FULL valid universe
+# (not just CONVICTION_FILTER tickers), but re-fetches a given ticker only
+# once its cached score is older than this many days; everything still-fresh
+# is carried over unchanged from the previous run's fundamental_data.json.
+FUNDAMENTAL_MAX_AGE_DAYS    = 7
+# Safety cap on FRESH fetches per run, so the first run against the full
+# universe (previously ~15% of it via CONVICTION_FILTER, now 100%) ramps up
+# over several runs instead of bursting ~1,900+ yfinance calls at once.
+FUNDAMENTAL_MAX_NEW_PER_RUN = 400
+
+# -- Crowded-sector thresholds (watchlist_ranker.regime_penalty) -------------
+# Mechanical, return-only trigger: either one firing is enough. No sector-rank
+# requirement -- a sector can be crowded without being today's single #1.
+SECTOR_RET_1M_THRESHOLD = 15   # percent, 1-month sector return
+SECTOR_RET_3M_THRESHOLD = 40   # percent, 3-month sector return
+# Tolerance band: a return within this many percentage points of a threshold
+# still counts as a hit (e.g. 36% against a 40% 3M threshold still triggers,
+# since 40 - 5 = 35 < 36). Applied to both thresholds the same way.
+SECTOR_THRESHOLD_TOLERANCE = 5
+
 
 # ── File paths ────────────────────────────────────────────────────────────────
 

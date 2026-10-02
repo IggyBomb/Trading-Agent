@@ -19,6 +19,8 @@ from pathlib import Path
 from config import (
     EU_SUFFIXES, MARKET_DATA_PATH, FUNDAMENTAL_PATH,
     ALT_DATA_PATH, EARNINGS_PATH, WATCHLIST_RANKED_PATH,
+    MACRO_REGIME_PATH, SECTOR_ROTATION_PATH,
+    SECTOR_RET_1M_THRESHOLD, SECTOR_RET_3M_THRESHOLD, SECTOR_THRESHOLD_TOLERANCE,
 )
 
 MARKET_PATH   = MARKET_DATA_PATH
@@ -26,6 +28,8 @@ FUND_PATH     = FUNDAMENTAL_PATH
 ALT_PATH      = ALT_DATA_PATH
 EARNINGS_PATH = EARNINGS_PATH
 OUTPUT_PATH   = WATCHLIST_RANKED_PATH
+MACRO_PATH    = MACRO_REGIME_PATH
+SECTOR_PATH   = SECTOR_ROTATION_PATH
 
 
 def load_json(path: str) -> dict | list | None:
@@ -125,6 +129,74 @@ def score_alt(ticker: str, alt_data: dict) -> float | None:
 # volatility score bands (from the atr_pct distribution, 2026-07-18):
 #   <2 → 35 · 2–3 → 55 · 3–8 → 85 (sweet spot) · 8–10 → 60 · 10–15 → 45 · >15 → 25
 #   missing or NaN → 50 (neutral)
+# Maps a company's yfinance sector label (as stored by fundamental_agent.py's
+# _raw()) to the matching US SPDR sector ETF tracked in sector_rotation.json.
+SECTOR_ETF_MAP = {
+    "Technology":             "XLK",
+    "Financial Services":     "XLF",
+    "Financials":             "XLF",
+    "Energy":                 "XLE",
+    "Healthcare":             "XLV",
+    "Industrials":            "XLI",
+    "Consumer Cyclical":      "XLY",
+    "Consumer Defensive":     "XLP",
+    "Utilities":              "XLU",
+    "Real Estate":            "XLRE",
+    "Basic Materials":        "XLB",
+    "Communication Services": "XLC",
+}
+
+
+# REVIEW(scoring): crowded-sector / regime-fragility penalty - hand-picked
+# thresholds, not backtested against history yet. Purpose: a clean technical
+# breakout inside a sector that is ALSO the single hottest-ranked one and up
+# sharply over the last quarter is the signature of a late-cycle/crowded move
+# (e.g. buying an oil name right as energy peaks), not an independent
+# idiosyncratic signal. This does not replace score_technical()'s per-ticker
+# checks - it adds a sector/macro-breadth check nothing here made before.
+# Needs the ticker's sector (only known for tickers that reached
+# fundamental_agent.py) - returns (0.0, []) when sector/data is unavailable,
+# never blocks scoring.
+def regime_penalty(sector: str | None, sector_rotation: dict | None, macro: dict | None) -> tuple[float, list]:
+    penalty = 0.0
+    notes: list = []
+
+    etf = SECTOR_ETF_MAP.get(sector) if sector else None
+    us_sectors = (sector_rotation or {}).get("us_sectors", {})
+    sector_row = us_sectors.get(etf) if etf else None
+    if sector_row:
+        ret_1m = sector_row.get("ret_1m")
+        ret_3m = sector_row.get("ret_3m")
+        rank   = sector_row.get("rank")
+        # Mechanical OR -- either threshold alone is enough to flag crowding.
+        # No rank requirement: a sector can be crowded without being today's
+        # single hottest-ranked one.
+        # A return within SECTOR_THRESHOLD_TOLERANCE points of the threshold
+        # still counts as a hit (e.g. 36% against a 40% 3M threshold triggers,
+        # since 40 - 5 = 35 < 36) -- a mechanical rule shouldn't miss a signal
+        # by one rounding error's worth of return.
+        hot_1m = ret_1m is not None and ret_1m > (SECTOR_RET_1M_THRESHOLD - SECTOR_THRESHOLD_TOLERANCE)
+        hot_3m = ret_3m is not None and ret_3m > (SECTOR_RET_3M_THRESHOLD - SECTOR_THRESHOLD_TOLERANCE)
+        if hot_1m or hot_3m:
+            # Either one alone is enough to flag crowding (-15); both firing
+            # together is a stronger signal than either alone (-20).
+            sector_pen = -20 if (hot_1m and hot_3m) else -15
+            penalty += sector_pen
+            parts = []
+            if ret_1m is not None: parts.append(f"{ret_1m:+.0f}% 1M")
+            if ret_3m is not None: parts.append(f"{ret_3m:+.0f}% 3M")
+            rank_note = f", rank #{rank}" if rank is not None else ""
+            both_note = " [both thresholds]" if (hot_1m and hot_3m) else ""
+            notes.append(f"crowded sector: {sector} ({' / '.join(parts)}{rank_note}){both_note}")
+
+    minsky = (macro or {}).get("minsky_score")
+    if minsky is not None and minsky >= 4:
+        penalty -= 10
+        notes.append(f"high macro fragility (Minsky {minsky}/5)")
+
+    return penalty, notes
+
+
 def volatility(ticker: str, t: dict) -> float | None:
     score = 50                      # neutral default — covers missing AND NaN
     atr_pct = t.get("atr_pct")
@@ -139,7 +211,8 @@ def volatility(ticker: str, t: dict) -> float | None:
     
 # this function calculates the final score for the ticker
 def composite(tech: float, fund: float | None, alt: float | None,
-              dte: int | None, short_pct: float | None, volatility: float) -> float:
+              dte: int | None, short_pct: float | None, volatility: float,
+              regime_pen: float = 0.0) -> float:
     """Weighted composite score with penalties."""
     weights = {"tech": 0.45, "fund": 0.25, "alt": 0.20, "volatility": 0.10}
 
@@ -157,6 +230,7 @@ def composite(tech: float, fund: float | None, alt: float | None,
     elif dte is not None and dte <= 7:  score -= 10
     if short_pct and short_pct > 30:    score -= 10
     if short_pct and short_pct > 50:    score -= 10
+    score += regime_pen   # crowded-sector / macro-fragility penalty, see regime_penalty()
 
     return round(max(0.0, min(100.0, score)), 1)
 
@@ -172,6 +246,8 @@ def main():
     fund_raw    = load_json(FUND_PATH)
     alt_raw     = load_json(ALT_PATH)
     earnings_raw = load_json(EARNINGS_PATH)
+    sector_rotation_raw = load_json(SECTOR_PATH)
+    macro_raw            = load_json(MACRO_PATH)
 
     if market_raw is None:
         print(f"\n  market_data.json not found — run fetch_data.py first.\n")
@@ -228,7 +304,15 @@ def main():
             si = ae.get("short_interest") or {}
             short_pct = si.get("short_pct_float")
 
-        comp = composite(tech_score, fund_score, alt_score,dte=dte, short_pct=short_pct, volatility=vol_score)
+        # Sector is only known for tickers that reached fundamental_agent.py
+        # (High/Medium conviction today) - unknown sector just skips the
+        # crowded-sector check for this ticker, never a crash.
+        fund_entry = fund_data.get(ticker) if isinstance(fund_data, dict) else None
+        sector     = fund_entry.get("sector") if fund_entry else None
+        regime_pen, regime_notes = regime_penalty(sector, sector_rotation_raw, macro_raw)
+
+        comp = composite(tech_score, fund_score, alt_score, dte=dte, short_pct=short_pct,
+                          volatility=vol_score, regime_pen=regime_pen)
 
         conv = (t_data.get("conviction") or "").upper()
         scored.append({
@@ -242,6 +326,7 @@ def main():
             "atr_pct":        t_data.get("atr_pct"),
             "dte":            dte,
             "is_eu":          is_eu(ticker),
+            "regime_flags":   regime_notes,
         })
 
     ranked = sorted(scored, key=lambda x: -x["score"])[:args.top]
@@ -262,6 +347,8 @@ def main():
         rsi_s   = f"{s['rsi']:.0f}"        if s["rsi"]        else "—"
         atr_s   = f"{s['atr_pct']:.1f}"    if s["atr_pct"]    else "—"
         notes   = f"⚠ EARN {s['dte']}d" if s["dte"] is not None and s["dte"] <= 7 else ""
+        if s.get("regime_flags"):
+            notes = (notes + "  " if notes else "") + "⚠ " + "; ".join(s["regime_flags"])
         eu_flag = " [EU]" if s["is_eu"] else ""
         print(f"  {rank:>3}  {s['ticker']:<12} {s['score']:>6.1f}  {s['tech_score']:>5.0f}  "
               f"{fund_s:>5}  {alt_s:>5}  {s['conviction']:<8} {rsi_s:>5}  {atr_s:>5}  {notes}{eu_flag}")

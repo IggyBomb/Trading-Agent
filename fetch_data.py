@@ -267,7 +267,7 @@ def short_conviction(short_setup, vol_ratio, dist_resistance, trend):
 # ratio 1–2 pts, distance-to-resistance 1–2 pts, trend agreement +1. Cutoffs:
 # ≥6 High, ≥3 Medium, else Low. NOTE: this label gates everything downstream —
 # only High/Medium tickers reach fundamental_agent.py and the ranker.
-def conviction(setup, vol_ratio, dist_resistance, dist_support, trend):
+def conviction(setup, vol_ratio, dist_resistance, dist_support, trend, support_bounce=False):
     """Assign conviction: High / Medium / Low."""
     score = 0
     if setup in ("breakout", "reversal"):
@@ -286,6 +286,25 @@ def conviction(setup, vol_ratio, dist_resistance, dist_support, trend):
         score += 2
     elif dist_resistance is not None and dist_resistance < 5:
         score += 1
+
+    # Upside-room bonus: pullback/reversal setups sit near SUPPORT by
+    # construction (see setup_type), so they structurally never get the
+    # near-resistance bonus above even when the setup quality is identical
+    # to a breakout. A large dist_resistance here means lots of room to run
+    # before hitting a ceiling -- reward that instead of ignoring it.
+    if setup in ("pullback", "reversal") and dist_resistance is not None:
+        if dist_resistance > 12:
+            score += 2
+        elif dist_resistance > 6:
+            score += 1
+
+    # Confirmed support bounce: not just proximity to support (which says
+    # nothing about direction -- a breakdown-in-progress is also "near
+    # support"), but proximity PLUS the most recent session already moving
+    # away from it upward. Computed by the caller from today's vs prior
+    # close, gated on price still being above support (not already broken).
+    if support_bounce:
+        score += 2
 
     if trend == "up" and setup in ("breakout", "pullback"):
         score += 1
@@ -522,7 +541,14 @@ def process_ticker(ticker, hist):
     support, resistance = support_resistance(highs, lows)
     dist_sup, dist_res  = distance_from_sr(price, support, resistance)
     setup        = setup_type(closes, volumes, support, resistance)
-    conv         = conviction(setup, vol_ratio, dist_res, dist_sup, trend)
+    # Support held (price still above it, within 2% -- same band setup_type's
+    # own near_support test uses) AND the latest session already moved away
+    # from it upward. Proximity alone isn't a bounce; this requires both.
+    support_bounce = (
+        dist_sup is not None and 0 <= dist_sup < 2
+        and price > prev_close
+    )
+    conv         = conviction(setup, vol_ratio, dist_res, dist_sup, trend, support_bounce)
 
     # Long: ATR-based stop below entry. Target is a REAL chart level, not a
     # mechanical RR_RATIO multiple of risk — RR_RATIO is RISK.md's MINIMUM bar
