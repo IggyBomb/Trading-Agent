@@ -377,6 +377,31 @@ never pulls back, "no signal" is the correct outcome.
 
 ---
 
+## Step 16 — Test_PTF management (every run, after Step 12)
+
+`Test_PTF` (`data/test_ptf.json`, managed with `test_ptf.py`) is the paper portfolio that
+measures whether this pipeline produces alpha. Started 2026-10-02 with €100,000 notional,
+benchmark IWDA.AS (MSCI World, EUR). Every `/scan` run manages it:
+
+1. Run `python3 test_ptf.py` first — fills orders queued last session at today's open,
+   enforces stops mechanically, snapshots NAV vs the shadow benchmark. Report the output.
+2. Review each open position against today's full stack (macro verdict, fundamentals,
+   alt data, technicals, news, earnings dates) using the SWING / strategy-analyst exit
+   rules: target hit → trim 50–100%; +1R → move stop to breakeven (`set-stop`); 10 trading
+   days without progress → exit; earnings inside the hold → exit or halve; thesis broken
+   → exit. Act with `sell TICKER QTY|all`, `buy` (adds), or `set-stop`, always with
+   `--reason`.
+3. Enter today's Step 12 verdicts: `BUY` at the risk-manager size (tier % of €100,000),
+   `BUY — REDUCED (X%)` at that fraction. WAIT/PASS are not entered; a WAIT whose trigger
+   fires on a later run may be entered then.
+4. Respect RISK.md inside the book too: max 5 open positions, max 2 per sector.
+
+Orders always fill at the next session's open (no same-close fills — the scan runs
+after the close). Never edit `data/test_ptf.json` by hand to change history — the alpha
+figure is only meaningful if every decision is recorded as it was made.
+
+---
+
 ## Rules:
 - No commentary. No disclaimers. Trade ideas only.
 - Short-term setups: stops are ATR(14)-based, target is 1.5:1 R:R minimum (RISK.md).

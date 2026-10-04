@@ -82,7 +82,7 @@ def _fetch_info(ticker: str) -> dict | None:
     return info
 
 # ── Config ───────────────────────────────────────────────────────────────────
-from config import CONVICTION_FILTER, MARKET_DATA_PATH, FUNDAMENTAL_PATH
+from config import MARKET_DATA_PATH, FUNDAMENTAL_PATH, FUNDAMENTAL_MAX_AGE_DAYS, FUNDAMENTAL_MAX_NEW_PER_RUN
 
 REQUEST_PAUSE = 0.3   # seconds between yfinance .info calls
 
@@ -433,20 +433,79 @@ def main():
     with open(MARKET_DATA_PATH) as f:
         market_data = json.load(f)
 
-    # Only process tickers that passed the technical filter
-    candidates = [
-        s["ticker"] for s in market_data["signals"]
-        if s["conviction"] in CONVICTION_FILTER
-    ]
-    log.info(f"{len(candidates)} High/Medium conviction candidates to score")
+    # Full valid universe, not just High/Medium conviction -- conviction is a
+    # TECHNICAL read and says nothing about fundamental merit. A ticker still
+    # basing (no clean breakout/pullback yet) deserves a fundamental score
+    # too, or strong fundamentals on it stay invisible to the ranker forever.
+    all_tickers = [s["ticker"] for s in market_data["signals"]]
+    log.info(f"{len(all_tickers)} tickers in the valid universe")
 
-    results  = {}
+    # -- Cache: reuse any still-fresh score, only re-fetch stale/missing ones --
+    # Fundamentals don't change daily, so re-fetching everyone every run is
+    # both wasteful and the thing that made CONVICTION_FILTER tempting in the
+    # first place. This reuses data/fundamental_data.json from the previous
+    # run for anything scored within FUNDAMENTAL_MAX_AGE_DAYS, and caps fresh
+    # fetches per run at FUNDAMENTAL_MAX_NEW_PER_RUN so the first run against
+    # the full universe ramps up instead of bursting every ticker at once.
+    previous: dict = {}
+    if os.path.exists(FUNDAMENTAL_PATH):
+        try:
+            with open(FUNDAMENTAL_PATH) as f:
+                previous = (json.load(f).get("fundamentals") or {})
+        except Exception:
+            log.warning("could not read previous fundamental_data.json -- treating cache as empty")
+
+    now = datetime.now()
+    reused: dict = {}
+    never_scored: list = []
+    stale: list = []
+    for ticker in all_tickers:
+        prev = previous.get(ticker)
+        scored_at = prev.get("scored_at") if prev else None
+        age_days = None
+        if scored_at:
+            try:
+                age_days = (now - datetime.fromisoformat(scored_at)).days
+            except Exception:
+                age_days = None
+
+        if prev and age_days is not None and age_days < FUNDAMENTAL_MAX_AGE_DAYS:
+            reused[ticker] = prev
+        elif prev:
+            stale.append((age_days if age_days is not None else 9999, ticker))
+        else:
+            never_scored.append(ticker)
+
+    # Priority: never-scored tickers first, then oldest-cached first.
+    stale.sort(key=lambda x: -x[0])
+    stale_tickers      = [t for _, t in stale]
+    candidates_ordered = never_scored + stale_tickers
+    to_fetch           = candidates_ordered[:FUNDAMENTAL_MAX_NEW_PER_RUN]
+    deferred_candidates = candidates_ordered[FUNDAMENTAL_MAX_NEW_PER_RUN:]
+
+    # A deferred ticker that already has a (stale) cached score keeps showing
+    # that stale score this run instead of vanishing from the output -- a few
+    # days old still beats the old behaviour, where every Low-conviction
+    # ticker had NO fundamental score, ever, by design. Only a deferred
+    # NEVER-scored ticker has nothing to carry and is genuinely absent this
+    # run (falls back to watchlist_ranker's neutral default, same as today).
+    deferred_stale_set = set(deferred_candidates) & set(stale_tickers)
+    carried_stale       = {t: previous[t] for t in deferred_stale_set}
+    deferred_no_data    = [t for t in deferred_candidates if t not in deferred_stale_set]
+
+    log.info(f"{len(reused)} reused from cache (< {FUNDAMENTAL_MAX_AGE_DAYS}d old), "
+             f"{len(to_fetch)} to fetch this run, {len(carried_stale)} deferred-but-carried "
+             f"(stale score kept), {len(deferred_no_data)} deferred with no data yet")
+
+    results  = dict(reused)
+    results.update(carried_stale)
     errors   = []
-    total    = len(candidates)
+    total    = len(to_fetch)
 
-    for i, ticker in enumerate(candidates, 1):
+    for i, ticker in enumerate(to_fetch, 1):
         data = fetch_fundamentals(ticker)
         if data:
+            data["scored_at"] = now.isoformat()
             results[ticker] = data
             log.debug(f"[{i}/{total}] {ticker} f_score={data['f_score']} {data['rating']}")
         else:
@@ -484,6 +543,10 @@ def main():
         "summary": {
             "generated_at":  datetime.now().isoformat(),
             "total_scored":  len(results),
+            "reused_from_cache": len(reused),
+            "fetched_this_run":  len(to_fetch),
+            "deferred_stale_carried": len(carried_stale),
+            "deferred_no_data_yet":   len(deferred_no_data),
             "total_errors":  len(errors),
             "schema_rejected": len(erroneous_tickers),
             "undervalued":   len(undervalued),

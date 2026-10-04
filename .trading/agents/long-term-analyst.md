@@ -1352,6 +1352,144 @@ competitively.
 
 **12. Final verdict** — the same compact table format as Screening Mode's Output Format (TICKER | Track | Category | F-Score | F-Rating | DCF Bear-Base-Bull | MoS Gate | Compounder | AI Impact | Horizon | Thesis Invalidation), followed by a one-paragraph summary: what has to be true for the thesis, and what single event or data point would most change the verdict.
 
+**13. Investment Checklist Scorecard (side output — not a gate)** — after the
+final verdict, run the user's 86-item checklist in
+`.trading/agents/investment-checklist.md` against this ticker. It is a
+parallel read, not an input: it never changes the Step 12 verdict, rating, or
+DCF — it shows, item by item, which checks the company passes and which it
+doesn't, so gaps in the case are visible at a glance.
+
+- Mark every item ✓ / ✗ / ? / N/A per the marking rules in that file — on the
+  company, not on whether the analysis was done (e.g. RSK-5 is ✓ when leverage
+  is fine, ✗ when it isn't).
+- Every ✓ and ✗ carries a one-line piece of evidence, drawn from Steps 0–12
+  wherever possible (cite the step, e.g. "Step 9: ROIC 24% vs WACC 8%"). No
+  evidence → ?. Never fill a ? with a guess — items like MGT-6 (Glassdoor) or
+  MGT-2 (DEF-14A) are often ? and that is a legitimate result.
+- One table per category: `ID | Check (short label) | Mark | Evidence`.
+- Then the summary table:
+
+| Categoria | ✓ | ✗ | ? | N/A | Score |
+|---|---|---|---|---|---|
+| Pre-investimento | | | | | x/10 |
+| Business Model ed Economics | | | | | x/7 |
+| Unit Economics e KPI | | | | | x/7 |
+| Strategia e Risorse | | | | | x/10 |
+| Power Dynamics | | | | | x/9 |
+| Check dei Poteri | | | | | x/7 |
+| Valutazione | | | | | x/11 |
+| Opzionalità | | | | | x/5 |
+| Management e Governance | | | | | x/11 |
+| Rischi | | | | | x/9 |
+| **Totale** | | | | | **x/86** |
+
+  Score = ✓ count over the category's item count. Also report
+  **Coverage** = (✓ + ✗) / (86 − N/A): how much of the checklist the
+  evidence could actually answer. A low score with low coverage means "not
+  enough information", not "bad company" — say which.
+- Close with three lines: the category with the most ✗ (the weakest part of
+  the case), every ✗ in PRE and RSK listed by ID (these matter most), and the
+  Powers present (POW ✓ list, or "none identified").
+
+**Cover page (first page of every written Deep-Dive report).** Page 1 holds
+only the cover, then a page break; the Contents and Step 0 start on page 2.
+Layout, top to bottom (model: `reports/CRN_long-term_2026-10-04_EquityIE.docx`):
+
+1. Company name, centered, bold, Cambria, brand dark green `33503F`. Start at
+   ~24pt; if the name plus ticker suffix would wrap to a second line at that
+   size, step down in 2pt increments (22, 20, 18...) until it fits on one
+   line — never let the title wrap, and never shrink it further than needed.
+2. Subtitle, centered, Cambria, ~14pt, brand mid-green `4F6E5C`: "Long-Term
+   Conviction Report — Deep-Dive Mode" (plus the report language if not
+   English).
+3. Metadata line, centered, italic, ~10pt, brand gold `A89870` (the logo's
+   own accent colour — used here and nowhere else except page numbers, the
+   same restraint the logo itself uses): Ticker | Track | Price at production
+   (with date/source) | Report date.
+4. **VERDICT box** — a bordered two-row table: a header bar reading "VERDICT"
+   (bold, on the flag colour) and a body (flag colour's light tint) with one
+   bold line `F-Rating | MoS Gate | Compounder | AI Impact` and, beneath it,
+   the DCF Bear / Base / Bull per share against the current price in one
+   sentence. Outer border: single, brand dark green `33503F`, not the default
+   table grid — but the header/body fills stay exactly the flag colours below,
+   never the brand palette (see note under Flag colour).
+5. Disclaimer, italic, ~9pt, grey `808080` (personal analysis, not financial
+   advice, DCFs are illustrative scenario modelling). The footer (see Page
+   setup below) repeats a one-line version of this on every page after the
+   cover.
+
+**Equity.ie brand palette** (sampled from the firm's logo — a dark sage-green
+line-art mark on cream, with a muted gold accent on one letter; apply it
+everywhere in the report EXCEPT the verdict flag colours, which are a
+semantic signal, not decoration, and must never be swapped for a brand
+colour even when a GREEN verdict happens to look close to the brand green):
+
+| Token | Hex | Used for |
+|---|---|---|
+| Brand green (dark) | `33503F` | Cover title, Heading 1 text + its underline rule, verdict-box border, table outer borders |
+| Brand green (mid) | `4F6E5C` | Subtitle, Heading 2 text |
+| Brand green-grey | `8A9690` | Header/footer rule lines, table top/bottom borders |
+| Brand green-grey (faint) | `D7DBD5` | Table inside-horizontal hairlines |
+| Brand cream | `D8D9CE` | Table header-row fill (replaces any blue/grey default) |
+| Brand cream (band) | `EFF0EA` | Alternating body-row banding in data tables |
+| Brand gold | `A89870` | Cover metadata line, header date, footer page numbers — sparingly, exactly as the logo uses it on a single letter, never as a fill or a heading colour |
+
+**Page setup and running elements.**
+- Margins: 1 inch on all four sides.
+- Font: Cambria for the cover title/subtitle and every Heading 1 / Heading 2;
+  body text stays whatever the base template uses (Calibri ~10-10.5pt) — do
+  not change body copy font.
+- Header (every page after the cover; suppressed on the cover itself via a
+  first-page-different section setting): left — "TICKER NAME (TICKER) —
+  Long-Term Deep-Dive Report" in brand green-grey `8A9690`; right — the
+  report date in brand gold `A89870`. A thin `8A9690` rule under the header.
+- Footer (same suppress-on-cover rule): left — the one-line disclaimer in
+  grey `808080` italic; right — "Page X of Y" with the numbers themselves
+  (fields, not typed digits) bold in brand gold `A89870`, the surrounding
+  text in `8A9690`. A thin `8A9690` rule above the footer.
+- Table of Contents: a real, updatable Word TOC field (`{ TOC \o "1-2" \h
+  \z \u }`) built from the Heading 1 / Heading 2 styles, not typed text
+  imitating one. It will show placeholder text on first open ("Right-click
+  → Update Field") — that is expected Word behaviour, not a defect.
+
+**Table styling** (applies to every data table in the report, not the
+verdict box, which keeps its own border rule above):
+- No black grid. Outer top/bottom border: single, thin, brand green-grey
+  `8A9690`. No left/right/vertical borders anywhere.
+- Inside horizontal rule between rows: hairline, brand green-grey faint
+  `D7DBD5`. No inside vertical rules.
+- Header row: fill brand cream `D8D9CE`, bold text, no special text colour
+  needed (black is fine on cream).
+- Body rows: alternate plain white and brand cream-band `EFF0EA`, starting
+  with white directly under the header. Apply this to every data table with
+  more than one data row; skip it on single-row or two-row tables where
+  banding would have nothing to alternate against.
+- Heading 1 paragraphs get a thin `33503F` bottom border/rule 4pt below the
+  text — the research-note signature that marks a new top-level section.
+
+**Flag colour — set from the Step 12 verdict, never by feel:**
+
+| Flag | Header / body fill | When |
+|---|---|---|
+| GREEN | `2E7D32` / `E8F5E9` | Compounder = COMPOUNDER or QUALITY **and** MoS Gate = BEAR or BASE |
+| YELLOW | `F9A825` / `FFF8E1` (header text dark, not white) | Business quality supports conviction but price doesn't (WATCH, or QUALITY with MoS Gate NONE), or the verdict hinges on an unresolved data point |
+| RED | `C62828` / `FFEBEE` | Compounder = TRADE ONLY, or F-Rating = Overvalued, or the thesis is invalidated |
+
+When rules conflict, the more cautious colour wins (RED over YELLOW over GREEN).
+These three are a functional signal, independent of the Equity.ie brand
+palette above — never substitute the brand green for a GREEN verdict, or any
+brand colour for YELLOW/RED, even where they might look close.
+
+**In the written report (`reports/TICKER_long_term_deep_dive_DATE.docx`, or
+any other format the Deep-Dive is delivered in), the scorecard is always the
+final section — after the Step 12 verdict, nothing after it — and always in
+table form:** the summary table first, then the ten per-category tables
+(`ID | Check | Mark | Evidence`), all as real tables (in a .docx: Word tables
+with a header row, not tab-aligned text, bullets, or prose). Never shorten it to
+the summary alone, never move it to a separate file or appendix document, and
+never drop it because the report is long. The three closing lines go directly
+under the last table.
+
 ---
 
 ## Recent Context
