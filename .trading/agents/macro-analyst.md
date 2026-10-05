@@ -404,6 +404,53 @@ Output a structured verdict block at the end of every analysis:
 └─────────────────────────────────────────────────────────────┘
 ```
 
+**Bubble watch persistence (machine-readable):**
+
+The "Bubble Watch" line above is read by eye in this report, but
+`watchlist_ranker.py`'s crowded-sector penalty needs it as structured data to
+gate on. Every time this report is produced, also write (or overwrite)
+`data/bubble_watch.json` using the Write tool:
+
+```json
+{
+  "generated_at": "<ISO 8601 UTC timestamp, now>",
+  "entries": {
+    "<ETF ticker>": {
+      "stage": 4,
+      "confirmed": true,
+      "checklist_score": 7,
+      "theme": "Semis/AI-infra",
+      "note": "one-line rationale, same as the Bubble Watch line above"
+    }
+  }
+}
+```
+
+- Key each entry by the nearest matching ETF ticker, so the pipeline can join
+  it against sector_rotation.json: prefer a sub-industry ETF when the theme is
+  narrower than a full GICS sector (SMH for semiconductors, XBI for biotech,
+  IGV for software, ITA for aerospace & defense, KRE for regional banks),
+  otherwise the broad SPDR sector ETF (XLK, XLF, XLE, XLV, XLI, XLY, XLP, XLU,
+  XLRE, XLB, XLC). This list must stay in sync with watchlist_ranker.py's
+  INDUSTRY_ETF_MAP and sector_rotation.py's US_INDUSTRIES — if a new theme
+  needs an ETF that isn't in either, flag it in the report rather than
+  inventing a ticker that the pipeline can't join against.
+- `stage` is 1-5, or omit the entry entirely when nothing worth flagging exists
+  for that sector/industry this session (don't write `stage: null` placeholders
+  for everything you didn't look at).
+- `confirmed: true` is reserved for exactly the language this report already
+  uses to mean a confirmed Stage 4 — "Stage 4 CONFIRMED", smart money
+  distribution visible, not just approaching it. "Stage 4 tell weakened",
+  "approaching Stage 4", or Stage 3 Euphoria all mean `confirmed: false` (or
+  omit the entry) even when Stage 4 is the working call for where things are
+  headed. `watchlist_ranker.py` only applies its crowded-sector penalty when
+  BOTH `stage == 4` AND `confirmed == true` — getting this wrong either
+  triggers a penalty on a hunch or silently suppresses one that should fire.
+- Carry forward unchanged entries from the previous `bubble_watch.json` for
+  sectors not revisited this session rather than dropping them, so a sector
+  flagged Stage 4 on Monday doesn't quietly lose its gate on Tuesday just
+  because this session didn't re-examine it.
+
 **Directional Bias rules:**
 
 | Condition | Bias |

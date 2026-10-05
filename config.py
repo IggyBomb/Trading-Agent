@@ -119,6 +119,14 @@ SECTOR_RET_3M_THRESHOLD = 40   # percent, 3-month sector return
 # since 40 - 5 = 35 < 36). Applied to both thresholds the same way.
 SECTOR_THRESHOLD_TOLERANCE = 5
 
+# -- Bubble-watch gate (watchlist_ranker.regime_penalty) ---------------------
+# The crowded-sector penalty above now only fires when macro-analyst.md has
+# written data/bubble_watch.json flagging that sector/industry as Kindleberger
+# Stage 4 CONFIRMED this session (see regime_penalty()). Macro reports run
+# ~daily, not every pipeline run -- treat the file as stale (= no gate, penalty
+# never fires on this basis) once it's older than this.
+BUBBLE_WATCH_MAX_AGE_HOURS = 36
+
 
 # ── File paths ────────────────────────────────────────────────────────────────
 
@@ -135,6 +143,7 @@ EARNINGS_PATH        = str(DATA_DIR / "earnings_calendar.json")
 MACRO_REGIME_PATH    = str(DATA_DIR / "macro_regime.json")
 MACRO_FRED_PATH      = str(DATA_DIR / "macro_fred.json")
 SECTOR_ROTATION_PATH = str(DATA_DIR / "sector_rotation.json")
+BUBBLE_WATCH_PATH    = str(DATA_DIR / "bubble_watch.json")
 WATCHLIST_RANKED_PATH= str(DATA_DIR / "watchlist_ranked.json")
 PREMARKET_GAPS_PATH  = str(DATA_DIR / "premarket_gaps.json")
 TRADES_PATH          = str(LOGS_DIR / "trades.jsonl")

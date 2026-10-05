@@ -19,8 +19,9 @@ from pathlib import Path
 from config import (
     EU_SUFFIXES, MARKET_DATA_PATH, FUNDAMENTAL_PATH,
     ALT_DATA_PATH, EARNINGS_PATH, WATCHLIST_RANKED_PATH,
-    MACRO_REGIME_PATH, SECTOR_ROTATION_PATH,
+    MACRO_REGIME_PATH, SECTOR_ROTATION_PATH, BUBBLE_WATCH_PATH,
     SECTOR_RET_1M_THRESHOLD, SECTOR_RET_3M_THRESHOLD, SECTOR_THRESHOLD_TOLERANCE,
+    BUBBLE_WATCH_MAX_AGE_HOURS,
 )
 
 MARKET_PATH   = MARKET_DATA_PATH
@@ -30,6 +31,7 @@ EARNINGS_PATH = EARNINGS_PATH
 OUTPUT_PATH   = WATCHLIST_RANKED_PATH
 MACRO_PATH    = MACRO_REGIME_PATH
 SECTOR_PATH   = SECTOR_ROTATION_PATH
+BUBBLE_PATH   = BUBBLE_WATCH_PATH
 
 
 def load_json(path: str) -> dict | list | None:
@@ -40,6 +42,32 @@ def load_json(path: str) -> dict | list | None:
             return json.load(f)
     except Exception:
         return None
+
+
+def load_bubble_watch(path: str, max_age_hours: float) -> dict:
+    """Loads data/bubble_watch.json's `entries` dict, or {} when the file is
+    missing, unreadable, or older than max_age_hours. Fail-closed on purpose:
+    stale/absent bubble data must mean "gate stays shut", never "fall back to
+    the old unconditional penalty" -- see regime_penalty()."""
+    raw = load_json(path)
+    if not isinstance(raw, dict):
+        return {}
+    generated_at = raw.get("generated_at")
+    if not generated_at:
+        return {}
+    try:
+        ts = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+        if ts.tzinfo is None:
+            from datetime import timezone
+            ts = ts.replace(tzinfo=timezone.utc)
+        from datetime import timezone
+        age_hours = (datetime.now(timezone.utc) - ts).total_seconds() / 3600
+        if age_hours > max_age_hours:
+            return {}
+    except Exception:
+        return {}
+    entries = raw.get("entries")
+    return entries if isinstance(entries, dict) else {}
 
 
 def is_eu(ticker: str) -> bool:
@@ -147,6 +175,25 @@ SECTOR_ETF_MAP = {
 }
 
 
+# Maps a company's yfinance INDUSTRY label (finer than the sector map above --
+# e.g. "Semiconductors" is a slice of "Technology", not all of it) to a
+# sub-industry ETF, when sector_rotation.py tracks one for it (US_INDUSTRIES).
+# Deliberately partial: only the industries that have actually come up in
+# macro-analyst.md's bubble watch have an entry. Anything not listed here just
+# falls back to the broad SECTOR_ETF_MAP lookup, same as before this existed --
+# no ticker loses sector-level coverage for lacking an industry-level one.
+# Keep in sync with sector_rotation.py's US_INDUSTRIES.
+INDUSTRY_ETF_MAP = {
+    "Semiconductors":                      "SMH",
+    "Semiconductor Equipment & Materials":  "SMH",
+    "Biotechnology":                       "XBI",
+    "Software - Infrastructure":           "IGV",
+    "Software - Application":              "IGV",
+    "Aerospace & Defense":                 "ITA",
+    "Banks - Regional":                    "KRE",
+}
+
+
 # REVIEW(scoring): crowded-sector / regime-fragility penalty - hand-picked
 # thresholds, not backtested against history yet. Purpose: a clean technical
 # breakout inside a sector that is ALSO the single hottest-ranked one and up
@@ -157,13 +204,46 @@ SECTOR_ETF_MAP = {
 # Needs the ticker's sector (only known for tickers that reached
 # fundamental_agent.py) - returns (0.0, []) when sector/data is unavailable,
 # never blocks scoring.
-def regime_penalty(sector: str | None, sector_rotation: dict | None, macro: dict | None) -> tuple[float, list]:
+#
+# 2026-10-05: the sector-return part (hot_1m/hot_3m) is now necessary but not
+# sufficient. The penalty only actually fires when macro-analyst.md's bubble
+# watch has flagged that same sector/industry as Kindleberger Stage 4
+# CONFIRMED this session, via data/bubble_watch.json (see load_bubble_watch()).
+# Missing/stale/no-entry bubble data = the penalty never fires on this basis,
+# even if the return thresholds alone would have triggered it before this
+# change -- fail-closed, not a silent revert to the old unconditional rule.
+# Industry-level data (INDUSTRY_ETF_MAP + sector_rotation.json's
+# "us_industries") is preferred over the broad sector ETF when both the
+# ticker's industry and sector_rotation.json have an entry for it, since
+# macro-analyst.md's bubble themes ("Semis/AI-infra") are usually narrower
+# than a full GICS sector -- falls back to the broad sector otherwise.
+# The Minsky fragility penalty below is untouched by this -- it was never
+# part of what was asked to be gated.
+def regime_penalty(sector: str | None, industry: str | None,
+                    sector_rotation: dict | None, macro: dict | None,
+                    bubble_watch: dict | None = None) -> tuple[float, list]:
     penalty = 0.0
     notes: list = []
 
-    etf = SECTOR_ETF_MAP.get(sector) if sector else None
-    us_sectors = (sector_rotation or {}).get("us_sectors", {})
-    sector_row = us_sectors.get(etf) if etf else None
+    # Prefer the industry-level ETF/row when we have one mapped AND
+    # sector_rotation.json actually carries industry-level data for it --
+    # otherwise fall back to the broad sector, exactly as before this change.
+    etf = None
+    granularity = "sector"
+    label = sector
+    us_industries = (sector_rotation or {}).get("us_industries", {})
+    if industry:
+        industry_etf = INDUSTRY_ETF_MAP.get(industry)
+        if industry_etf and us_industries.get(industry_etf):
+            etf = industry_etf
+            granularity = "industry"
+            label = industry
+    if etf is None:
+        etf = SECTOR_ETF_MAP.get(sector) if sector else None
+
+    row_source = us_industries if granularity == "industry" else (sector_rotation or {}).get("us_sectors", {})
+    sector_row = row_source.get(etf) if etf else None
+
     if sector_row:
         ret_1m = sector_row.get("ret_1m")
         ret_3m = sector_row.get("ret_3m")
@@ -178,16 +258,29 @@ def regime_penalty(sector: str | None, sector_rotation: dict | None, macro: dict
         hot_1m = ret_1m is not None and ret_1m > (SECTOR_RET_1M_THRESHOLD - SECTOR_THRESHOLD_TOLERANCE)
         hot_3m = ret_3m is not None and ret_3m > (SECTOR_RET_3M_THRESHOLD - SECTOR_THRESHOLD_TOLERANCE)
         if hot_1m or hot_3m:
-            # Either one alone is enough to flag crowding (-15); both firing
-            # together is a stronger signal than either alone (-20).
-            sector_pen = -20 if (hot_1m and hot_3m) else -15
-            penalty += sector_pen
+            bubble_entry = (bubble_watch or {}).get(etf) if etf else None
+            stage4_confirmed = bool(
+                bubble_entry
+                and bubble_entry.get("stage") == 4
+                and bubble_entry.get("confirmed") is True
+            )
             parts = []
             if ret_1m is not None: parts.append(f"{ret_1m:+.0f}% 1M")
             if ret_3m is not None: parts.append(f"{ret_3m:+.0f}% 3M")
             rank_note = f", rank #{rank}" if rank is not None else ""
             both_note = " [both thresholds]" if (hot_1m and hot_3m) else ""
-            notes.append(f"crowded sector: {sector} ({' / '.join(parts)}{rank_note}){both_note}")
+            if stage4_confirmed:
+                # Either one alone is enough to flag crowding (-15); both
+                # firing together is a stronger signal than either alone (-20).
+                sector_pen = -20 if (hot_1m and hot_3m) else -15
+                penalty += sector_pen
+                notes.append(f"crowded {granularity}: {label} ({' / '.join(parts)}{rank_note}){both_note} "
+                             f"[bubble Stage 4 confirmed]")
+            else:
+                # Hot return, but no confirmed Stage 4 bubble signal -- logged
+                # for visibility, no penalty applied.
+                notes.append(f"{granularity} return hot but no bubble Stage-4 confirmation: "
+                             f"{label} ({' / '.join(parts)}{rank_note}){both_note}")
 
     minsky = (macro or {}).get("minsky_score")
     if minsky is not None and minsky >= 4:
@@ -248,6 +341,7 @@ def main():
     earnings_raw = load_json(EARNINGS_PATH)
     sector_rotation_raw = load_json(SECTOR_PATH)
     macro_raw            = load_json(MACRO_PATH)
+    bubble_watch_raw     = load_bubble_watch(BUBBLE_PATH, BUBBLE_WATCH_MAX_AGE_HOURS)
 
     if market_raw is None:
         print(f"\n  market_data.json not found — run fetch_data.py first.\n")
@@ -304,12 +398,16 @@ def main():
             si = ae.get("short_interest") or {}
             short_pct = si.get("short_pct_float")
 
-        # Sector is only known for tickers that reached fundamental_agent.py
-        # (High/Medium conviction today) - unknown sector just skips the
-        # crowded-sector check for this ticker, never a crash.
+        # Sector/industry are only known for tickers that reached
+        # fundamental_agent.py - unknown sector just skips the crowded-sector
+        # check for this ticker, never a crash. fundamental_agent.py scores
+        # the full universe now (not just High/Medium), so this already
+        # covers every conviction level, not only High/Medium.
         fund_entry = fund_data.get(ticker) if isinstance(fund_data, dict) else None
-        sector     = fund_entry.get("sector") if fund_entry else None
-        regime_pen, regime_notes = regime_penalty(sector, sector_rotation_raw, macro_raw)
+        sector     = fund_entry.get("sector")   if fund_entry else None
+        industry   = fund_entry.get("industry") if fund_entry else None
+        regime_pen, regime_notes = regime_penalty(sector, industry, sector_rotation_raw,
+                                                    macro_raw, bubble_watch_raw)
 
         comp = composite(tech_score, fund_score, alt_score, dte=dte, short_pct=short_pct,
                           volatility=vol_score, regime_pen=regime_pen)
