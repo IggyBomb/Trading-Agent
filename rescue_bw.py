@@ -41,19 +41,36 @@ def main():
     parser.add_argument("--us", action="store_true", help="US tickers only")
     args = parser.parse_args()
 
-    # RESCUE_BW_WEIGHTS (config.py) -- heavier on technical, lighter on
-    # fundamentals than the main rank's COMPOSITE_WEIGHTS. Same scoring
-    # function, same inputs, different pillar split: see build_scored_universe().
-    result = build_scored_universe(args, weights=RESCUE_BW_WEIGHTS)
-    if result is None:
+    # Two passes, deliberately -- "who's excluded" and "how do they score"
+    # are different questions that must NOT share one weight set:
+    #
+    # 1) Pipeline 1's OWN weights (config.COMPOSITE_WEIGHTS, the default)
+    #    decide who is actually in watchlist_ranker.py's real top
+    #    RESCUE_BW_TOP_CUTOFF -- that's the exclusion set this script rescues
+    #    FROM. Scoring this with RESCUE_BW_WEIGHTS instead would silently
+    #    change who counts as "already in the top 20", which is a different
+    #    universe than the one pipeline 1 actually produced (verified live,
+    #    2026-10-05: 4 tickers differed between the two top-20s on the same
+    #    day's data -- APA/SNDK dropped out, AMP.MI/ENI.MI appeared).
+    # 2) RESCUE_BW_WEIGHTS then scores and orders the rescued pool itself --
+    #    this is the part that's legitimately allowed to use a different
+    #    pillar split, per the earlier request.
+    result_default = build_scored_universe(args)
+    if result_default is None:
         print("\n  market_data.json not found — run fetch_data.py first.\n")
         return
-    scored, sector_rotation_raw, bubble_watch_raw = result
+    scored_default, _, _ = result_default
+    top_cutoff_tickers = {
+        row["ticker"] for row in sorted(scored_default, key=lambda x: -x["score"])[:RESCUE_BW_TOP_CUTOFF]
+    }
 
-    # Fixed cutoff (config.py), independent of whatever --top a
-    # watchlist_ranker.py run used -- Rescued_BW always means the same thing.
-    full_sorted = sorted(scored, key=lambda x: -x["score"])
-    rescue_pool = full_sorted[RESCUE_BW_TOP_CUTOFF:]
+    result_rescue = build_scored_universe(args, weights=RESCUE_BW_WEIGHTS)
+    if result_rescue is None:
+        print("\n  market_data.json not found — run fetch_data.py first.\n")
+        return
+    scored, sector_rotation_raw, bubble_watch_raw = result_rescue
+
+    rescue_pool = [row for row in scored if row["ticker"] not in top_cutoff_tickers]
 
     rescued = []
     for row in rescue_pool:
