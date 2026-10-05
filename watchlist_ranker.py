@@ -21,7 +21,7 @@ from config import (
     ALT_DATA_PATH, EARNINGS_PATH, WATCHLIST_RANKED_PATH,
     MACRO_REGIME_PATH, SECTOR_ROTATION_PATH, BUBBLE_WATCH_PATH,
     SECTOR_RET_1M_THRESHOLD, SECTOR_RET_3M_THRESHOLD, SECTOR_THRESHOLD_TOLERANCE,
-    BUBBLE_WATCH_MAX_AGE_HOURS,
+    BUBBLE_WATCH_MAX_AGE_HOURS, RESCUE_BW_TOP_CUTOFF,
 )
 
 MARKET_PATH   = MARKET_DATA_PATH
@@ -194,6 +194,23 @@ INDUSTRY_ETF_MAP = {
 }
 
 
+def resolve_bubble_etf(sector: str | None, industry: str | None,
+                        sector_rotation: dict | None) -> tuple[str | None, str, str | None]:
+    """Picks the ETF to join bubble_watch.json / sector_rotation.json against
+    for a ticker -- the industry-level ETF when INDUSTRY_ETF_MAP has one
+    mapped AND sector_rotation.json actually carries data for it, otherwise
+    the broad sector ETF. Returns (etf, granularity, label); etf is None when
+    neither resolves. Shared by regime_penalty() and the Rescued_BW rank so
+    both resolve a ticker's sector/industry identically -- two independently
+    hand-rolled copies of this preference order would drift apart silently."""
+    us_industries = (sector_rotation or {}).get("us_industries", {})
+    if industry:
+        industry_etf = INDUSTRY_ETF_MAP.get(industry)
+        if industry_etf and us_industries.get(industry_etf):
+            return industry_etf, "industry", industry
+    return (SECTOR_ETF_MAP.get(sector) if sector else None), "sector", sector
+
+
 # REVIEW(scoring): crowded-sector / regime-fragility penalty - hand-picked
 # thresholds, not backtested against history yet. Purpose: a clean technical
 # breakout inside a sector that is ALSO the single hottest-ranked one and up
@@ -225,22 +242,8 @@ def regime_penalty(sector: str | None, industry: str | None,
     penalty = 0.0
     notes: list = []
 
-    # Prefer the industry-level ETF/row when we have one mapped AND
-    # sector_rotation.json actually carries industry-level data for it --
-    # otherwise fall back to the broad sector, exactly as before this change.
-    etf = None
-    granularity = "sector"
-    label = sector
+    etf, granularity, label = resolve_bubble_etf(sector, industry, sector_rotation)
     us_industries = (sector_rotation or {}).get("us_industries", {})
-    if industry:
-        industry_etf = INDUSTRY_ETF_MAP.get(industry)
-        if industry_etf and us_industries.get(industry_etf):
-            etf = industry_etf
-            granularity = "industry"
-            label = industry
-    if etf is None:
-        etf = SECTOR_ETF_MAP.get(sector) if sector else None
-
     row_source = us_industries if granularity == "industry" else (sector_rotation or {}).get("us_sectors", {})
     sector_row = row_source.get(etf) if etf else None
 
@@ -425,9 +428,44 @@ def main():
             "dte":            dte,
             "is_eu":          is_eu(ticker),
             "regime_flags":   regime_notes,
+            "sector":         sector,
+            "industry":       industry,
         })
 
     ranked = sorted(scored, key=lambda x: -x["score"])[:args.top]
+
+    # ── Rescued_BW ────────────────────────────────────────────────────────
+    # Tickers that don't make the top RESCUE_BW_TOP_CUTOFF on composite score
+    # alone, but whose sector/industry bubble watch is at an early, not-yet-
+    # confirmed stage (2, 3, or 4-not-confirmed) -- possibly catching a rally
+    # before the score reflects it. Confirmed Stage 4 is never rescued: that's
+    # the same "too late" signal regime_penalty() already penalizes, not an
+    # opportunity. Fixed cutoff, independent of --top (see config.py).
+    full_sorted = sorted(scored, key=lambda x: -x["score"])
+    rescue_pool = full_sorted[RESCUE_BW_TOP_CUTOFF:]
+
+    rescued = []
+    for row in rescue_pool:
+        etf, _, _ = resolve_bubble_etf(row.get("sector"), row.get("industry"), sector_rotation_raw)
+        if not etf:
+            continue
+        bubble_entry = (bubble_watch_raw or {}).get(etf)
+        if not bubble_entry:
+            continue
+        stage = bubble_entry.get("stage")
+        confirmed = bubble_entry.get("confirmed") is True
+        if stage not in (2, 3, 4):
+            continue
+        if stage == 4 and confirmed:
+            continue  # already flagged at risk in regime_penalty() -- never rescued
+        rescued.append({
+            **row,
+            "bubble_stage": stage,
+            "bubble_theme": bubble_entry.get("theme"),
+            "bubble_etf":   etf,
+            "rescue_flag":  "late-stage, not yet confirmed — watch for distribution" if stage == 4 else None,
+        })
+    rescued.sort(key=lambda x: -x["score"])
 
     # ── Print ─────────────────────────────────────────────────────────────
     today = datetime.today().strftime("%Y-%m-%d")
@@ -451,11 +489,27 @@ def main():
         print(f"  {rank:>3}  {s['ticker']:<12} {s['score']:>6.1f}  {s['tech_score']:>5.0f}  "
               f"{fund_s:>5}  {alt_s:>5}  {s['conviction']:<8} {rsi_s:>5}  {atr_s:>5}  {notes}{eu_flag}")
 
+    # ── Print Rescued_BW ─────────────────────────────────────────────────
+    print(f"\n  {'='*72}")
+    print(f"  RESCUED_BW — outside top {RESCUE_BW_TOP_CUTOFF}, early bubble-watch stage — {today}")
+    print(f"  {'='*72}")
+    if rescued:
+        print(f"  {'TICKER':<12} {'SCORE':>6}  {'CONV':<8} {'STAGE':>5}  THEME / FLAG")
+        print(f"  {'─'*72}")
+        for s_r in rescued:
+            flag  = f" — {s_r['rescue_flag']}" if s_r.get("rescue_flag") else ""
+            theme = s_r.get("bubble_theme") or ""
+            print(f"  {s_r['ticker']:<12} {s_r['score']:>6.1f}  {s_r['conviction']:<8} "
+                  f"{s_r['bubble_stage']:>5}  {theme}{flag}")
+    else:
+        print("  (none)")
+
     # ── Save ──────────────────────────────────────────────────────────────
     output = {
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "top_n":        args.top,
         "ranked":       ranked,
+        "Rescued_BW":   rescued,
     }
     Path("./data").mkdir(exist_ok=True)
     with open(OUTPUT_PATH, "w") as f:

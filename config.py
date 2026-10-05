@@ -127,6 +127,17 @@ SECTOR_THRESHOLD_TOLERANCE = 5
 # never fires on this basis) once it's older than this.
 BUBBLE_WATCH_MAX_AGE_HOURS = 36
 
+# -- Rescued_BW rank (watchlist_ranker.main) ---------------------------------
+# A second, smaller rank alongside the main one: tickers that don't make the
+# main composite cutoff but whose sector/industry bubble watch is at an early,
+# not-yet-confirmed stage (2, 3, or 4-not-confirmed) -- possibly catching a
+# rally before the composite score reflects it. Confirmed Stage 4 is excluded
+# on purpose, since that's the same signal regime_penalty() already treats as
+# "too late", not an opportunity. Independent of whatever --top a given run
+# uses for the main list -- this cutoff is fixed on purpose, so Rescued_BW
+# always means the same thing regardless of how many rows main() prints.
+RESCUE_BW_TOP_CUTOFF = 20
+
 
 # ── File paths ────────────────────────────────────────────────────────────────
 
