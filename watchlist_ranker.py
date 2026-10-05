@@ -21,7 +21,7 @@ from config import (
     ALT_DATA_PATH, EARNINGS_PATH, WATCHLIST_RANKED_PATH,
     MACRO_REGIME_PATH, SECTOR_ROTATION_PATH, BUBBLE_WATCH_PATH,
     SECTOR_RET_1M_THRESHOLD, SECTOR_RET_3M_THRESHOLD, SECTOR_THRESHOLD_TOLERANCE,
-    BUBBLE_WATCH_MAX_AGE_HOURS, RESCUE_BW_TOP_CUTOFF,
+    BUBBLE_WATCH_MAX_AGE_HOURS, RESCUE_BW_TOP_CUTOFF, COMPOSITE_WEIGHTS,
 )
 
 MARKET_PATH   = MARKET_DATA_PATH
@@ -308,9 +308,12 @@ def volatility(ticker: str, t: dict) -> float | None:
 # this function calculates the final score for the ticker
 def composite(tech: float, fund: float | None, alt: float | None,
               dte: int | None, short_pct: float | None, volatility: float,
-              regime_pen: float = 0.0) -> float:
-    """Weighted composite score with penalties."""
-    weights = {"tech": 0.45, "fund": 0.25, "alt": 0.20, "volatility": 0.10}
+              regime_pen: float = 0.0, weights: dict | None = None) -> float:
+    """Weighted composite score with penalties. `weights` defaults to
+    config.COMPOSITE_WEIGHTS -- pass a different dict (e.g.
+    config.RESCUE_BW_WEIGHTS) to score the same inputs with a different
+    pillar split, as rescue_bw.py does via build_scored_universe()."""
+    weights = weights or COMPOSITE_WEIGHTS
 
     fund_val = fund if fund is not None else 50.0
     alt_val  = alt  if alt  is not None else 50.0
@@ -331,14 +334,18 @@ def composite(tech: float, fund: float | None, alt: float | None,
     return round(max(0.0, min(100.0, score)), 1)
 
 
-def build_scored_universe(args) -> tuple[list, dict | None, dict | None] | None:
+def build_scored_universe(args, weights: dict | None = None) -> tuple[list, dict | None, dict | None] | None:
     """Loads every input file and scores the full universe exactly once --
     shared by watchlist_ranker.py's main() ranking and rescue_bw.py's
-    Rescued_BW pass, so both run on identical composite scores and
-    sector/industry data by construction, not two hand-written copies that
-    could drift apart. Returns (scored, sector_rotation_raw, bubble_watch_raw),
-    or None when market_data.json is missing -- the caller decides how to
-    report that, this function doesn't print on their behalf.
+    Rescued_BW pass, so both run on identical inputs and sector/industry
+    data by construction, not two hand-written copies that could drift apart.
+    `weights` (passed straight to composite()) is the one thing callers can
+    legitimately want different -- rescue_bw.py scores the same universe with
+    config.RESCUE_BW_WEIGHTS instead of the default config.COMPOSITE_WEIGHTS;
+    everything else about how a ticker is scored stays identical on purpose.
+    Returns (scored, sector_rotation_raw, bubble_watch_raw), or None when
+    market_data.json is missing -- the caller decides how to report that,
+    this function doesn't print on their behalf.
     `args` only needs `.eu` and `.us` (both argparse flags, default False)."""
     market_raw  = load_json(MARKET_PATH)
     fund_raw    = load_json(FUND_PATH)
@@ -414,7 +421,7 @@ def build_scored_universe(args) -> tuple[list, dict | None, dict | None] | None:
                                                     macro_raw, bubble_watch_raw)
 
         comp = composite(tech_score, fund_score, alt_score, dte=dte, short_pct=short_pct,
-                          volatility=vol_score, regime_pen=regime_pen)
+                          volatility=vol_score, regime_pen=regime_pen, weights=weights)
 
         conv = (t_data.get("conviction") or "").upper()
         scored.append({

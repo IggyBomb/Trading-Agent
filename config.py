@@ -138,6 +138,21 @@ BUBBLE_WATCH_MAX_AGE_HOURS = 36
 # always means the same thing regardless of how many rows main() prints.
 RESCUE_BW_TOP_CUTOFF = 20
 
+# -- Composite score weights (watchlist_ranker.composite) --------------------
+# Single source of truth: edit here, not inside composite(), and every
+# consumer (watchlist_ranker.py's main rank, rescue_bw.py's Rescued_BW, or
+# anything else built on build_scored_universe() later) picks it up.
+# Must sum to 1.0 -- composite() doesn't re-normalize for you.
+COMPOSITE_WEIGHTS = {"tech": 0.45, "fund": 0.25, "alt": 0.20, "volatility": 0.10}
+
+# Rescued_BW uses its own split (rescue_bw.py only, never watchlist_ranker.py's
+# main rank): heavier on technical/momentum, lighter on fundamentals, since
+# these are specifically the tickers whose composite score DIDN'T make the
+# main cut -- for a ticker in an early bubble-watch stage, how it's actually
+# trading right now matters more here than it does for the main rank.
+# 2026-10-05: tech 0.45->0.50, fund 0.25->0.20, alt/volatility unchanged.
+RESCUE_BW_WEIGHTS = {"tech": 0.50, "fund": 0.20, "alt": 0.20, "volatility": 0.10}
+
 
 # ── File paths ────────────────────────────────────────────────────────────────
 

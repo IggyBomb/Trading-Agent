@@ -29,7 +29,7 @@ import json, argparse
 from datetime import datetime
 from pathlib import Path
 
-from config import RESCUE_BW_TOP_CUTOFF, RESCUED_BW_PATH
+from config import RESCUE_BW_TOP_CUTOFF, RESCUED_BW_PATH, RESCUE_BW_WEIGHTS
 from watchlist_ranker import build_scored_universe, resolve_bubble_etf
 
 OUTPUT_PATH = RESCUED_BW_PATH
@@ -41,7 +41,10 @@ def main():
     parser.add_argument("--us", action="store_true", help="US tickers only")
     args = parser.parse_args()
 
-    result = build_scored_universe(args)
+    # RESCUE_BW_WEIGHTS (config.py) -- heavier on technical, lighter on
+    # fundamentals than the main rank's COMPOSITE_WEIGHTS. Same scoring
+    # function, same inputs, different pillar split: see build_scored_universe().
+    result = build_scored_universe(args, weights=RESCUE_BW_WEIGHTS)
     if result is None:
         print("\n  market_data.json not found — run fetch_data.py first.\n")
         return
