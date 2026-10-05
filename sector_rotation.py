@@ -72,14 +72,24 @@ BENCHMARKS = {
     "SPY":     "S&P 500",
     "QQQ":     "Nasdaq 100",
     "IWM":     "Russell 2000",
-    "SXXP.DE": "Stoxx 600",
+    "EXSA.DE": "Stoxx 600",   # SXXP.DE stopped downloading via yfinance (Yahoo
+                               # flags it as possibly delisted) -- EXSA.DE is
+                               # the iShares STOXX Europe 600 UCITS ETF, same
+                               # underlying index, still live on Xetra.
     "IWDA.AS": "MSCI World",
 }
 
 
 def fetch_sector_data(tickers: dict) -> dict:
     end   = datetime.today()
-    start = end - timedelta(days=75)
+    # 75 calendar days (~53 trading days) was only ever enough for ret_1d/
+    # ret_5d/ret_1m (needs >22 trading days). ret_3m needs >63 trading days
+    # and above_ma200 needs 200 -- both were silently always None/blank for
+    # every sector and industry (found 2026-10-05: watchlist_ranker.py's hot_3m
+    # check in regime_penalty() could never fire, even for a sector up 15%+
+    # over 3 months). 400 calendar days matches the same requirement already
+    # solved the same way in macro_regime_classifier.py's FETCH_DAYS.
+    start = end - timedelta(days=400)
     data  = {}
     for ticker, name in tickers.items():
         try:
