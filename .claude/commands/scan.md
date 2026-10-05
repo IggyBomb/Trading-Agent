@@ -405,6 +405,7 @@ figure is only meaningful if every decision is recorded as it was made.
 ## Rules:
 - No commentary. No disclaimers. Trade ideas only.
 - Short-term setups: stops are ATR(14)-based, target is 1.5:1 R:R minimum (RISK.md).
+- The stop logged to scan_tracking.db is the scanner's 2× ATR stop. An agent (Steps 5–9) may only move it FURTHER from entry (e.g. below a support level), never tighter — tighter stops undid the 2026-09-14 2× ATR fix (BUY rows 09-24 → 10-01 were logged at ~1 ATR and stopped out within days).
 - CONFIRMED = technically sound + fundamentally backed. These are the primary setups.
 - CAUTION = technically valid but fundamentally expensive. Label clearly. Stops at Step 4 by default — no Steps 5–9 unless specifically requested for that ticker.
 - Never output Low conviction tickers regardless of fundamental score.

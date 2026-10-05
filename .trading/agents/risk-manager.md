@@ -36,6 +36,7 @@ If a portfolio screenshot is provided, extract all position data from it directl
 - Must be ≥ 1.5:1 per RISK.md
 - If R:R is between 1.5 and 2.0, flag as MARGINAL — acceptable but not ideal
 - If R:R ≥ 2.5, note as HIGH QUALITY setup
+- Compute R:R only with a stop of at least 1.5× ATR (see check 5). A high R:R produced by a sub-1.5 ATR stop is not HIGH QUALITY — score it at the 2× ATR stop instead
 
 ### 4. Drawdown Status
 - Estimate current daily P&L from open positions if provided
@@ -46,7 +47,11 @@ If a portfolio screenshot is provided, extract all position data from it directl
 ### 5. Stop-Loss Sanity Check
 - Confirm a stop is defined. If missing: auto-REJECT
 - Check stop is not arbitrarily placed — it must be below a logical level (swing low, breakout level, key MA)
-- Flag if stop distance is unusually wide (> 5% from entry) — may indicate poor setup structure
+- Measure stop distance in ATRs: (entry − stop) / ATR(14). The scanner's standard stop is 2.0× ATR (`ATR_STOP_MULT`)
+- Flag WARNING if the stop is TIGHTER than 1.5× ATR — likely to be hit by normal daily noise (scan test group: 43–45% stop-out rate below 1.75 ATR vs 17% at ~2 ATR)
+- Flag WARNING if the stop is wider than 3× ATR — may indicate poor setup structure
+- Do not judge stop width by a fixed % from entry; a wide-in-% stop on a volatile name is handled by smaller size, not a tighter stop
+- Never recommend tightening the stop to make R:R pass — evaluate R:R at the ATR-based stop
 
 ### 6. Volatility & Market Context
 - If market is in high-volatility regime (VIX > 25), recommend reducing position size by 25-50%

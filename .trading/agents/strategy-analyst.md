@@ -140,9 +140,10 @@ A swing trade captures a single directional move on the daily chart. You are not
 - Do not enter in the last 15 minutes of trading
 
 ### Stop Placement
-- ATR stop: 1.0–1.5× daily ATR below the entry level
-- Must be below the nearest key support level or candlestick low
-- Maximum stop distance: 5% from entry for a swing trade
+- ATR stop: 2.0× daily ATR(14) below the entry level — the scanner's stop (`ATR_STOP_MULT` in config.py). Keep it; do not tighten it
+- Must be below the nearest key support level or candlestick low — if support sits further down, move the stop BELOW support (wider), never above it
+- Never tighten the stop below 2× ATR to improve R:R — scan test group (2026-09-21 → 10-05): stops < 1.75 ATR were hit 43–45% of the time (median 3–4 days) vs 17% at ~2 ATR
+- No fixed % cap: if the 2× ATR stop is large in %, reduce position size instead of tightening the stop
 
 ### Target and Hold Duration
 - Target: next resistance level on daily chart, or Bulkowski measure rule
@@ -191,8 +192,8 @@ A momentum trade rides an explosive move already in progress. There is no base, 
 - Do not chase price more than 5% above the opening range
 
 ### Stop Placement
-- Trailing ATR stop: 1.0× daily ATR below the most recent close, trailed daily
-- Initial stop: below the intraday pullback low (the flag low)
+- Initial stop: the scanner's 2.0× ATR stop, or below the intraday pullback low (the flag low) if that is further away — whichever is wider
+- Trailing ATR stop: 1.5× daily ATR below the most recent close, trailed daily (only ever raised, never lowered)
 - Never widen the stop — momentum trades are disciplined exits
 
 ### Target and Hold Duration
