@@ -331,13 +331,15 @@ def composite(tech: float, fund: float | None, alt: float | None,
     return round(max(0.0, min(100.0, score)), 1)
 
 
-def main():
-    parser = argparse.ArgumentParser(prog="watchlist_ranker")
-    parser.add_argument("--top",  type=int, default=50)
-    parser.add_argument("--eu",   action="store_true", help="EU tickers only")
-    parser.add_argument("--us",   action="store_true", help="US tickers only")
-    args = parser.parse_args()
-
+def build_scored_universe(args) -> tuple[list, dict | None, dict | None] | None:
+    """Loads every input file and scores the full universe exactly once --
+    shared by watchlist_ranker.py's main() ranking and rescue_bw.py's
+    Rescued_BW pass, so both run on identical composite scores and
+    sector/industry data by construction, not two hand-written copies that
+    could drift apart. Returns (scored, sector_rotation_raw, bubble_watch_raw),
+    or None when market_data.json is missing -- the caller decides how to
+    report that, this function doesn't print on their behalf.
+    `args` only needs `.eu` and `.us` (both argparse flags, default False)."""
     market_raw  = load_json(MARKET_PATH)
     fund_raw    = load_json(FUND_PATH)
     alt_raw     = load_json(ALT_PATH)
@@ -347,8 +349,7 @@ def main():
     bubble_watch_raw     = load_bubble_watch(BUBBLE_PATH, BUBBLE_WATCH_MAX_AGE_HOURS)
 
     if market_raw is None:
-        print(f"\n  market_data.json not found — run fetch_data.py first.\n")
-        return
+        return None
 
     # Normalise market_data structure
     if isinstance(market_raw, dict) and "tickers" in market_raw:
@@ -432,40 +433,23 @@ def main():
             "industry":       industry,
         })
 
+    return scored, sector_rotation_raw, bubble_watch_raw
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="watchlist_ranker")
+    parser.add_argument("--top",  type=int, default=50)
+    parser.add_argument("--eu",   action="store_true", help="EU tickers only")
+    parser.add_argument("--us",   action="store_true", help="US tickers only")
+    args = parser.parse_args()
+
+    result = build_scored_universe(args)
+    if result is None:
+        print(f"\n  market_data.json not found — run fetch_data.py first.\n")
+        return
+    scored, sector_rotation_raw, bubble_watch_raw = result
+
     ranked = sorted(scored, key=lambda x: -x["score"])[:args.top]
-
-    # ── Rescued_BW ────────────────────────────────────────────────────────
-    # Tickers that don't make the top RESCUE_BW_TOP_CUTOFF on composite score
-    # alone, but whose sector/industry bubble watch is at an early, not-yet-
-    # confirmed stage (2, 3, or 4-not-confirmed) -- possibly catching a rally
-    # before the score reflects it. Confirmed Stage 4 is never rescued: that's
-    # the same "too late" signal regime_penalty() already penalizes, not an
-    # opportunity. Fixed cutoff, independent of --top (see config.py).
-    full_sorted = sorted(scored, key=lambda x: -x["score"])
-    rescue_pool = full_sorted[RESCUE_BW_TOP_CUTOFF:]
-
-    rescued = []
-    for row in rescue_pool:
-        etf, _, _ = resolve_bubble_etf(row.get("sector"), row.get("industry"), sector_rotation_raw)
-        if not etf:
-            continue
-        bubble_entry = (bubble_watch_raw or {}).get(etf)
-        if not bubble_entry:
-            continue
-        stage = bubble_entry.get("stage")
-        confirmed = bubble_entry.get("confirmed") is True
-        if stage not in (2, 3, 4):
-            continue
-        if stage == 4 and confirmed:
-            continue  # already flagged at risk in regime_penalty() -- never rescued
-        rescued.append({
-            **row,
-            "bubble_stage": stage,
-            "bubble_theme": bubble_entry.get("theme"),
-            "bubble_etf":   etf,
-            "rescue_flag":  "late-stage, not yet confirmed — watch for distribution" if stage == 4 else None,
-        })
-    rescued.sort(key=lambda x: -x["score"])
 
     # ── Print ─────────────────────────────────────────────────────────────
     today = datetime.today().strftime("%Y-%m-%d")
@@ -489,27 +473,11 @@ def main():
         print(f"  {rank:>3}  {s['ticker']:<12} {s['score']:>6.1f}  {s['tech_score']:>5.0f}  "
               f"{fund_s:>5}  {alt_s:>5}  {s['conviction']:<8} {rsi_s:>5}  {atr_s:>5}  {notes}{eu_flag}")
 
-    # ── Print Rescued_BW ─────────────────────────────────────────────────
-    print(f"\n  {'='*72}")
-    print(f"  RESCUED_BW — outside top {RESCUE_BW_TOP_CUTOFF}, early bubble-watch stage — {today}")
-    print(f"  {'='*72}")
-    if rescued:
-        print(f"  {'TICKER':<12} {'SCORE':>6}  {'CONV':<8} {'STAGE':>5}  THEME / FLAG")
-        print(f"  {'─'*72}")
-        for s_r in rescued:
-            flag  = f" — {s_r['rescue_flag']}" if s_r.get("rescue_flag") else ""
-            theme = s_r.get("bubble_theme") or ""
-            print(f"  {s_r['ticker']:<12} {s_r['score']:>6.1f}  {s_r['conviction']:<8} "
-                  f"{s_r['bubble_stage']:>5}  {theme}{flag}")
-    else:
-        print("  (none)")
-
     # ── Save ──────────────────────────────────────────────────────────────
     output = {
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "top_n":        args.top,
         "ranked":       ranked,
-        "Rescued_BW":   rescued,
     }
     Path("./data").mkdir(exist_ok=True)
     with open(OUTPUT_PATH, "w") as f:
