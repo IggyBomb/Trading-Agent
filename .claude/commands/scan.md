@@ -247,6 +247,7 @@ a key):
       "institutional_score": 50,
       "institutional_alignment": "CAUTIOUS",
       "risk_manager_verdict": "REJECT",
+      "risk_manager_reason": "RR: 1.3:1 at the 2x ATR stop, below the 1.5:1 minimum",
       "final_verdict": null,
       "final_verdict_reason": null,
       "research_summary": "2nd FY26 guidance cut in a month (widening beef losses), BofA cut PT, no confirmed reversal signal — disqualified despite mechanical TURNAROUND shape"
@@ -270,6 +271,24 @@ Field notes:
   including a REJECT driven purely by portfolio exposure (no open slots) — do not filter
   those out of the file just because the setup itself was sound. Kept as-is even when
   `final_verdict` overrides it — this is the raw, mechanical read, preserved for audit.
+- `risk_manager_reason`: WHY Step 9 landed on REJECT or CAUTION — mandatory for both,
+  never left blank; `null` only for APPROVE. Format: `CATEGORY: one-line detail`, where
+  CATEGORY is the check that failed, exactly one of:
+  - `EXPOSURE` — no open slot (5 positions) or sector/correlation limit (2 per sector)
+  - `RR` — R:R below 1.5:1 at the 2x ATR stop
+  - `TARGET_ATR` — Step 4 gate, `target_atr < 1.5`
+  - `SIZE` — position over the active sentiment tier maximum
+  - `DRAWDOWN` — daily/weekly drawdown limit hit or near
+  - `STOP` — stop missing, illogical, or outside 1.5–3x ATR
+  - `THESIS` — company-specific: negative catalyst, broken thesis, support lost / setup
+    invalidated, or an overextended chase (RSI, euphoric run)
+  - `MACRO` — sector on the macro short list / macro headwind, with no company-specific issue
+  A marginal R:R (1.5–2.0) counts as `RR` only when it is the stated reason for CAUTION.
+  If several checks failed, use the first one in this list as CATEGORY and name the others
+  in the detail. Example: `"EXPOSURE: 5/5 positions open; R:R also MARGINAL at 1.7:1"`.
+  This is what separates a sound setup rejected only for portfolio room from a setup the
+  risk manager actually judged bad — the test group compares the two, so never collapse
+  them into a bare REJECT.
 - `final_verdict`: Step 12's conclusion (BUY / BUY — REDUCED / WAIT / PASS) for tickers
   that reached Steps 10–12 (i.e. `risk_manager_verdict = APPROVE`); `null` for every ticker
   that never reached adjudication because Step 9 already said CAUTION or REJECT. This is
