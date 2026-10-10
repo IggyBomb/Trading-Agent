@@ -36,6 +36,23 @@ US_SECTORS = {
     "XLC":  "Comm. Services",
 }
 
+# Sub-industry ETFs, finer-grained than the 11 broad SPDR sectors above.
+# Purpose: macro-analyst.md's Kindleberger bubble watch flags themes like
+# "Semis/AI-infra", not whole GICS sectors (semis are a slice of XLK/Technology,
+# not all of it) -- watchlist_ranker.py's regime_penalty() needs ret_1m/ret_3m
+# at this granularity too, or the bubble-stage gate and the return-threshold
+# check it's gating would be reading two different levels of aggregation.
+# Deliberately partial -- only the industries that have come up in bubble
+# watch so far have a mapped ETF here; extend as new themes appear (see
+# INDUSTRY_ETF_MAP in watchlist_ranker.py, which must stay in sync with this).
+US_INDUSTRIES = {
+    "SMH":  "Semiconductors",
+    "XBI":  "Biotechnology",
+    "IGV":  "Software",
+    "ITA":  "Aerospace & Defense",
+    "KRE":  "Regional Banks",
+}
+
 EU_SECTORS = {
     "EXV1.DE": "EU Banks",
     "EXV3.DE": "EU Technology",
@@ -55,14 +72,24 @@ BENCHMARKS = {
     "SPY":     "S&P 500",
     "QQQ":     "Nasdaq 100",
     "IWM":     "Russell 2000",
-    "SXXP.DE": "Stoxx 600",
+    "EXSA.DE": "Stoxx 600",   # SXXP.DE stopped downloading via yfinance (Yahoo
+                               # flags it as possibly delisted) -- EXSA.DE is
+                               # the iShares STOXX Europe 600 UCITS ETF, same
+                               # underlying index, still live on Xetra.
     "IWDA.AS": "MSCI World",
 }
 
 
 def fetch_sector_data(tickers: dict) -> dict:
     end   = datetime.today()
-    start = end - timedelta(days=75)
+    # 75 calendar days (~53 trading days) was only ever enough for ret_1d/
+    # ret_5d/ret_1m (needs >22 trading days). ret_3m needs >63 trading days
+    # and above_ma200 needs 200 -- both were silently always None/blank for
+    # every sector and industry (found 2026-10-05: watchlist_ranker.py's hot_3m
+    # check in regime_penalty() could never fire, even for a sector up 15%+
+    # over 3 months). 400 calendar days matches the same requirement already
+    # solved the same way in macro_regime_classifier.py's FETCH_DAYS.
+    start = end - timedelta(days=400)
     data  = {}
     for ticker, name in tickers.items():
         try:
@@ -152,9 +179,11 @@ def main():
 
     bench_data = fetch_sector_data(BENCHMARKS)
     us_data    = fetch_sector_data(US_SECTORS)
+    us_ind_data = fetch_sector_data(US_INDUSTRIES)
     eu_data    = fetch_sector_data(EU_SECTORS)
 
     us_ranked  = rank_by(us_data)
+    us_ind_ranked = rank_by(us_ind_data)
     eu_ranked  = rank_by(eu_data)
 
     print(f"\n  {'='*67}")
@@ -170,6 +199,7 @@ def main():
         print(f"  {t:<12} {d['name']:<24} 5d: {r5:>7}  1M: {r1m:>7}  MA200: {ma200}")
 
     print_table("US SECTORS — ranked by 5d momentum", us_ranked)
+    print_table("US SUB-INDUSTRIES — ranked by 5d momentum", us_ind_ranked)
     print_table("EU SECTORS — ranked by 5d momentum", eu_ranked)
 
     sig = rotation_signal(us_ranked)
@@ -183,6 +213,7 @@ def main():
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "benchmarks":   bench_data,
         "us_sectors":   dict(us_ranked),
+        "us_industries": dict(us_ind_ranked),
         "eu_sectors":   dict(eu_ranked),
     }
     Path("./data").mkdir(exist_ok=True)

@@ -96,7 +96,7 @@ After contrarian candidates are presented, flag portfolio-level implications:
 
 - Check position count (RISK.local.md) — if already at 5 positions, note that all contrarian entries are blocked until a slot opens
 - Check sector concentration — if entering a contrarian name would create a third position in the same sector, flag it
-- Confirm that every contrarian entry still requires: stop loss defined, R:R ≥ 1.5:1, size ≤ active tier maximum
+- Confirm that every contrarian entry still requires: stop loss defined, R:R ≥ 1.2:1, size ≤ active tier maximum
 
 No contrarian thesis overrides RISK.md. A compelling narrative does not justify skipping the stop.
 

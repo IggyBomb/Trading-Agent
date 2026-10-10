@@ -18,7 +18,7 @@ from pathlib import Path
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8")
 
-from config import ACCOUNT_SIZE, TRADES_PATH
+from config import ACCOUNT_SIZE, TRADES_PATH, RR_RATIO
 
 LOGS_PATH      = TRADES_PATH
 SENTIMENT_PATH = "./data/sentiment_data.json"
@@ -158,7 +158,7 @@ def cmd_entry(args):
         reward  = abs(target - price)
         rr_planned = round(reward / risk, 2) if risk else None
         if rr_planned and rr_planned < RR_RATIO:
-            flags.append(f"LOW_RR: planned R:R {rr_planned:.2f} below RISK.md minimum {RR_RATIO}")
+            flags.append(f"LOW_RR: planned R:R {rr_planned:.2f} below floor {RR_RATIO} (RISK.md's 1.2:1 effective minimum at ATR_STOP_MULT=3.2x)")
 
     trade = {
         "id":           trade_id(),

@@ -38,7 +38,7 @@ class TickerSignal(BaseModel):
     rsi: float
 
     rr: float            # true R:R at the ATR_STOP_MULT stop
-    target_atr: float    # target distance in ATRs — scan.md Steps 5-9 gate (>= 1.5)
+    target_atr: float    # target distance in ATRs — scan.md Steps 5-9 gate (>= 2.4)
 
     # short side — string sentinels are inconsistent on purpose:
     # "none" (lowercase) vs "None" (capitalized) is what the live pipeline emits

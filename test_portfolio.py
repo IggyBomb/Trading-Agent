@@ -29,7 +29,7 @@ Usage:
         Simulated €-sized portfolio: applies RISK.md's dynamic sizing tiers
         (same logic as trade_logger.py) to a notional account, converts
         USD/JPY positions to EUR, and reports position size, € P&L, and
-        RISK.md violations (max 5 concurrent positions, oversize, no-stop
+        RISK.md violations (max 15 concurrent positions, oversize, no-stop
         — scan positions only; long-term positions never trigger NO_STOP,
         that's by design for this kind of entry, not an oversight).
         This is still paper — no real capital, same separation as above.
@@ -56,6 +56,9 @@ DATA_PATH = "./data/test_portfolio.json"
 # into other markets. Certificates/EU-suffixed tickers aren't handled here;
 # this covers the US/JP names the scan currently produces.
 def ticker_currency(ticker: str) -> str:
+    # London quotes are in pence (GBp), not pounds -- fx functions divide by 100.
+    if ticker.endswith(".L"):
+        return "GBp"
     if ticker.endswith(".T"):
         return "JPY"
     if any(ticker.endswith(s) for s in (".MI", ".PA", ".DE", ".AS", ".BR", ".MC", ".LS", ".VI", ".HE")):
@@ -71,6 +74,8 @@ def fx_to_eur(currency: str) -> float:
     currency by this to get EUR). Cached per run."""
     if currency == "EUR":
         return 1.0
+    if currency == "GBp":
+        return fx_to_eur("GBP") / 100
     if currency in _fx_cache:
         return _fx_cache[currency]
     pair = f"EUR{currency}=X"
@@ -253,8 +258,8 @@ def cmd_sim(args):
     violations = []
     n_positions = len(positions)
 
-    if n_positions > 5:
-        violations.append(f"MAX_POSITIONS: {n_positions} open positions — RISK.md caps concurrent positions at 5")
+    if n_positions > 15:
+        violations.append(f"MAX_POSITIONS: {n_positions} open positions — RISK.md caps concurrent positions at 15")
 
     for pos in positions:
         t = pos["ticker"]
@@ -308,7 +313,7 @@ def cmd_sim(args):
     print(f"  Investito: €{total_invested:,.0f}   Valore oggi: €{total_value:,.0f}   "
           f"P&L: €{total_pnl:+,.0f} ({total_pnl_pct:+.2f}%)")
     print(f"  Cash residuo (non investito): €{cash_eur:,.0f}  "
-          f"(atteso — RISK.md limita {max_pct:.0f}% a posizione, max 5 posizioni aperte: il resto resta cash by design)")
+          f"(atteso — RISK.md limita {max_pct:.0f}% a posizione, max 15 posizioni aperte: il resto resta cash by design)")
 
     if violations:
         print(f"\n  ⚠ RISK.md — {len(violations)} violazione/i:")

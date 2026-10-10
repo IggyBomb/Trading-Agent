@@ -17,7 +17,6 @@ Position size is determined by the full analysis stack: Fear & Greed score, over
 - Never exceed 3% without at least 2 independent signal confirmations
 - Never exceed 4% without HIGH conviction — medium conviction caps at GOOD (3%)
 - Never size up after a loss
-- Max concurrent open positions: 5
 
 ## Drawdown Limits
 - Daily max drawdown: 3% of account
@@ -27,7 +26,7 @@ Position size is determined by the full analysis stack: Fear & Greed score, over
 ## Stop-Loss Logic
 - Every trade MUST have a stop-loss set before entry
 - Never move stop-loss against the trade
-- Minimum R:R ratio: 1.4:1
+- Minimum R:R ratio: 1.2:1 (config.py RR_RATIO=0.75 at ATR_STOP_MULT=3.2x — the constant is lower than 1.2 because it is compared against the stop-width-dependent `rr` field; see config.py's comment)
 
 ---
 
@@ -43,7 +42,7 @@ Position size is determined by the full analysis stack: Fear & Greed score, over
 - Stop is a price level ABOVE entry — cover immediately if hit
 - Never move stop higher (against the trade)
 - Maximum stop distance: 5% above entry for SHORT-SWING, 8% for SHORT-POSITION
-- Minimum R:R: 1.4:1 — same as longs
+- Minimum R:R: 1.2:1 — same as longs (see config.py RR_RATIO note above)
 
 ### Short Squeeze Pre-Check — mandatory before every short entry
 - Short interest % of float > 20% → DO NOT SHORT

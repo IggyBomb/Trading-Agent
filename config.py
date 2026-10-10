@@ -25,16 +25,25 @@ _load_env()
 ACCOUNT_SIZE = int(os.getenv("ACCOUNT_SIZE", "100000"))   # EUR
 
 # ── Risk / sizing ─────────────────────────────────────────────────────────────
-RR_RATIO     = 1.5             # minimum risk/reward ratio (RISK.md)
-ATR_STOP_MULT = 2.0            # stop = entry -/+ ATR_STOP_MULT x ATR14 (was 1.0 until 2026-09-14;
-                               # scan test group showed 1-ATR stops hit by ordinary daily noise)
+# RISK.md's stated minimum is 1.2:1 R:R. RR_RATIO below is NOT that number directly --
+# it's compared against the live `rr` field, which is target_atr / ATR_STOP_MULT, so
+# raising ATR_STOP_MULT shrinks `rr` for every ticker at a fixed target. Changed
+# 2026-10-06: widened the stop to 3.2x ATR (more noise protection) and lowered
+# RR_RATIO to 0.75 (not 1.2) specifically so the combined gate admits MORE candidates
+# than the previous 1.5/2.0 setting, not fewer -- 1.2 @ 3.2x would need
+# target_atr >= 3.84 and pass only ~7% of the High/Medium pool (vs ~14% today);
+# 0.75 @ 3.2x needs target_atr >= 2.4, passing ~25%. See chat 2026-10-06 for the
+# derivation -- do not "simplify" this back to 1.2 without redoing that math.
+RR_RATIO     = 0.75            # compared against the live `rr` field (NOT the literal RISK.md ratio -- see above)
+ATR_STOP_MULT = 3.2            # stop = entry -/+ ATR_STOP_MULT x ATR14 (was 1.0 until 2026-09-14, then 2.0;
+                               # widened again 2026-10-06 for more noise protection)
 
 # ── Fetch / filter thresholds ────────────────────────────────────────────────
 MIN_PRICE         = 0.50       # skip penny stocks below this
 MIN_AVG_VOLUME    = 300_000    # min 20-day avg volume — US stocks
-MIN_ATR_PCT       = 2.5        # min ATR% — US stocks
+MIN_ATR_PCT       = 1.0        # min ATR% — US stocks (was 2.5 until 2026-10-06)
 EU_MIN_AVG_VOLUME = 67_500    # EU stocks trade thinner
-EU_MIN_ATR_PCT    = 1.8        # EU stocks less volatile than US
+EU_MIN_ATR_PCT    = 0.7        # EU stocks less volatile than US (was 1.8 until 2026-10-06)
 SR_WINDOW         = 10         # days for support/resistance lookback
 LOOKBACK_DAYS     = 60         # days of OHLCV history to pull
 MAX_TICKERS       = 3200       # safety cap on watchlist size
@@ -119,6 +128,44 @@ SECTOR_RET_3M_THRESHOLD = 40   # percent, 3-month sector return
 # since 40 - 5 = 35 < 36). Applied to both thresholds the same way.
 SECTOR_THRESHOLD_TOLERANCE = 5
 
+# -- Bubble-watch gate (watchlist_ranker.regime_penalty) ---------------------
+# The crowded-sector penalty above now only fires when macro-analyst.md has
+# written data/bubble_watch.json flagging that sector/industry as Kindleberger
+# Stage 4 CONFIRMED this session (see regime_penalty()). Macro reports run
+# ~daily, not every pipeline run -- treat the file as stale (= no gate, penalty
+# never fires on this basis) once it's older than this.
+BUBBLE_WATCH_MAX_AGE_HOURS = 36
+
+# -- Rescued_BW rank (watchlist_ranker.main) ---------------------------------
+# A second, smaller rank alongside the main one: tickers that don't make the
+# main composite cutoff but whose sector/industry bubble watch is at an early,
+# not-yet-confirmed stage (2, 3, or 4-not-confirmed) -- possibly catching a
+# rally before the composite score reflects it. Confirmed Stage 4 is excluded
+# on purpose, since that's the same signal regime_penalty() already treats as
+# "too late", not an opportunity. Independent of whatever --top a given run
+# uses for the main list -- this cutoff is fixed on purpose, so Rescued_BW
+# always means the same thing regardless of how many rows main() prints.
+RESCUE_BW_TOP_CUTOFF = 20
+# Last pipeline-1 rank eligible for rescue (inclusive): the pool is ranks
+# RESCUE_BW_TOP_CUTOFF+1 .. RESCUE_BW_POOL_END on COMPOSITE_WEIGHTS (21-100),
+# not the whole tail -- anything below #100 is too far from the cut to rescue.
+RESCUE_BW_POOL_END = 100
+
+# -- Composite score weights (watchlist_ranker.composite) --------------------
+# Single source of truth: edit here, not inside composite(), and every
+# consumer (watchlist_ranker.py's main rank, rescue_bw.py's Rescued_BW, or
+# anything else built on build_scored_universe() later) picks it up.
+# Must sum to 1.0 -- composite() doesn't re-normalize for you.
+COMPOSITE_WEIGHTS = {"tech": 0.45, "fund": 0.25, "alt": 0.20, "volatility": 0.10}
+
+# Rescued_BW uses its own split (rescue_bw.py only, never watchlist_ranker.py's
+# main rank): heavier on technical/momentum, lighter on fundamentals, since
+# these are specifically the tickers whose composite score DIDN'T make the
+# main cut -- for a ticker in an early bubble-watch stage, how it's actually
+# trading right now matters more here than it does for the main rank.
+# 2026-10-05: tech 0.45->0.50, fund 0.25->0.20, alt/volatility unchanged.
+RESCUE_BW_WEIGHTS = {"tech": 0.50, "fund": 0.20, "alt": 0.20, "volatility": 0.10}
+
 
 # ── File paths ────────────────────────────────────────────────────────────────
 
@@ -135,6 +182,8 @@ EARNINGS_PATH        = str(DATA_DIR / "earnings_calendar.json")
 MACRO_REGIME_PATH    = str(DATA_DIR / "macro_regime.json")
 MACRO_FRED_PATH      = str(DATA_DIR / "macro_fred.json")
 SECTOR_ROTATION_PATH = str(DATA_DIR / "sector_rotation.json")
+BUBBLE_WATCH_PATH    = str(DATA_DIR / "bubble_watch.json")
+RESCUED_BW_PATH      = str(DATA_DIR / "rescued_bw.json")
 WATCHLIST_RANKED_PATH= str(DATA_DIR / "watchlist_ranked.json")
 PREMARKET_GAPS_PATH  = str(DATA_DIR / "premarket_gaps.json")
 TRADES_PATH          = str(LOGS_DIR / "trades.jsonl")
