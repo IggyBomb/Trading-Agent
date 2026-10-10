@@ -17,7 +17,6 @@ Position size is determined by the full analysis stack: Fear & Greed score, over
 - Never exceed 3% without at least 2 independent signal confirmations
 - Never exceed 4% without HIGH conviction — medium conviction caps at GOOD (3%)
 - Never size up after a loss
-- Max concurrent open positions: 15 (raised from 5 on 2026-10-07)
 
 ## Drawdown Limits
 - Daily max drawdown: 3% of account
