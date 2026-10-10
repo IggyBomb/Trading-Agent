@@ -193,6 +193,7 @@ CREATE TABLE IF NOT EXISTS scan_test_group (
     institutional_score          REAL,
     institutional_alignment       TEXT,
     risk_manager_verdict          TEXT,
+    risk_manager_reason           TEXT,
     final_verdict                 TEXT,
     final_verdict_reason          TEXT,
     research_summary              TEXT,
@@ -210,6 +211,8 @@ CREATE TABLE IF NOT EXISTS scan_test_group (
     -- refreshed on every run.
     day_close_price               REAL,
     gain_pct                      REAL,
+    sp500_gain_pct                REAL,
+    sp500_entry_close             REAL,
     max_high                      REAL,
     max_high_date                 TEXT,
     min_low                       REAL,
@@ -231,13 +234,13 @@ INSERT OR IGNORE INTO scan_test_group (
     scan_date, ticker, conviction, setup, entry, stop, target, rr_planned,
     f_score, rating, sector, strategy_type, alt_data_score,
     institutional_score, institutional_alignment, risk_manager_verdict,
-    final_verdict, final_verdict_reason,
+    risk_manager_reason, final_verdict, final_verdict_reason,
     research_summary, expected_close_date
 ) VALUES (
     :scan_date, :ticker, :conviction, :setup, :entry, :stop, :target, :rr_planned,
     :f_score, :rating, :sector, :strategy_type, :alt_data_score,
     :institutional_score, :institutional_alignment, :risk_manager_verdict,
-    :final_verdict, :final_verdict_reason,
+    :risk_manager_reason, :final_verdict, :final_verdict_reason,
     :research_summary, :expected_close_date
 );
 """
@@ -269,6 +272,7 @@ DESIRED_COLUMNS = [
     ("institutional_score",       "REAL"),
     ("institutional_alignment",   "TEXT"),
     ("risk_manager_verdict",      "TEXT"),
+    ("risk_manager_reason",       "TEXT"),
     ("final_verdict",             "TEXT"),
     ("final_verdict_reason",      "TEXT"),
     ("research_summary",          "TEXT"),
@@ -280,6 +284,8 @@ DESIRED_COLUMNS = [
     ("r_achieved",                "REAL"),
     ("day_close_price",           "REAL"),
     ("gain_pct",                  "REAL"),
+    ("sp500_gain_pct",            "REAL"),
+    ("sp500_entry_close",         "REAL"),
     ("max_high",                  "REAL"),
     ("max_high_date",             "TEXT"),
     ("min_low",                   "REAL"),
@@ -358,6 +364,7 @@ def main():
 
     inserted, skipped_open, skipped_duplicate = 0, 0, 0
     for c in candidates:
+        c.setdefault("risk_manager_reason", None)
         c.setdefault("final_verdict", None)
         c.setdefault("final_verdict_reason", None)
 

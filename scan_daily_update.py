@@ -21,8 +21,12 @@ Access one value with two keys: today_tickers_data["AAPL"]["high"].
 A ticker yfinance returned nothing for is simply absent from the dict.
 """
 
+import os
 import sqlite3
-from datetime import datetime, date
+import sys
+from datetime import datetime, date, timedelta
+import logging
+log = logging.getLogger("scan_daily_update")
 
 import yfinance as yf
 import pandas as pd
@@ -47,6 +51,22 @@ def fetch_last_day_ticker_data(ticker):
         "volume": int(ticker_data["Volume"]),
     }
 
+
+#this is a helper function that fetches the SP500 close value for a given date, it is used to compare the performance of a  ticker against the benchmark
+def sp500_close_fetch(date_str):
+    """Fetch the SP500 close on date_str, or on the first trading day after it (weekend/holiday)."""
+    try:
+        end = datetime.strptime(date_str, "%Y-%m-%d") + timedelta(days=7)  # yfinance end is exclusive
+        hist = yf.download("^GSPC", start=date_str, end=end.strftime("%Y-%m-%d"),
+                           progress=False, auto_adjust=True)
+        if isinstance(hist.columns, pd.MultiIndex):
+            hist.columns = hist.columns.droplevel(1)  # yfinance nests under ticker name
+        if hist.empty:
+            return None
+        return float(hist.iloc[0]["Close"])
+    except Exception as e:
+        log.error(f"Error fetching SP500 close value for {date_str}: {e}")
+        return None
 
 def update_row(conn, row_id, values):
     """UPDATE one scan_test_group row with the given {column: value} dict."""
@@ -109,8 +129,37 @@ def check_close_date(conn, row, data):
             **calculate_outcome(row, data, "CLOSE_DATE_HIT", close),
         })
 
+# this function updates the SP500 benchmark tracking, it compares the performance of the ticker since its scan date against the SP500
+def benchmark_daily_tracking(conn, row, sp500_today_value):
+    """Store the SP500 close on the scan date (once) and the SP500 % change since then (daily)."""
+    sp500_start_value = row["sp500_entry_close"]
+    if sp500_start_value is None:
+        sp500_start_value = sp500_close_fetch(row["scan_date"])
+        if sp500_start_value is None:
+            return   # yfinance failed — try again on the next run
+        update_row(conn, row["id"], {"sp500_entry_close": sp500_start_value})
+    if sp500_today_value is not None:
+        sp500_gain_pct = round((sp500_today_value - sp500_start_value) / sp500_start_value * 100, 2)
+        update_row(conn, row["id"], {"sp500_gain_pct": sp500_gain_pct})
+
 
 def main():
+    # Logging setup — INFO to console + a fresh logfile each run. Flip to
+    # logging.DEBUG to see the per-ticker drop reasons from process_ticker().
+    os.makedirs("logs", exist_ok=True)
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")   # so em-dashes render on any Windows console
+    except Exception:
+        pass
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)-7s %(name)s  %(message)s",
+        datefmt="%H:%M:%S",
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler("logs/scan_daily_update.log", mode="w", encoding="utf-8"),
+        ],
+    )
     print(f"=== scan_daily_update === {datetime.now():%Y-%m-%d %H:%M:%S}")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # rows accessible by column name: row["ticker"]
@@ -132,11 +181,17 @@ def main():
 
     print(f"  Fetched {len(today_tickers_data)}/{len(tickers)} tickers")
 
+    sp500_today_data = fetch_last_day_ticker_data("^GSPC")   # once for all rows
+    sp500_today_value = sp500_today_data["close"] if sp500_today_data is not None else None
+    if sp500_today_value is None:
+        print("  ^GSPC: no data from yfinance — sp500_gain_pct not updated today")
+
     for row in open_rows:
         data = today_tickers_data.get(row["ticker"])
         if data is None:
             continue   # no bar for this ticker today — leave the row untouched
         update_daily_tracking(conn, row, data)
+        benchmark_daily_tracking(conn, row, sp500_today_value)
         if not check_high_low(conn, row, data):
             check_close_date(conn, row, data)
 
