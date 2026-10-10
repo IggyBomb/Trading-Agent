@@ -117,16 +117,16 @@ History: 2026-09-14 the gate moved from `rr >= 1.5` to `target_atr >= 1.5` (stop
 2x ATR); 2026-10-06 to `target_atr >= 2.4` (stop 3.2x ATR, RR_RATIO 0.75); 2026-10-07 removed
 as a gate entirely, kept as the flag above.
 
-## Step 5 — Market Researcher (mandatory for HIGH conviction CONFIRMED + top 10 Medium conviction CONFIRMED)
+## Step 5 — Market Researcher (mandatory for HIGH conviction CONFIRMED + top 20 Medium conviction CONFIRMED)
 
 For every **CONFIRMED** ticker flagged **HIGH conviction** in Step 4, invoke `market-researcher.md` immediately.
 Do not skip this step — it is not optional for High conviction CONFIRMED names.
 
-For **Medium conviction CONFIRMED** tickers: invoke `market-researcher.md` for the **top 10
+For **Medium conviction CONFIRMED** tickers: invoke `market-researcher.md` for the **top 20
 by f_score** (descending) — mandatory, not optional, for that subset (the quality pool above).
-If fewer than 10 Medium CONFIRMED tickers exist that day, research all of them.
+If fewer than 20 Medium CONFIRMED tickers exist that day, research all of them.
 
-Any other Medium conviction CONFIRMED ticker (outside that top 10): market-researcher remains
+Any other Medium conviction CONFIRMED ticker (outside that top 20): market-researcher remains
 optional — call it only if a specific catalyst or risk
 event (e.g. earnings within the lookahead window) warrants it. A ticker researched under
 this optional path is not part of the Test Group Log population (see after Step 9) unless
