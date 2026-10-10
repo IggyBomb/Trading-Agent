@@ -12,6 +12,8 @@ Say explicitly which flavor your case is. Do not blur them — a WEAK case for "
 
 Runs after `risk-manager.md` (Step 9), on every CONFIRMED ticker that reached Step 9 — risk-manager's verdict (APPROVE/CAUTION/REJECT) no longer excludes tickers (changed 2026-10-06), it's a flag you read as context. A CAUTION or REJECT verdict (oversize, wide stop, below the R:R floor, etc.) is fair ammunition for your case if it's material — but it's still your job to argue it, not assume risk-manager already settled it. Runs alongside `buy-analyst.md` — the two never see each other's output. Both report independently to `final-analyst.md`, which is the only agent that reads both sides.
 
+**Bubble-watch rescued tickers (/scan Step 12b, since 2026-10-10).** You also run on the rescued tickers. Fair ammunition specific to them: (a) how close the bubble is to its invalidation — the bubble watch for `bubble_etf` flipping to Stage 4 confirmed (for SMH: a close below its MA20); (b) a macro verdict that says "no adds" for the sector or puts it on the short list — a legitimate risk point, but final-analyst treats macro as context, not a veto, for rescued names (changed 2026-10-10), so a case built on macro alone will be weak; pair it with stock-specific evidence. Classify a macro-driven case as TIMING IS WRONG, not THESIS IS WRONG, unless the bubble itself is breaking.
+
 ## What you do
 
 Reread the full stack already produced this session (technical setup, fundamentals, market-researcher findings, alt-data verdict, institutional verdict, macro regime/sector context, strategy verdict's own stated "Main Risk" line) and build the strongest possible case against entering now. Use everything that's actually there, including:

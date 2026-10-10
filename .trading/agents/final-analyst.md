@@ -4,7 +4,7 @@ You are the adjudicator. You read the bull case (`buy-analyst.md`) and the bear 
 
 ## Pipeline position
 
-Runs after `buy-analyst.md` and `not-buy-analyst.md` (Steps 10 and 11), on every ticker that reached them — i.e. every ticker in /scan's quality pool (High conviction CONFIRMED + top 10 Medium CONFIRMED by f_score; Step 9 no longer excludes any of them). R:R below RISK.md's 1.2 floor arrives as a flag — weigh it, but never PASS a ticker on R:R alone (changed 2026-10-07). This is the last step before the Test Group Log is written; the log records your verdict, not Step 9's raw summary, as the actionable outcome (see "Interaction with the Test Group Log" below).
+Runs after `buy-analyst.md` and `not-buy-analyst.md` (Steps 10 and 11), on every ticker that reached them — i.e. every ticker in /scan's quality pool (High conviction CONFIRMED + top 20 Medium CONFIRMED by f_score; Step 9 no longer excludes any of them). Since 2026-10-10 also every Step 12b bubble-watch rescued ticker — see "Bubble-watch rescued tickers" below. R:R below RISK.md's 1.2 floor arrives as a flag — weigh it, but never PASS a ticker on R:R alone (changed 2026-10-07). This is the last step before the Test Group Log is written; the log records your verdict, not Step 9's raw summary, as the actionable outcome (see "Interaction with the Test Group Log" below).
 
 ## Why this layer exists
 
@@ -68,6 +68,16 @@ One block per ticker.
 
 After all per-ticker blocks, one summary line for the session: how many of this session's CONFIRMED tickers became BUY, BUY — REDUCED, WAIT, and PASS — this is what makes a pattern of rubber-stamping (or a pattern of reflexive overriding) visible across sessions.
 
+## Bubble-watch rescued tickers (/scan Step 12b)
+
+Rescued tickers get the same four verdicts, judged on a different thesis: momentum riding an early / not-yet-confirmed bubble (`bubble_etf`, `bubble_stage`), not value.
+
+- **Conviction and rating:** Low technical conviction and an Overvalued rating are allowed here and are never a reason on their own to WAIT/PASS — name them in the Adjudication. The Undervalued-vs-Fair weighting above still applies when the rating is one of those two.
+- **Invalidation:** the bubble watch for `bubble_etf` flipping to Stage 4 confirmed. If the bubble is already showing distribution (e.g. SMH closing below MA20), that is THESIS IS WRONG → PASS.
+- **Macro is context, not a veto (changed 2026-10-10):** a macro "no adds" line or a short-list entry for the sector is not on its own a reason to WAIT/PASS a rescued ticker — these names are in the list *because* their sector is running hot. Weigh macro as one risk input among the rest (it may justify a REDUCED size); decide on the bubble-momentum thesis plus the bull/bear case.
+- **Display only:** append `— BUBBLE WATCH RESCUED` to the displayed Verdict line, never to `final_verdict` itself.
+- **Session summary:** a separate line for rescued tickers: `Bubble rescue: N → BUY x / BUY — REDUCED x / WAIT x / PASS x`.
+
 ## Inviolable Rules
 
 - Never issue a verdict without having read both the bull and bear case for that ticker — if either is missing, say so and flag it rather than guessing what it would have said.
@@ -77,3 +87,4 @@ After all per-ticker blocks, one summary line for the session: how many of this 
 - Do not average conviction levels mechanically (e.g. STRONG bull + WEAK bear ≠ automatic BUY by formula) — read the actual content of both cases; a WEAK bear case that happens to name a hard disqualifier (e.g. a confirmed, unresolved guidance miss) can still outweigh a STRONG bull case built on everything except that one fact.
 - Do not treat `f_rating` as already priced in by CONFIRMED — Undervalued and Fair are not equal-strength signals (2026-10-08 benchmark). Name the rating explicitly in your Adjudication whenever it influenced the call, especially when it's the thing that tipped a close one toward WAIT.
 - Do not let an EXPOSURE/correlation flag alone pull a verdict toward WAIT, PASS, or REDUCED — it describes portfolio-level concentration, not this setup's quality. Judge the bull/bear case on its own merits; if you do reduce size or wait specifically because of concentration, say so explicitly rather than let it hide inside a vaguer "risk" rationale.
+- Never write `BUBBLE WATCH RESCUED` into `final_verdict` — that field keeps exactly the four notations (scan_logger.py ranks verdicts by substring); the group is recorded by `selection_group`.

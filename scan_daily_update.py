@@ -4,7 +4,7 @@ Mamma mia quanto fanno cagare i commenti di Claude. Questi sono tutti da riscriv
 scan_daily_update.py — daily tracker for the scan test group.
 
 Runs once a day, after market close. Reads every open (outcome IS NULL) row
-from data/scan_tracking.db's scan_test_group table and fills in that day's
+from data/scan_tracking.db's TABLE (config.SCAN_TRACKING_TABLE) and fills in that day's
 data for each ticker.
 
 DATA STRUCTURE — today_tickers_data is a dict of dicts (nested dict):
@@ -30,8 +30,11 @@ log = logging.getLogger("scan_daily_update")
 
 import yfinance as yf
 import pandas as pd
+from config import SCAN_TRACKING_TABLE
+from scan_logger import TRACKING_CREATE_SQL
 
 DB_PATH = "data/scan_tracking.db"
+TABLE   = SCAN_TRACKING_TABLE   # scan_tracking_bubble_watch; scan_test_group is the frozen old table
 
 
 def fetch_last_day_ticker_data(ticker):
@@ -69,10 +72,10 @@ def sp500_close_fetch(date_str):
         return None
 
 def update_row(conn, row_id, values):
-    """UPDATE one scan_test_group row with the given {column: value} dict."""
+    """UPDATE one row of TABLE with the given {column: value} dict."""
     assignments = ", ".join(f"{col} = :{col}" for col in values)
     conn.execute(
-        f"UPDATE scan_test_group SET {assignments} WHERE id = :id",
+        f"UPDATE {TABLE} SET {assignments} WHERE id = :id",
         {**values, "id": row_id},
     )
 
@@ -163,9 +166,10 @@ def main():
     print(f"=== scan_daily_update === {datetime.now():%Y-%m-%d %H:%M:%S}")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # rows accessible by column name: row["ticker"]
+    conn.execute(TRACKING_CREATE_SQL)  # IF NOT EXISTS: no crash if scan_logger.py hasn't created TABLE yet
 
     open_rows = conn.execute(
-        "SELECT * FROM scan_test_group WHERE outcome IS NULL"
+        f"SELECT * FROM {TABLE} WHERE outcome IS NULL"
     ).fetchall()
     tickers = sorted({row["ticker"] for row in open_rows})  # unique, one yfinance call each
 
@@ -190,6 +194,9 @@ def main():
         data = today_tickers_data.get(row["ticker"])
         if data is None:
             continue   # no bar for this ticker today — leave the row untouched
+        if data["date"] <= row["scan_date"]:
+            continue   # scan-day bar (or older): it includes prices from before the
+                       # scan's intraday snapshot -- tracking starts the next session
         update_daily_tracking(conn, row, data)
         benchmark_daily_tracking(conn, row, sp500_today_value)
         if not check_high_low(conn, row, data):
@@ -197,7 +204,7 @@ def main():
 
     conn.commit()
     still_open = conn.execute(
-        "SELECT COUNT(*) FROM scan_test_group WHERE outcome IS NULL"
+        f"SELECT COUNT(*) FROM {TABLE} WHERE outcome IS NULL"
     ).fetchone()[0]
     conn.close()
 

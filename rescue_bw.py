@@ -7,25 +7,26 @@ its own output file (data/rescued_bw.json) -- deliberately not a section glued
 onto watchlist_ranker.py's own run or output. It builds the exact same scored
 universe (via watchlist_ranker.build_scored_universe(), imported rather than
 reimplemented, so both pipelines score identically by construction) and then
-asks a different question of it: not "who's in the top N", but "who's outside
-the top N on composite score alone, whose sector/industry bubble watch says a
-rally may be starting before the score caught up?"
+asks a different question of it: not "who's in the top N", but "who in the
+top RESCUE_BW_POOL_END on composite score sits in a sector/industry whose
+bubble watch says a rally may be under way?" (2026-10-10: the pool starts at
+pipeline-1 rank #1 -- RESCUE_BW_TOP_CUTOFF = 0 -- not #21 as originally.)
 
 Mirrors watchlist_ranker.regime_penalty()'s bubble-watch gate from the other
 side: that function penalizes a sector once Kindleberger Stage 4 is CONFIRMED
 (too late, distribution phase). This script rescues the opposite case -- Stage
 2 (Boom), Stage 3 (Euphoria), or Stage 4 not yet confirmed -- as names worth a
-second look even though their composite score didn't make the main cut.
+second look, whether or not their composite score made the main cut.
 Confirmed Stage 4 is never rescued here: same signal, already handled as a
 penalty elsewhere, not an opportunity.
 
 Usage:
-  python3 rescue_bw.py              — full universe (pool = pipeline-1 ranks 21-100)
+  python3 rescue_bw.py              — full universe (pool = pipeline-1 ranks 1-100)
   python3 rescue_bw.py --eu         — EU tickers only
   python3 rescue_bw.py --us         — US tickers only
 """
 
-import json, argparse
+import json, argparse, sys
 from datetime import datetime
 from pathlib import Path
 
@@ -40,6 +41,10 @@ def main():
     parser.add_argument("--eu", action="store_true", help="EU tickers only")
     parser.add_argument("--us", action="store_true", help="US tickers only")
     args = parser.parse_args()
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")   # so the arrows/dashes print on any Windows console
+    except Exception:
+        pass
 
     # Two passes, deliberately -- "who's excluded" and "how do they score"
     # are different questions that must NOT share one weight set:
@@ -47,7 +52,8 @@ def main():
     # 1) Pipeline 1's OWN weights (config.COMPOSITE_WEIGHTS, the default)
     #    decide who is actually in watchlist_ranker.py's real top
     #    RESCUE_BW_TOP_CUTOFF -- that's the exclusion set this script rescues
-    #    FROM. Scoring this with RESCUE_BW_WEIGHTS instead would silently
+    #    FROM (empty since 2026-10-10, cutoff = 0; the pool's ranks still come
+    #    from these weights). Scoring this with RESCUE_BW_WEIGHTS instead would silently
     #    change who counts as "already in the top 20", which is a different
     #    universe than the one pipeline 1 actually produced (verified live,
     #    2026-10-05: 4 tickers differed between the two top-20s on the same
@@ -61,7 +67,7 @@ def main():
         return
     scored_default, _, _ = result_default
     # Pool = pipeline 1's ranks RESCUE_BW_TOP_CUTOFF+1 .. RESCUE_BW_POOL_END
-    # (21-100), ranked on pipeline 1's own weights; pipeline-1 rank is kept
+    # (1-100 since 2026-10-10), ranked on pipeline 1's own weights; pipeline-1 rank is kept
     # on each rescued row so the output shows where it came from.
     ranked_default = sorted(scored_default, key=lambda x: -x["score"])
     pool_ranks = {
@@ -97,7 +103,7 @@ def main():
             "bubble_stage": stage,
             "bubble_theme": bubble_entry.get("theme"),
             "bubble_etf":   etf,
-            "p1_rank":      pool_ranks[row["ticker"]],
+            "normal_rank":  pool_ranks[row["ticker"]],
             "rescue_flag":  "late-stage, not yet confirmed — watch for distribution" if stage == 4 else None,
         })
     rescued.sort(key=lambda x: -x["score"])
@@ -114,7 +120,7 @@ def main():
         for row in rescued:
             flag  = f" — {row['rescue_flag']}" if row.get("rescue_flag") else ""
             theme = row.get("bubble_theme") or ""
-            print(f"  {row['ticker']:<12} {row['p1_rank']:>4} {row['score']:>6.1f}  {row['conviction']:<8} "
+            print(f"  {row['ticker']:<12} {row['normal_rank']:>4} {row['score']:>6.1f}  {row['conviction']:<8} "
                   f"{row['bubble_stage']:>5}  {theme}{flag}")
     else:
         print("  (none — data/bubble_watch.json missing/stale, or nothing in pipeline-1 ranks "

@@ -137,18 +137,21 @@ SECTOR_THRESHOLD_TOLERANCE = 5
 BUBBLE_WATCH_MAX_AGE_HOURS = 36
 
 # -- Rescued_BW rank (watchlist_ranker.main) ---------------------------------
-# A second, smaller rank alongside the main one: tickers that don't make the
-# main composite cutoff but whose sector/industry bubble watch is at an early,
-# not-yet-confirmed stage (2, 3, or 4-not-confirmed) -- possibly catching a
-# rally before the composite score reflects it. Confirmed Stage 4 is excluded
-# on purpose, since that's the same signal regime_penalty() already treats as
-# "too late", not an opportunity. Independent of whatever --top a given run
-# uses for the main list -- this cutoff is fixed on purpose, so Rescued_BW
-# always means the same thing regardless of how many rows main() prints.
-RESCUE_BW_TOP_CUTOFF = 20
+# A second, smaller rank alongside the main one: tickers whose sector/industry
+# bubble watch is at an early, not-yet-confirmed stage (2, 3, or
+# 4-not-confirmed) -- possibly catching a rally the composite score hasn't
+# fully priced. Confirmed Stage 4 is excluded on purpose, since that's the
+# same signal regime_penalty() already treats as "too late", not an
+# opportunity. Fixed on purpose (independent of the main list's --top), so
+# Rescued_BW always means the same thing regardless of how many rows main()
+# prints.
+# 2026-10-10: 20 -> 0. The pool now starts at pipeline-1 rank #1 instead of
+# #21 -- the main top 20 is no longer excluded, so a bubble-watch name ranked
+# highly on composite is eligible too. Ranks RESCUE_BW_TOP_CUTOFF+1 .. POOL_END.
+RESCUE_BW_TOP_CUTOFF = 0
 # Last pipeline-1 rank eligible for rescue (inclusive): the pool is ranks
-# RESCUE_BW_TOP_CUTOFF+1 .. RESCUE_BW_POOL_END on COMPOSITE_WEIGHTS (21-100),
-# not the whole tail -- anything below #100 is too far from the cut to rescue.
+# RESCUE_BW_TOP_CUTOFF+1 .. RESCUE_BW_POOL_END on COMPOSITE_WEIGHTS (1-100),
+# not the whole tail -- anything below #100 is too far down to rescue.
 RESCUE_BW_POOL_END = 100
 
 # -- Composite score weights (watchlist_ranker.composite) --------------------
@@ -190,3 +193,9 @@ TRADES_PATH          = str(LOGS_DIR / "trades.jsonl")
 BACKTEST_PATH        = str(DATA_DIR / "backtest_results.json")
 SCAN_CANDIDATES_PATH = str(LOGS_DIR / "scan_candidates.jsonl")
 SCAN_BACKTEST_PATH   = str(DATA_DIR / "scan_backtest_results.json")
+
+# scan_tracking.db table that scan_logger.py writes and scan_daily_update.py
+# tracks. scan_test_group is the frozen pre-bubble-watch table (old tracking
+# rules); everything from the bubble-watch rescue onward goes here, with a
+# selection_group column (HIGH / MEDIUM_POOL / BUBBLE_RESCUED) to compare groups.
+SCAN_TRACKING_TABLE  = "scan_tracking_bubble_watch"

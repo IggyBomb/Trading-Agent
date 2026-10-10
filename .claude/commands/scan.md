@@ -212,11 +212,72 @@ many CONFIRMED tickers became BUY / BUY — REDUCED / WAIT / PASS.
 **This is the mark that actually matters** — when presenting results to the user, lead with
 Step 12's verdict. Step 9's risk summary is context for that verdict, not a prior decision.
 
+## Step 12b — Bubble Watch Rescue (after Step 12, before the Test Group Log)
+
+Added 2026-10-10. A second, separate candidate group alongside the quality pool: tickers in
+the top 100 of `watchlist_ranker.py`'s composite ranking whose sector/industry sits at an
+early, not-yet-confirmed bubble-watch stage (Stage 2, 3, or 4 not confirmed) — names that
+may keep running *because* they are in a bubble. They get the same full analyst treatment
+and the same verdict ladder, and are logged as their own group (`BUBBLE_RESCUED`) so their
+performance can be compared against the quality pool.
+
+1. **Preconditions — check, never block:**
+   - `data/bubble_watch.json` exists and its `generated_at` is < 36 h old
+     (`config.BUBBLE_WATCH_MAX_AGE_HOURS`). This session's macro run is what writes it —
+     if it's missing or stale, the macro step didn't persist it.
+   - `data/sector_rotation.json` has a `us_industries` block (without it every semi resolves
+     to XLK instead of SMH and nothing matches the bubble watch).
+   If either fails, print
+   `⚠ [BUBBLE RESCUE SKIPPED — <reason>. rescued_candidates = []]`, write an empty
+   `rescued_candidates` list in the Test Group Log, and continue.
+2. **Re-run the rescue now:** `PYTHONIOENCODING=utf-8 python rescue_bw.py`. Do not reuse the
+   16:00 pipeline's `data/rescued_bw.json` — it was built before today's macro wrote today's
+   bubble watch. Read the fresh `data/rescued_bw.json` → `Rescued_BW` list (already sorted
+   by rescue `score`, descending; each row carries `normal_rank`, `bubble_etf`,
+   `bubble_stage`, `bubble_theme`).
+3. **Drop overlaps, then cap:** any rescued ticker already in today's quality pool is
+   dropped from the rescue list (the pool row wins; list the dropped names). From what
+   remains, take the **top 10 by rescue score**. Everything below the top 10 is listed in the
+   output (ticker, normal_rank, score) but not analysed or logged.
+4. **Levels are mandatory:** take `setup`, `conviction`, `entry`, `stop`, `target`, `rr` from
+   `market_data.json` and `f_score` / `rating` from `fundamental_data.json`. `entry`, `stop`
+   and `target` must all be non-null — `scan_daily_update.py` cannot track a row without them.
+   If any is missing, flag `⚠ [NO LEVELS — not logged]` for that ticker and skip it.
+   Low technical conviction and any `rating` (including Overvalued) are allowed for this
+   group — state both, they are information, not filters.
+5. **Run Steps 5–12 on each of the (up to) 10** — market-researcher, alt-data-agent,
+   strategy-analyst, institutional-flow, risk-manager, buy-analyst, not-buy-analyst,
+   final-analyst — with this framing passed to every agent:
+   - **Thesis:** riding the bubble momentum of `bubble_etf` (`bubble_theme`, stage
+     `bubble_stage`), not value. Strategy is usually MOMENTUM.
+   - **Hard invalidation:** the bubble watch for `bubble_etf` flips to Stage 4 **confirmed**
+     (for SMH: an SMH close below its MA20). Name this level in the strategy verdict and
+     as the exit trigger.
+   - **Macro is context, not a veto (changed 2026-10-10):** a macro "no adds" line or a
+     short-list entry for the sector does not on its own turn a rescued buy into WAIT/PASS.
+     These names are in the list *because* their sector is running hot, so judge them on
+     the bubble-momentum thesis plus the stock's own bull/bear case. Macro still counts as
+     a risk input (risk-manager may flag it, the bear case may cite it), and the bubble's
+     own invalidation (Stage 4 confirmed) is still a hard exit. Every rescued ticker is
+     analysed and logged.
+   - **Sizing and limits:** exactly the same rules as the quality pool (risk-manager tier
+     sizing; rescued BUYs share Step 16's 5-BUY limit).
+   - `final_verdict` uses the same four notations only (`BUY`, `BUY — REDUCED (X%)`, `WAIT`,
+     `PASS`). The rescue label is never written into that field — the group lives in
+     `rescued_candidates` / `selection_group`.
+6. **Output:** a FINAL VERDICT block per rescued ticker, with
+   `— BUBBLE WATCH RESCUED` appended to the displayed verdict line
+   (e.g. `Verdict : WAIT — BUBBLE WATCH RESCUED`), plus a separate one-line summary:
+   `Bubble rescue: N analysed → BUY x / BUY — REDUCED x / WAIT x / PASS x | dropped as pool
+   overlap: …`.
+
 ## Test Group Log — write the JSON file
 
 After Step 12 completes for every ticker in the Step 5 research population (all High
-conviction CONFIRMED + the top 10 Medium conviction CONFIRMED by f_score), write the
-results to `data/scan_test_group.json` using the Write tool.
+conviction CONFIRMED + the top 20 Medium conviction CONFIRMED by f_score) **and Step 12b
+completes for the rescued top 10**, write the results to `data/scan_test_group.json`
+using the Write tool — quality-pool rows under `candidates`, rescued rows under
+`rescued_candidates`, in the same file.
 
 This is a FIXED filename, overwritten every `/scan` run — not dated per day. That's
 deliberate (avoids a pile of per-day files accumulating over a months-long test), but it
@@ -227,8 +288,15 @@ day's results are lost with no trace.
 step) to load it into `data/scan_tracking.db` before moving on to Step 13. Do not treat
 this as optional or defer it to "later in the session" — the whole point of running it
 now is to close the window where an unread file could get overwritten by a future `/scan`
-run. Report `scan_logger.py`'s own output (inserted / skipped-open / skipped-duplicate
-counts) to the user as part of this step's output.
+run. Report `scan_logger.py`'s own output (its per-group table: HIGH / MEDIUM_POOL /
+BUBBLE_RESCUED — in JSON / inserted / skipped-open / skipped-duplicate) to the user as
+part of this step's output.
+
+Since 2026-10-10 the logger writes table `scan_tracking_bubble_watch`
+(`config.SCAN_TRACKING_TABLE`), tagging every row with `selection_group`: `HIGH` /
+`MEDIUM_POOL` from `conviction` for `candidates`, `BUBBLE_RESCUED` for
+`rescued_candidates`. The old `scan_test_group` table is frozen (old tracking rules) and is
+no longer written.
 
 This captures what this specific `/scan` session actually concluded — the real Steps 5–12
 verdicts, including any override a researched finding produced (e.g. TSN, 2026-09-08:
@@ -268,16 +336,54 @@ a key):
       "final_verdict_reason": null,
       "research_summary": "2nd FY26 guidance cut in a month (widening beef losses), BofA cut PT, no confirmed reversal signal — disqualified despite mechanical TURNAROUND shape"
     }
+  ],
+  "rescued_candidates": [
+    {
+      "ticker": "LRCX",
+      "conviction": "Low",
+      "setup": "neutral",
+      "entry": 321.72,
+      "stop": 297.61,
+      "target": 352.56,
+      "rr_planned": 1.28,
+      "f_score": 57.1,
+      "rating": "Fair",
+      "sector": "Technology",
+      "strategy_type": "MOMENTUM",
+      "alt_data_score": 52,
+      "institutional_score": 50,
+      "institutional_alignment": "CAUTIOUS",
+      "risk_manager_verdict": "CAUTION",
+      "risk_manager_reason": "RR: 1.28:1 MARGINAL; MACRO AI hardware 'no adds' in macro verdict (context, not a veto)",
+      "final_verdict": "BUY — REDUCED (50%)",
+      "final_verdict_reason": "Bubble momentum intact (SMH > MA20), clean uptrend, R:R 1.28; Fair rating and insider selling keep it at half size",
+      "research_summary": "Semi-equipment demand strong on AI capex; price above MA50/MA200",
+      "bubble_etf": "SMH",
+      "bubble_stage": 4,
+      "bubble_theme": "Semis/AI-infra",
+      "normal_rank": 31,
+      "rescue_score": 65.4
+    }
   ]
 }
 ```
 
+(The LRCX row is an illustrative shape, not a real verdict.)
+
 Field notes:
 - `conviction` doubles as the selection reason under this rule — "High" means it qualified
-  via the mandatory-High path, "Medium" means it qualified via top-10-by-f_score. There is
-  no third path into this file: a Medium-conviction ticker researched only because of the
-  optional catalyst clause in Step 5 does not go in this log unless it also independently
-  made the top 10.
+  via the mandatory-High path, "Medium" means it qualified via top-20-by-f_score. The only
+  other path into this file is Step 12b's `rescued_candidates`: a Medium-conviction ticker
+  researched only because of the optional catalyst clause in Step 5 does not go in this log
+  unless it also independently made the top 20.
+- `rescued_candidates`: Step 12b's analysed top 10 only, with exactly the same keys as
+  `candidates` plus the five rescue fields below (every key present, `null` if unknown).
+  Write `"rescued_candidates": []` when Step 12b was skipped — never omit the key. A ticker
+  never appears in both lists on the same day (overlaps were dropped in Step 12b).
+- `bubble_etf` / `bubble_stage` / `bubble_theme` / `normal_rank` / `rescue_score`: copied
+  from the ticker's row in `data/rescued_bw.json` (`normal_rank` = its rank in the
+  composite ranking; `rescue_score` = that row's `score`). Only on `rescued_candidates`
+  rows — do not add them to `candidates` (the logger fills them with NULL there).
 - `strategy_type`: the real strategy-analyst.md classification, not a mechanical proxy.
 - `institutional_score` / `institutional_alignment`: from Step 8. With no real 13F /
   dark-pool / options-flow source wired into this pipeline, this will typically be
@@ -313,6 +419,11 @@ Field notes:
   did); `null` alongside a `null` `final_verdict`. Never leave this blank when
   `final_verdict` is set — a BUY still gets a one-line "why," not just PASS/WAIT.
 - `research_summary`: 1–2 sentences, the key market-researcher finding for that ticker.
+- `target`: always write the pipeline's own target. `scan_logger.py` stores it as
+  `target_pipeline` and tracks the row against `max(target, entry + 1.2 × (entry − stop))`
+  (`TARGET_FLOOR_R`, since 2026-10-10), so near-entry consolidation targets don't close
+  the row on day one. `scan_daily_update.py` skips the scan-day bar — tracking starts
+  the next session.
 
 Write this file every session Step 9 completes for the test-group population, even if a
 ticker repeats from a prior day's file with an unchanged verdict — each day is a separate
@@ -431,7 +542,9 @@ benchmark IWDA.AS (MSCI World, EUR). Every `/scan` run manages it:
    fires on a later run may be entered then. **Few, quality names:**  — if more than 5 BUY verdicts, take the strongest by final-analyst
    conviction (thesis, fundamentals, news, trend), not by R:R. Every order's `--reason`
    states its R:R and flags it if below the 1.2 floor; a below-floor R:R never blocks an
-   entry on its own.
+   entry on its own. Step 12b's rescued BUYs are entered under the same rules and count
+   toward the same 5-BUY limit; their `--reason` starts with `BUBBLE WATCH RESCUED` and
+   names the invalidation (bubble watch for `bubble_etf` flipping to Stage 4 confirmed).
 
 Orders always fill at the next session's open (no same-close fills — the scan runs
 after the close). Never edit `data/test_ptf.json` by hand to change history — the alpha
@@ -445,7 +558,9 @@ figure is only meaningful if every decision is recorded as it was made.
   floor and flagged when below it — a flag, not a disqualifier (since 2026-10-07).
 - CONFIRMED = technically sound + fundamentally backed. These are the primary setups.
 - CAUTION = technically valid but fundamentally expensive. Label clearly. Stops at Step 4 by default — no Steps 5–9 unless specifically requested for that ticker.
-- Never output Low conviction tickers regardless of fundamental score.
+- Never output Low conviction tickers regardless of fundamental score — except Step 12b's
+  bubble-watch rescued names, which are selected by bubble stage + composite rank, not by
+  technical conviction (show their conviction, don't filter on it).
 - Never skip Steps 5–8 for High conviction CONFIRMED tickers — partial analysis is not a complete scan.
 - Missing data = flag only, never block. The user makes all final decisions.
 - Momentum and contrarian outputs are always separated — never merge the two lists.
