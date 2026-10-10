@@ -100,8 +100,8 @@ next to every one of them rather than used as a filter.
 **Quality pool** (the only tickers that go through Steps 5–12 — this is what keeps research
 volume bounded now that the R:R gate no longer does):
 - every **High conviction** CONFIRMED ticker, plus
-- the **top 10 Medium conviction** CONFIRMED tickers by f_score (descending) — all of them
-  if fewer than 10.
+- the **top 20 Medium conviction** CONFIRMED tickers by f_score (descending) — all of them
+  if fewer than 20.
 
 Every other CONFIRMED ticker stops after Step 4 (ranked table only).
 
