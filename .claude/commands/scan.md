@@ -428,12 +428,10 @@ benchmark IWDA.AS (MSCI World, EUR). Every `/scan` run manages it:
    `--reason`.
 3. Enter today's Step 12 verdicts: `BUY` at the risk-manager size (tier % of €100,000),
    `BUY — REDUCED (X%)` at that fraction. WAIT/PASS are not entered; a WAIT whose trigger
-   fires on a later run may be entered then. **Few, quality names:** at most **2 new
-   positions per session** — if more than 2 BUY verdicts, take the strongest by final-analyst
+   fires on a later run may be entered then. **Few, quality names:**  — if more than 5 BUY verdicts, take the strongest by final-analyst
    conviction (thesis, fundamentals, news, trend), not by R:R. Every order's `--reason`
    states its R:R and flags it if below the 1.2 floor; a below-floor R:R never blocks an
    entry on its own.
-4. Respect RISK.md inside the book too: max 15 open positions, max 2 per sector.
 
 Orders always fill at the next session's open (no same-close fills — the scan runs
 after the close). Never edit `data/test_ptf.json` by hand to change history — the alpha
