@@ -33,7 +33,7 @@ Only if all four pass do you continue to the technical analysis below.
 - Never more than 2% of account at risk
 
 ## Targets
-- Minimum R:R: 1.5:1
+- Minimum R:R: 1.2:1
 - Target 1: prior swing high (for longs)
 - Target 2: measured move continuation
 - Scale out 50% at Target 1, trail stop on remainder

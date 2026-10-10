@@ -146,7 +146,7 @@ A swing trade captures a single directional move on the daily chart. You are not
 
 ### Target and Hold Duration
 - Target: next resistance level on daily chart, or Bulkowski measure rule
-- Minimum R:R: 1.5:1 per RISK.md; prefer 2.0:1 or higher
+- Minimum R:R: 1.2:1 per RISK.md; prefer 1.8:1 or higher
 - Holding period: 5–15 trading days
 - Time-based backstop: if price has not moved toward target within 10 trading days, exit regardless of where stop is — time is a cost
 
@@ -185,6 +185,7 @@ A momentum trade rides an explosive move already in progress. There is no base, 
 - Enter on the first intraday pullback after the initial surge — not at the top of the spike
 - Look for a 15–30 minute base or bull flag forming after the initial move
 - Volume should contract on the pullback (normal) and expand on the resumption (entry signal)
+- The resumption must take price to a new high above the initial surge's high — a bounce that only returns to the pre-pullback price without exceeding it is a failed base, not an entry signal (added 2026-10-09: the 2026-10-08 benchmark found all 4 of the system's High-conviction time-outs — ALAB, MPWR, AMD, SHOP — were momentum entries that stalled without ever retesting a new high)
 
 **Entry timing:**
 - First 30 minutes: observe the opening range. Enter on the first pullback that holds above the opening 15-minute low
@@ -207,14 +208,18 @@ A momentum trade rides an explosive move already in progress. There is no base, 
 | Price gaps up the next morning > 3% | Take 50% profit at open; trail rest |
 | Volume below average for 2 consecutive days | Full exit |
 | Price fails to make new high for 2 days | Full exit |
+| No new high since entry by end of day 4 | Full exit — stalling backstop, see note below |
 | Max 7 trading days elapsed | Full exit regardless |
+
+Day-4 backstop (added 2026-10-09): the "2 consecutive days" rule above can be gamed by a move that alternates single no-new-high days without ever stringing two together, riding sideways all the way to the day-7 cutoff. The 2026-10-08 benchmark found exactly this pattern in all 4 of the system's High-conviction time-outs. This checkpoint is independent of that rule and cannot be waived by an improving-but-not-yet-new-high move.
 
 ### Exit Triggers (in order of priority)
 1. Trailing stop hit → full exit
 2. Volume below average 2 consecutive days → full exit
 3. Price fails new high 2 consecutive days → full exit
-4. Elder Impulse System turns Red → full exit
-5. Day 7 reached → full exit
+4. No new high since entry by end of day 4 → full exit (stalling backstop)
+5. Elder Impulse System turns Red → full exit
+6. Day 7 reached → full exit
 
 ---
 
@@ -347,7 +352,7 @@ A short swing captures a single directional down-move on the daily chart. You ar
 
 ### Target and Hold Duration
 - Target: next support level on the daily chart, or Bulkowski measure rule (pattern height subtracted from breakdown point)
-- Minimum R:R: 1.5:1
+- Minimum R:R: 1.2:1
 - Holding period: 5–15 trading days
 - Time backstop: if price has not moved toward target within 10 days, cover regardless
 

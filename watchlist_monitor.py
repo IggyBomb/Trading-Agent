@@ -81,7 +81,7 @@ def session_elapsed_fraction(now_et=None):
     return (now_et - open_).total_seconds() / (close_ - open_).total_seconds()
 
 
-def check_ticker(ticker, level, direction, entry, stop, target, vol_threshold=1.5, min_rr=1.5):
+def check_ticker(ticker, level, direction, entry, stop, target, vol_threshold=1.5, min_rr=0.75):
     """`holding_level` alone is not sufficient for "wait for a pullback to X" watches:
     it only checks price is on the right side of `level`, which is trivially true for
     a stock that never actually pulled back and is still sitting far above it. Found
@@ -90,8 +90,10 @@ def check_ticker(ticker, level, direction, entry, stop, target, vol_threshold=1.
     above 161" was true by default and the tool reported SIGNAL FIRED with R:R=0.26 —
     a terrible entry, not a confirmation. min_rr gates the signal on the trade still
     being worth taking at the CURRENT price, not just on which side of the level it's
-    on. Default 1.5 matches RISK.md's minimum R:R requirement — do not lower this to
-    make a signal fire; that defeats the purpose of the gate.
+    on. Default 0.75 matches config.RR_RATIO (RISK.md's 1.2:1 minimum, expressed as the
+    raw constant compared against `rr` at ATR_STOP_MULT=3.2x — see config.py's comment,
+    changed 2026-10-06) — do not lower this to make a signal fire; that defeats the
+    purpose of the gate.
     """
     hist = yf.download(ticker, period="30d", interval="1d", progress=False, auto_adjust=True)
     if isinstance(hist.columns, pd.MultiIndex):
@@ -239,8 +241,8 @@ def main():
     p.add_argument("--stop", type=float)
     p.add_argument("--target", type=float)
     p.add_argument("--vol-threshold", type=float, default=1.5)
-    p.add_argument("--min-rr", type=float, default=1.5,
-                    help="Minimum R:R at the CURRENT price required for a signal to fire (default 1.5, matches RISK.md)")
+    p.add_argument("--min-rr", type=float, default=0.75,
+                    help="Minimum R:R at the CURRENT price required for a signal to fire (default 0.75 = config.RR_RATIO, RISK.md's 1.2:1 effective minimum at ATR_STOP_MULT=3.2x)")
     p.add_argument("--auto", action="store_true")
     p.add_argument("--within-atr", type=float, default=0.2)
     p.add_argument("--conviction", choices=["High", "Medium"], default=None,

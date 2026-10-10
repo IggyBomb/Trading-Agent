@@ -1,0 +1,94 @@
+Failed to get ticker 'TTE.PA' reason: Failed to perform, curl: (56) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.
+Traceback (most recent call last):
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/curl_cffi/requests/session.py", line 732, in _request_once
+    c.perform()
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/curl_cffi/curl.py", line 505, in perform
+    self._check_error(ret, "perform")
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/curl_cffi/curl.py", line 269, in _check_error
+    raise error
+curl_cffi.curl.CurlError: Failed to perform, curl: (56) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/test_ptf.py", line 321, in <module>
+    main()
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/test_ptf.py", line 315, in main
+    events = update(book)
+             ^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/test_ptf.py", line 198, in update
+    e = check_stop(book, t)
+        ^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/test_ptf.py", line 157, in check_stop
+    h = history(ticker, p["opened"])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/test_ptf.py", line 60, in history
+    h = yf.Ticker(ticker).history(start=start, auto_adjust=False)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/utils.py", line 124, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/base.py", line 129, in history
+    return self._lazy_load_price_history().history(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/base.py", line 135, in _lazy_load_price_history
+    self._price_history = PriceHistory(self._data, self.ticker, self._get_ticker_tz(timeout=10))
+                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/base.py", line 160, in _get_ticker_tz
+    if k in self.info:
+            ^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/ticker.py", line 159, in info
+    return self.get_info()
+           ^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/base.py", line 282, in get_info
+    data = self._quote.info
+           ^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/scrapers/quote.py", line 524, in info
+    self._fetch_info()
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/scrapers/quote.py", line 682, in _fetch_info
+    result = self._fetch(modules=modules)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/scrapers/quote.py", line 658, in _fetch
+    result = self._data.get_raw_json(_QUOTE_SUMMARY_URL_ + f"/{self._symbol}", params=params_dict)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/data.py", line 509, in get_raw_json
+    response = self.get(url, params=params, timeout=timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/utils.py", line 124, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/data.py", line 422, in get
+    response = self._make_request(url, request_method = self._session.get, params=params, timeout=timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/utils.py", line 124, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/data.py", line 456, in _make_request
+    crumb, strategy = self._get_cookie_and_crumb()
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/utils.py", line 124, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/data.py", line 412, in _get_cookie_and_crumb
+    crumb = self._get_cookie_and_crumb_basic(timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/utils.py", line 124, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/data.py", line 291, in _get_cookie_and_crumb_basic
+    if not self._get_cookie_basic(timeout):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/utils.py", line 124, in wrapper
+    result = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/yfinance/data.py", line 246, in _get_cookie_basic
+    self._session.get(
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/curl_cffi/requests/session.py", line 842, in get
+    return self.request(method="GET", url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/curl_cffi/requests/session.py", line 795, in request
+    return self._request_once(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/sessions/rcw-01a1djck8kz4qvcay5chm4k4/mnt/Trading-Agent/.venv_scheduled/lib/python3.12/site-packages/curl_cffi/requests/session.py", line 739, in _request_once
+    raise error(str(e), e.code, rsp) from e
+curl_cffi.requests.exceptions.ProxyError: Failed to perform, curl: (56) CONNECT tunnel failed, response 403. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.

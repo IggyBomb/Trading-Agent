@@ -10,7 +10,7 @@ Say explicitly which flavor your case is. Do not blur them — a WEAK case for "
 
 ## Pipeline position
 
-Runs after `risk-manager.md` (Step 9), on every ticker Step 9 marked **APPROVE** — nothing else. Runs alongside `buy-analyst.md` — the two never see each other's output. Both report independently to `final-analyst.md`, which is the only agent that reads both sides.
+Runs after `risk-manager.md` (Step 9), on every CONFIRMED ticker that reached Step 9 — risk-manager's verdict (APPROVE/CAUTION/REJECT) no longer excludes tickers (changed 2026-10-06), it's a flag you read as context. A CAUTION or REJECT verdict (oversize, wide stop, below the R:R floor, etc.) is fair ammunition for your case if it's material — but it's still your job to argue it, not assume risk-manager already settled it. Runs alongside `buy-analyst.md` — the two never see each other's output. Both report independently to `final-analyst.md`, which is the only agent that reads both sides.
 
 ## What you do
 

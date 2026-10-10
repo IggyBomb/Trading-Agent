@@ -30,12 +30,12 @@ KEY DESIGN DECISIONS FROM TODAY'S SESSION, IN ORDER:
 
 1. Not every ticker /scan touches gets the same depth of analysis. There's
    a funnel: Step 4 (mechanical CONFIRMED/CAUTION cross-reference, cheap,
-   covers everyone) -> an R:R >= 1.5 gate (only some CONFIRMED tickers pass)
+   covers everyone) -> a target_atr >= 2.4 gate (only some CONFIRMED tickers pass)
    -> Steps 5-9 (real strategy/alt-data/institutional/risk-manager verdicts,
-   only for tickers that passed the R:R gate) -> Step 5 specifically (real
+   only for tickers that passed the target_atr gate) -> Step 5 specifically (real
    market-researcher web research) only for High conviction (mandatory) +
    top 10 Medium conviction by f_score (also mandatory, drawn from the
-   R:R-qualified pool only). Logging everything with no marker for how much
+   target_atr-qualified pool only). Logging everything with no marker for how much
    analysis actually backed it would confound "research helps" with "this
    was already the strongest candidate." See .claude/commands/scan.md's
    "Steps 5-9 scope" sections and Step 5 for the formal rules.
@@ -54,7 +54,7 @@ KEY DESIGN DECISIONS FROM TODAY'S SESSION, IN ORDER:
 3. The tracked population ("test group") = ALL High conviction CONFIRMED
    tickers + the top 10 Medium conviction CONFIRMED tickers by f_score
    (that top 10 drawn only from Medium CONFIRMED tickers that already
-   passed the R:R >= 1.5 gate — a ticker that can't be traded on R:R
+   passed the target_atr >= 2.4 gate — a ticker that can't be traded on R:R
    grounds is never worth spending research budget on). This keeps daily
    research volume to a predictable ~15 tickers rather than scaling with
    the full CONFIRMED list — scan.md's own documented history shows a full

@@ -43,6 +43,8 @@ For each High or Medium conviction technical setup, look up its fundamental scor
 
 If fundamental data is unavailable for a ticker, include it as-is (no flag).
 
+**f_rating carries forward past this gate — it is not just a pass/fail filter.** CONFIRMED collapses Undervalued and Fair into one bucket, but the 2026-10-08 benchmark report found they are not equal-strength signals: Undervalued names won 70% of the time (+0.40 pts vs the S&P) against 34% for Fair (−1.56 pts) — the single cleanest edge found in the whole report. Tag every CONFIRMED ticker's `f_rating` through Steps 5–11 so `final-analyst.md` (Step 12) can weigh it explicitly instead of it being discarded once CONFIRMED is decided.
+
 ## Step 3 — Assess each setup
 
 For each ticker assess:
@@ -87,43 +89,45 @@ per-run agent-call volume back in line with historical runs.
 If a specific CAUTION ticker is worth a full look, run its Steps 5–9 manually on
 request rather than defaulting to it for the whole bucket.
 
-## Steps 5–9 scope — target_atr ≥ 1.5 gate (within CONFIRMED)
+## Steps 5–12 scope — quality pool, R:R flagged (within CONFIRMED)
 
-Not every CONFIRMED ticker proceeds into Steps 5–9. The gate reads `market_data.json`'s
-`target_atr` field (target distance in ATRs): "consolidation" setups in particular routinely
-target nearby resistance, producing a target well under 1.5 ATR away by construction (found
-live, 2026-09-08: 27 of 58 Medium CONFIRMED tickers failed this gate; all 5 High conviction
-CONFIRMED tickers passed it).
+Changed 2026-10-07 (user decision): R:R and `target_atr` no longer exclude anything. The
+old `target_atr >= 2.4` gate (pegged to RR_RATIO x ATR_STOP_MULT) used to stop a CONFIRMED
+ticker after Step 4 when its target was too close; it is now a **flag only**. The goal is a
+few quality names to buy, chosen on thesis + fundamentals + news + trend, with R:R shown
+next to every one of them rather than used as a filter.
 
-History (2026-09-14): this gate used to read `rr >= 1.5`. With the scanner's original 1-ATR
-stop that was algebraically the same test as `target_atr >= 1.5`. The stop is now
-`ATR_STOP_MULT` (config.py, 2.0) x ATR — the scan test group showed 1-ATR stops being hit by
-ordinary daily noise (40% of rows with stop < 1 ATR stopped out within 4 days) — which halves
-every `rr` value. Gating on `target_atr` keeps the SAME tickers flowing into Steps 5–9 as
-before; `rr` now reports the true R:R at the wider stop and is for risk-manager (Step 9), not
-for this gate.
+**Quality pool** (the only tickers that go through Steps 5–12 — this is what keeps research
+volume bounded now that the R:R gate no longer does):
+- every **High conviction** CONFIRMED ticker, plus
+- the **top 10 Medium conviction** CONFIRMED tickers by f_score (descending) — all of them
+  if fewer than 10.
 
-- CONFIRMED tickers with `target_atr >= 1.5`: proceed to Step 5 onward.
-- CONFIRMED tickers with `target_atr < 1.5`: stop after Step 4. Do not run Steps 5–8 for
-  these — the target is too close to the entry to be worth research budget. Output a one-line
-  Step 9 REJECT citing the target_atr gate; no full Steps 5–9 write-up needed.
+Every other CONFIRMED ticker stops after Step 4 (ranked table only).
 
-This gate also defines the pool Step 5's "top 10 Medium conviction by f_score" selection
-(below) draws from — a ticker that fails this gate is never in the running for a research
-pass, since it cannot be traded regardless of what research would find.
+**R:R flag** — carried on every pool ticker through Steps 5–12 and into the final output:
+- `⚠ R:R {rr} < 1.2 (RISK.md floor)` when `rr` (at the live 3.2x-ATR stop) is under 1.2
+- `⚠ target_atr {x} < 2.4` when the target is under 2.4 ATR away
+- Both are information for risk-manager / buy / not-buy / final-analyst to weigh, never a
+  reason on their own to drop a ticker. A pipeline target that is just the pre-gap price
+  after an event-driven drop (profit warning, M&A, etc.) makes R:R look better than it is —
+  say so when it applies.
+
+History: 2026-09-14 the gate moved from `rr >= 1.5` to `target_atr >= 1.5` (stop widened to
+2x ATR); 2026-10-06 to `target_atr >= 2.4` (stop 3.2x ATR, RR_RATIO 0.75); 2026-10-07 removed
+as a gate entirely, kept as the flag above.
 
 ## Step 5 — Market Researcher (mandatory for HIGH conviction CONFIRMED + top 10 Medium conviction CONFIRMED)
 
 For every **CONFIRMED** ticker flagged **HIGH conviction** in Step 4, invoke `market-researcher.md` immediately.
 Do not skip this step — it is not optional for High conviction CONFIRMED names.
 
-For **Medium conviction CONFIRMED** tickers that passed the R:R ≥ 1.5 gate above: invoke
-`market-researcher.md` for the **top 10 by f_score** (descending) among them — mandatory,
-not optional, for that subset. If fewer than 10 Medium CONFIRMED tickers pass the R:R gate
-that day, research all of them.
+For **Medium conviction CONFIRMED** tickers: invoke `market-researcher.md` for the **top 10
+by f_score** (descending) — mandatory, not optional, for that subset (the quality pool above).
+If fewer than 10 Medium CONFIRMED tickers exist that day, research all of them.
 
-Any other Medium conviction CONFIRMED ticker (outside that top 10, or that failed the R:R
-gate): market-researcher remains optional — call it only if a specific catalyst or risk
+Any other Medium conviction CONFIRMED ticker (outside that top 10): market-researcher remains
+optional — call it only if a specific catalyst or risk
 event (e.g. earnings within the lookahead window) warrants it. A ticker researched under
 this optional path is not part of the Test Group Log population (see after Step 9) unless
 it also independently qualifies via High conviction or top-10-by-f_score.
@@ -135,21 +139,21 @@ blew the budget once. This rule also defines the Test Group Log population, belo
 
 ## Step 6 — Alt Data Agent (mandatory for all CONFIRMED tickers)
 
-After market-researcher completes, invoke `alt-data-agent.md` for every **CONFIRMED** ticker in the output.
+After market-researcher completes, invoke `alt-data-agent.md` for every ticker in the **quality pool**.
 Reads `./data/alt_data.json` — if missing, flag it and continue with available data.
 
 Outputs: ALT DATA VERDICT block per ticker with insider cluster signal, short interest level, congressional direction, news NLP sentiment, and Alt Data Score (0–100).
 
 ## Step 7 — Strategy Analyst
 
-After all agent outputs are assembled (technical, fundamental, sentiment, macro, market-researcher, alt-data), invoke `strategy-analyst.md` for every **CONFIRMED** ticker in the output.
+After all agent outputs are assembled (technical, fundamental, sentiment, macro, market-researcher, alt-data), invoke `strategy-analyst.md` for every ticker in the **quality pool**.
 
 Strategy analyst classifies each ticker: POSITION / SWING / MOMENTUM / TURNAROUND / EVENT.
 Outputs full STRATEGY VERDICT block per ticker.
 
 ## Step 8 — Institutional Flow (mandatory for all CONFIRMED tickers)
 
-After strategy-analyst output is complete, invoke `institutional-flow.md` for every **CONFIRMED** ticker.
+After strategy-analyst output is complete, invoke `institutional-flow.md` for every ticker in the **quality pool**.
 
 This is the final analysis layer before risk. It runs once all other agents have produced their output — never before.
 Outputs market-wide Institutional Flow Overview (once per session) + per-ticker Institutional Verdict with Smart Money Score.
@@ -161,17 +165,27 @@ Verdict flags (never blocks):
 
 ## Step 9 — Risk Manager
 
-Pass every **CONFIRMED** ticker with its full analysis stack (strategy verdict + alt data verdict + institutional verdict) to `risk-manager.md` for final position sizing, stop validation, and APPROVE / CAUTION / REJECT verdict.
+Pass every ticker in the **quality pool** (with its R:R flag), with its full analysis
+stack (strategy verdict + alt data verdict + institutional verdict), to `risk-manager.md` for
+a **VERDICT: APPROVE / CAUTION / REJECT** plus the position sizing, exposure/correlation,
+R:R, drawdown, stop-loss, and volatility detail behind it. This is a flag only (changed
+2026-10-06): a REJECT does NOT exclude the ticker — every CONFIRMED ticker that reaches
+this step proceeds to Step 10 regardless of its verdict. Treat REJECT as "mechanically
+can't be sized as proposed" information for Steps 10–12 to weigh, not as grounds to drop
+the ticker from the list.
 
 Provide the current portfolio snapshot (from RISK.local.md or user-supplied screenshot) so the risk manager can check sector concentration, position count, and drawdown status.
 
 ## Step 10 — Buy Analyst
 
-For every ticker `risk-manager.md` marked **APPROVE** in Step 9 — nothing else — invoke
-`buy-analyst.md`. It builds the strongest evidence-based case for entering now, using only
-what Steps 1–9 already produced (no new research). Outputs one BUY CASE block per ticker.
+For every ticker that reached Step 9 (the whole quality pool — Step 9's verdict does not
+filter this set, including REJECT), invoke `buy-analyst.md`.
+It builds the strongest evidence-based case for entering now, using only what Steps 1–9
+already produced (no new research), including Step 9's verdict and detail as context.
+Outputs one BUY CASE block per ticker.
 
-If Step 9 approved nothing, skip Steps 10–12 entirely — there is nothing to adjudicate.
+If the quality pool is empty (no High CONFIRMED and no Medium CONFIRMED tickers), skip
+Steps 10–12 entirely — there is nothing to adjudicate.
 
 ## Step 11 — Not-Buy Analyst
 
@@ -185,16 +199,18 @@ block per ticker.
 
 After both Step 10 and Step 11 complete for a ticker, invoke `final-analyst.md`. It is the
 only agent that reads both the bull and bear case together, plus the full Steps 1–9
-context, and issues the verdict that actually governs whether the ticker gets traded today:
-**BUY / BUY — REDUCED / WAIT / PASS**. This can override Step 9's APPROVE (a PASS or WAIT
-here does not mean risk-manager was wrong — it checks sizing/exposure/R:R mechanics, not
-thesis quality; see `final-analyst.md`'s own rationale, and the 2026-09-09 SYK case that
-motivated adding this layer). Outputs one FINAL VERDICT block per ticker, plus a one-line
-session summary of how many APPROVEs became BUY / BUY — REDUCED / WAIT / PASS.
+context (including Step 9's verdict and detail), and issues the verdict that actually
+governs whether the ticker gets traded today: **BUY / BUY — REDUCED / WAIT / PASS**. Since
+2026-10-06, Step 9's REJECT no longer excludes a ticker — every CONFIRMED ticker reaches
+this step regardless of its Step 9 verdict, so this is the only point in the pipeline that
+excludes a ticker from being traded, and it does so on thesis + risk facts together, not on
+risk mechanics alone (see `final-analyst.md`'s own rationale, and the 2026-09-09 SYK case —
+from before this change — that motivated adding this adjudication layer in the first
+place). Outputs one FINAL VERDICT block per ticker, plus a one-line session summary of how
+many CONFIRMED tickers became BUY / BUY — REDUCED / WAIT / PASS.
 
 **This is the mark that actually matters** — when presenting results to the user, lead with
-Step 12's verdict, not Step 9's. Step 9's APPROVE only means a ticker was eligible for this
-adjudication, not that it should be bought.
+Step 12's verdict. Step 9's risk summary is context for that verdict, not a prior decision.
 
 ## Test Group Log — write the JSON file
 
@@ -371,8 +387,8 @@ with `level=161` (a named pullback zone); price never came down to 161, stayed n
 $170 the whole session, so "holding above 161" was true by default and produced a false
 `SIGNAL FIRED` at an actual R:R of 0.25. EL had the same latent issue. Every signal now
 also requires `rr_confirmed` — R:R computed at the *current* live price (not the
-original scan price) at or above `--min-rr` (default 1.5, matching RISK.md's own
-minimum). Never lower `--min-rr` just to make a signal fire — if a pullback ticker
+original scan price) at or above `--min-rr` (default 0.75 = config.RR_RATIO, RISK.md's
+1.2:1 effective minimum at ATR_STOP_MULT=3.2x). Never lower `--min-rr` just to make a signal fire — if a pullback ticker
 never pulls back, "no signal" is the correct outcome.
 
 ---
@@ -393,8 +409,12 @@ benchmark IWDA.AS (MSCI World, EUR). Every `/scan` run manages it:
    `--reason`.
 3. Enter today's Step 12 verdicts: `BUY` at the risk-manager size (tier % of €100,000),
    `BUY — REDUCED (X%)` at that fraction. WAIT/PASS are not entered; a WAIT whose trigger
-   fires on a later run may be entered then.
-4. Respect RISK.md inside the book too: max 5 open positions, max 2 per sector.
+   fires on a later run may be entered then. **Few, quality names:** at most **2 new
+   positions per session** — if more than 2 BUY verdicts, take the strongest by final-analyst
+   conviction (thesis, fundamentals, news, trend), not by R:R. Every order's `--reason`
+   states its R:R and flags it if below the 1.2 floor; a below-floor R:R never blocks an
+   entry on its own.
+4. Respect RISK.md inside the book too: max 15 open positions, max 2 per sector.
 
 Orders always fill at the next session's open (no same-close fills — the scan runs
 after the close). Never edit `data/test_ptf.json` by hand to change history — the alpha
@@ -404,7 +424,8 @@ figure is only meaningful if every decision is recorded as it was made.
 
 ## Rules:
 - No commentary. No disclaimers. Trade ideas only.
-- Short-term setups: stops are ATR(14)-based, target is 1.5:1 R:R minimum (RISK.md).
+- Short-term setups: stops are ATR(14)-based. R:R is always shown against RISK.md's 1.2:1
+  floor and flagged when below it — a flag, not a disqualifier (since 2026-10-07).
 - CONFIRMED = technically sound + fundamentally backed. These are the primary setups.
 - CAUTION = technically valid but fundamentally expensive. Label clearly. Stops at Step 4 by default — no Steps 5–9 unless specifically requested for that ticker.
 - Never output Low conviction tickers regardless of fundamental score.

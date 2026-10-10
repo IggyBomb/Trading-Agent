@@ -31,7 +31,7 @@ Only if all four pass do you continue to the technical analysis below.
 - If using confirmation entry: stop below the retest candle low
 
 ## Targets
-- Minimum R:R: 1.5:1
+- Minimum R:R: 1.2:1
 - Target 1: measured move (height of the base added to breakout point)
 - Target 2: next major resistance level
 - Scale out 50% at Target 1, trail stop on remainder

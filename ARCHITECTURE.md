@@ -40,7 +40,7 @@ trading_agent/
 
 **`config.py`** — every script imports from here. No magic numbers duplicated across files.
 - Account: `ACCOUNT_SIZE = 74_000`
-- Risk: `RR_RATIO = 1.5`
+- Risk: `RR_RATIO = 0.75` (RISK.md's 1.2:1 minimum, expressed as the raw constant against the live `rr` field at `ATR_STOP_MULT = 3.2`x — see config.py's comment), `ATR_STOP_MULT = 3.2`
 - Per-market filters: `MIN_*` / `EU_*` / `JP_*` / `CA_*` / `BR_*` (volume, ATR%, batch size/pause)
 - `CONVICTION_FILTER = {"High", "Medium"}` — gates which tickers flow into fundamental_agent.py and alt_data.py
 - **File path constants** (`*_PATH`) — every script's input/output path is defined once here and imported, not hardcoded
@@ -49,7 +49,7 @@ trading_agent/
 - `FINNHUB_API_KEY` — powers analyst trend + insider MSPR + news fallback (added 2026-06-23)
 - `QUIVER_API_KEY` — congressional trading, reference-only now (not scored — both Quiver and Finnhub gate that endpoint behind paid plans)
 
-**`RISK.md`** (global, versioned) — dynamic position-sizing tiers (HALF/NORMAL/GOOD/STRONG/MAX), max 5 open positions, 3% daily drawdown, 1.5:1 min R:R.
+**`RISK.md`** (global, versioned) — dynamic position-sizing tiers (HALF/NORMAL/GOOD/STRONG/MAX), max 15 open positions, 3% daily drawdown, 1.5:1 min R:R.
 **`RISK.local.md`** (gitignored) — actual account state: €74k (€44k invested + €30k liquidity), Trade Republic broker, live position snapshot. `risk-manager.md` and `risk_dashboard.py`/`position_monitor.py` read this for real sizing math.
 **`.trading/rules/forex.md`** — session awareness (London/NY), pip sizing, spread filters — only applies to FX pairs.
 
@@ -133,7 +133,7 @@ These are pure markdown personas invoked by Claude during a session — they rea
 | `alt-data-agent.md` | **alt_data.json** | `/scan` Step 6 (mandatory, all tickers) | Interprets insider clusters + MSPR, short interest, analyst trend, news velocity → Alt Data Score verdict block |
 | `strategy-analyst.md` | all prior agent outputs | `/scan` Step 7 | Classifies POSITION / SWING / MOMENTUM / TURNAROUND / EVENT |
 | `institutional-flow.md` | 13F/dark pool/options flow/ETF flows (live research) | `/scan` Step 8 (mandatory, all tickers) | Smart Money Score 0–100 → ALIGNED/CAUTIOUS/CONTRARIAN WARNING |
-| `risk-manager.md` | RISK.local.md, full analysis stack | `/scan` Step 9 | Final APPROVE/CAUTION/REJECT, position sizing, stop validation |
+| `risk-manager.md` | RISK.local.md, full analysis stack | `/scan` Step 9 | VERDICT: APPROVE/CAUTION/REJECT (position sizing, exposure, R:R, drawdown, stop validation flags behind it) — a flag only, does not exclude tickers (changed 2026-10-06); `final-analyst.md` (Step 12) is the only exclusion point now |
 | `short-screener.md` | market_data.json | `/scan` Step 10 (conditional — only if macro bias is NEUTRAL or SHORT) | Short candidates with Short Score |
 | `contrarian-analyst.md` | `data/contrarian_data.json` (from `contrarian_scan.py`) | `/contrarian` command (standalone companion to `/scan`) | Interprets contrarian_data.json through Dreman/Marks/Klarman framework. Five signals: price weakness, oversold RSI, fundamental integrity, short squeeze potential, volume divergence. Narrative taxonomy: MACRO_FEAR / SINGLE_EVENT / SECTOR_CONTAGION / CROWDED_SHORT / PROXY_COLLAPSE / GROWTH_DECELERATION. Outputs CONTRARIAN OVERVIEW + per-ticker CONTRARIAN VERDICT (HIGH/MEDIUM/LOW). Never merged with momentum scan output. |
 | `investor-relations.md` | `data/transcripts/*.txt` | Standalone, triggered by `run_pipeline.sh` when an open position has earnings ≤7 days | Earnings call tone, metrics vs consensus, Q&A evasion, 5 takeaways |
@@ -156,7 +156,7 @@ Step 5  → market-researcher.md — MANDATORY for HIGH conviction, optional for
 Step 6  → alt-data-agent.md — MANDATORY for all tickers in output
 Step 7  → strategy-analyst.md — all tickers
 Step 8  → institutional-flow.md — MANDATORY for all tickers (final analysis layer)
-Step 9  → risk-manager.md — final sizing/stop/APPROVE-CAUTION-REJECT, fed RISK.local.md
+Step 9  → risk-manager.md — VERDICT: APPROVE/CAUTION/REJECT (flag only) + sizing/stop/exposure detail, fed RISK.local.md (no longer excludes tickers; see Step 12)
 Step 10 → short-screener.md — CONDITIONAL on macro-analyst Directional Bias (NEUTRAL/SHORT only)
 Step 11 → contrarian-analyst.md — OPTIONAL companion, invoked by /contrarian
           (always separate from Steps 1–10; momentum and contrarian outputs never merged)

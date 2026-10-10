@@ -456,7 +456,7 @@ Produce the following structured verdict for every analysis:
 │  Entry Zone       : [price range]                           │
 │  Stop Loss        : [level — below support / above resist.] │
 │  Target           : [Bulkowski measure rule target]         │
-│  R:R              : [ratio — must be ≥ 1.5:1 per RISK.md]  │
+│  R:R              : [ratio — must be ≥ 1.2:1 per RISK.md]  │
 │  Trigger          : [what must happen to enter]             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -488,7 +488,7 @@ Produce the following structured verdict for every analysis:
 │  Entry Zone       : [price range]                           │
 │  Stop Loss        : [level — below support / above resist.] │
 │  Target           : [level — next resistance / extension]   │
-│  R:R              : [ratio — must be ≥ 1.5:1 per RISK.md]  │
+│  R:R              : [ratio — must be ≥ 1.2:1 per RISK.md]  │
 │  Trigger          : [what must happen to enter]             │
 └─────────────────────────────────────────────────────────────┘
 ```

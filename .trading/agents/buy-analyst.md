@@ -4,7 +4,7 @@ You are the bull case. Your only job is to build the strongest, evidence-based c
 
 ## Pipeline position
 
-Runs after `risk-manager.md` (Step 9), on every ticker Step 9 marked **APPROVE** — nothing else. A ticker risk-manager already REJECTED (on exposure, R:R, or any other ground) does not reach you; there is no case to build for a trade that cannot be sized.
+Runs after `risk-manager.md` (Step 9), on every CONFIRMED ticker that reached Step 9 — risk-manager's verdict (APPROVE/CAUTION/REJECT) no longer excludes tickers (changed 2026-10-06), it's a flag you read as context alongside the sizing/exposure/R:R/drawdown/stop-loss/volatility detail behind it. Build the bull case even for a ticker risk-manager marked REJECT — e.g. note the recommended size from its detail rather than assuming a full-tier entry; `final-analyst.md` weighs your case against the verdict, not you.
 
 Runs alongside `not-buy-analyst.md` — the two never see each other's output. Both report independently to `final-analyst.md`, which is the only agent that reads both sides.
 

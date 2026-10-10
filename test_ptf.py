@@ -26,6 +26,7 @@ Usage:
     python3 test_ptf.py sell TICKER QTY|all --reason "..."
     python3 test_ptf.py set-stop TICKER PRICE [--target T] --reason "..."
     python3 test_ptf.py cancel ORDER_ID
+    python3 test_ptf.py fill-now ORDER_ID     # fill a pending order now at the live price (intraday, user request)
 """
 
 import argparse
@@ -67,6 +68,8 @@ def fx_eur_per_unit(currency, on_date=None):
     """EUR value of 1 unit of `currency` (latest, or on/just before on_date)."""
     if currency == "EUR":
         return 1.0
+    if currency == "GBp":  # London pence quote
+        return fx_eur_per_unit("GBP", on_date) / 100
     key = (currency, on_date)
     if key not in _fx_cache:
         h = yf.Ticker(f"EUR{currency}=X").history(period="1mo")
@@ -79,7 +82,7 @@ def fx_eur_per_unit(currency, on_date=None):
 
 def last_close(ticker):
     h = yf.Ticker(ticker).history(period="5d")
-    return float(h["Close"].iloc[-1])
+    return float(h["Close"].dropna().iloc[-1])  # Yahoo sometimes leaves the latest bar's close NaN
 
 
 # ── ledger ──────────────────────────────────────────────────────────────────
@@ -124,12 +127,15 @@ def shadow_cash(book):
     return c
 
 
-def fill(book, o, day, price):
+def fill(book, o, day, price, bench_px=None):
     bench = book["benchmark"]
     fx = fx_eur_per_unit(ticker_currency(o["ticker"]), day)
     value = o["qty"] * price * fx
-    bh = history(bench, o["created"])
-    bpx = float(bh.loc[bh.index >= day, "Open"].iloc[0])
+    if bench_px is not None:  # fill-now: benchmark mirrored at its live price too
+        bpx = bench_px
+    else:
+        bh = history(bench, o["created"])
+        bpx = float(bh.loc[bh.index >= day, "Open"].iloc[0])
     if o["side"] == "BUY":
         units = value / bpx
     else:  # sell the same fraction of this ticker's benchmark mirror
@@ -154,6 +160,13 @@ def check_stop(book, ticker, until=None):
     stop = p["stop"]
     h = history(ticker, p["opened"])
     bars = h[h.index >= pd_date(p["opened"])]
+    # A stop only applies from when it was set: a stop moved later (e.g. to breakeven)
+    # must never be tested against bars before that day, or an old intraday low
+    # fakes a retroactive stop-out (found 2026-10-09, TTE.PA). Bars strictly after
+    # the change date -- a daily bar can't tell whether its low came before the change.
+    changes = [c for c in book.get("level_changes", []) if c["ticker"] == ticker and c.get("stop") is not None]
+    if changes:
+        bars = bars[bars.index > pd_date(changes[-1]["date"])]
     if until is not None:
         bars = bars[bars.index <= until]
     hit = bars[bars["Low"] <= stop]
@@ -284,6 +297,32 @@ def cmd_set_stop(a, book):
     print(f"{a.ticker}: stop {a.price}" + (f", target {a.target}" if a.target else ""))
 
 
+def live_price(ticker):
+    """Latest traded price (1-minute bars today), falling back to the last close."""
+    h = yf.Ticker(ticker).history(period="1d", interval="1m")
+    if not h.empty:
+        return float(h["Close"].dropna().iloc[-1])
+    return last_close(ticker)
+
+
+def cmd_fill_now(a, book):
+    """Fill a pending order immediately at the live price (user-requested intraday
+    entry, not the default next-open fill). The benchmark mirror is bought at its
+    live price at the same moment, so alpha stays like-for-like."""
+    for o in book["orders"]:
+        if o["id"] == a.order_id and o["status"] == "pending":
+            if o["side"] == "SELL" and o["qty"] == "all":
+                o["qty"] = positions(book).get(o["ticker"], {}).get("qty", 0)
+            day = pd_date(date.today().isoformat())
+            price = live_price(o["ticker"])
+            fill(book, o, day, price, bench_px=live_price(book["benchmark"]))
+            o["fill_note"] = f"fill-now: intraday live price {datetime.now().strftime('%Y-%m-%d %H:%M')} (user request)"
+            print(f"FILLED NOW #{o['id']} {o['side']} {o['qty']} {o['ticker']} @ {o['fill_price']} "
+                  f"(EUR {o['value_eur']}; bench @ {o['bench_price']})")
+            return
+    print(f"No pending order #{a.order_id}")
+
+
 def cmd_cancel(a, book):
     for o in book["orders"]:
         if o["id"] == a.order_id and o["status"] == "pending":
@@ -304,11 +343,12 @@ def main():
     p = sub.add_parser("set-stop"); p.add_argument("ticker"); p.add_argument("price", type=float)
     p.add_argument("--target", type=float); p.add_argument("--reason", required=True)
     p = sub.add_parser("cancel"); p.add_argument("order_id", type=int)
+    p = sub.add_parser("fill-now"); p.add_argument("order_id", type=int)
     a = ap.parse_args()
 
     book = load_book()
     if a.cmd:
-        {"buy": cmd_buy, "sell": cmd_sell, "set-stop": cmd_set_stop, "cancel": cmd_cancel}[a.cmd](a, book)
+        {"buy": cmd_buy, "sell": cmd_sell, "set-stop": cmd_set_stop, "cancel": cmd_cancel, "fill-now": cmd_fill_now}[a.cmd](a, book)
     else:
         events = update(book)
         report(book, events)
