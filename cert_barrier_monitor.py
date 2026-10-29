@@ -10,10 +10,15 @@ Held certificates (worst-of, capital barrier as % of initial fixing):
   DE000VJ135Q5  ("the Italian one") — Vontobel Multi Cash Collect,
       worst-of 4 Italian blue chips, barrier 60% of initial fixing,
       maturity 2027-12-30
+  IT0006777905  ("the reverse one") — Natixis Phoenix Memory Reverse,
+      BEST-of 4 (STM / TUI / Stellantis / Hensoldt), UP barrier 150% of
+      initial fixing (strikes 2026-09-15), maturity 2028-09-26
 
 Prints live price vs. barrier and % cushion for each underlying.
 Distance formula matches the broker's own convention: (price - barrier) / price * 100
 — i.e. how far the price would need to FALL to hit the barrier.
+For direction="up" certs the cushion is (barrier - price) / price * 100 — how
+far the price would need to RISE — and the binding leg is the best performer.
 
 Run standalone: python3 cert_barrier_monitor.py
 """
@@ -43,6 +48,20 @@ CERTS = [
             {"name": "Moncler",   "ticker": "MONC.MI", "initial": 54.98,  "barrier": 32.99,  "ccy": "EUR"},
         ],
     },
+    {
+        # Natixis Phoenix Memory Reverse: capital at risk if the BEST performer
+        # closes at or above 150% of its strike (discrete, closing-price check).
+        "isin": "IT0006777905",
+        "label": "Natixis reverse cert (STM / TUI / Stellantis / Hensoldt)",
+        "maturity": "2028-09-26",
+        "direction": "up",
+        "underlyings": [
+            {"name": "STMicroelectronics", "ticker": "STMMI.MI", "initial": 41.78, "barrier": 62.67,  "ccy": "EUR"},
+            {"name": "TUI",                "ticker": "TUI1.DE",  "initial": 6.494, "barrier": 9.741,  "ccy": "EUR"},
+            {"name": "Stellantis",         "ticker": "STLAM.MI", "initial": 4.487, "barrier": 6.7305, "ccy": "EUR"},
+            {"name": "Hensoldt",           "ticker": "HAG.DE",   "initial": 77.10, "barrier": 115.65, "ccy": "EUR"},
+        ],
+    },
 ]
 
 
@@ -70,7 +89,10 @@ def main():
                 print(f"  {u['name']:<22} {'NO DATA':>10}")
                 continue
             vs_initial = (price / u["initial"] - 1) * 100
-            cushion = (price - u["barrier"]) / price * 100
+            if cert.get("direction") == "up":
+                cushion = (u["barrier"] - price) / price * 100
+            else:
+                cushion = (price - u["barrier"]) / price * 100
             if worst is None or cushion < worst[2]:
                 worst = (u, price, cushion)
             print(f"  {u['name']:<22} {price:>9.2f}{u['ccy'][0]} {u['barrier']:>9.2f}{u['ccy'][0]} "

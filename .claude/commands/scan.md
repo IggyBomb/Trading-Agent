@@ -155,6 +155,22 @@ Outputs full STRATEGY VERDICT block per ticker.
 
 After strategy-analyst output is complete, invoke `institutional-flow.md` for every ticker in the **quality pool**.
 
+First run the data step, with every quality-pool ticker on one line:
+
+```bash
+python3 institutional_data.py TICKER1 TICKER2 ...   # writes data/institutional.json
+```
+
+It scores the agent's five components from the free sources that exist: 13F top holders
+(yfinance, US only), FINRA weekly ATS + non-ATS volume (US only, ~3-week lag), option
+chains ≤45 DTE (directional only when 13F or dark pool agrees), sector ETF relative
+strength (a PROXY for ETF flows), and `data/institutional_market.json` for dry powder
+(fill `as_of`, `fms_cash_pct`, `hf_net_leverage_pct` from the latest BofA FMS / GS prime
+book via WebSearch when it is missing or >45 days old). Start from its `score` /
+`alignment` per ticker; the agent may override per its own rules (e.g. Berkshire + Citadel
+consensus exit) but must state why. Tickers where 13F, dark pool and options are all
+unavailable (EU-only names) keep the 50 / CAUTIOUS DATA UNAVAILABLE fallback.
+
 This is the final analysis layer before risk. It runs once all other agents have produced their output — never before.
 Outputs market-wide Institutional Flow Overview (once per session) + per-ticker Institutional Verdict with Smart Money Score.
 
@@ -279,10 +295,12 @@ Field notes:
   optional catalyst clause in Step 5 does not go in this log unless it also independently
   made the top 10.
 - `strategy_type`: the real strategy-analyst.md classification, not a mechanical proxy.
-- `institutional_score` / `institutional_alignment`: from Step 8. With no real 13F /
-  dark-pool / options-flow source wired into this pipeline, this will typically be
-  `50` / `"CAUTIOUS"` (`DATA UNAVAILABLE`) per institutional-flow.md's own fallback rule —
-  write that honestly rather than fabricating a more specific score.
+- `institutional_score` / `institutional_alignment`: from Step 8 — the
+  `institutional_data.py` score (or the agent's documented override). Since 2026-10-27
+  US names get a real score; EU-only names stay `50` / `"CAUTIOUS"` (`DATA UNAVAILABLE`)
+  per institutional-flow.md's fallback rule — write that honestly rather than
+  fabricating a more specific score. Scans before 2026-10-23 have 50 everywhere because
+  no source was wired yet.
 - `risk_manager_verdict`: exactly Step 9's conclusion (APPROVE / CAUTION / REJECT),
   including a REJECT driven purely by portfolio exposure (no open slots) — do not filter
   those out of the file just because the setup itself was sound. Kept as-is even when
@@ -432,6 +450,11 @@ benchmark IWDA.AS (MSCI World, EUR). Every `/scan` run manages it:
    conviction (thesis, fundamentals, news, trend), not by R:R. Every order's `--reason`
    states its R:R and flags it if below the 1.2 floor; a below-floor R:R never blocks an
    entry on its own.
+
+Every `test_ptf.py` command also mirrors the book into SQLite (`data/scan_tracking.db`,
+`ptf_orders` / `ptf_positions` / `ptf_history` tables, plus view `v_ptf_tickers` linking each
+holding to the `scan_test_group` row that selected it) via `ptf_db.py` — automatic, no extra
+step. If its output shows `[ptf_db] WARNING`, run `python3 test_ptf.py sync-db`.
 
 Orders always fill at the next session's open (no same-close fills — the scan runs
 after the close). Never edit `data/test_ptf.json` by hand to change history — the alpha

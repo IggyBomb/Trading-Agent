@@ -1,6 +1,6 @@
 {
   "name": "test",
-  "description": "Running paper-tracking portfolio for /scan CONFIRMED picks. Grows over time as new scans add entries \u2014 this is not a single snapshot. No real capital, never logged in trade_logger.py, never read by the publishing track's position disclosures.",
+  "description": "Running paper-tracking portfolio for /scan CONFIRMED picks. Grows over time as new scans add entries — this is not a single snapshot. No real capital, never logged in trade_logger.py, never read by the publishing track's position disclosures.",
   "created": "2026-09-07",
   "positions": [
     {
@@ -85,12 +85,28 @@
       "ticker": "300750.SZ",
       "entry_date": "2026-09-16",
       "entry_price": 337.11,
-      "dcf_bear": 321.98,
-      "dcf_base": 748.79,
-      "dcf_bull": 1597.97,
-      "rating": "QUALITY (vicino a COMPOUNDER)",
-      "thesis_invalidation": "ROIC che inverte la tendenza e torna sotto 13%, o un secondo anno di calo ricavi non spiegabile da pass-through prezzi",
-      "source": "Deep-Dive 2026-09-15"
+      "dcf_bear": 322.0,
+      "dcf_base": 610.0,
+      "dcf_bull": 853.0,
+      "rating": "COMPOUNDER 7/9 — GREEN (WEAK), MoS BEAR",
+      "thesis_invalidation": "Gross margin below 20% for two consecutive quarters, or domestic GM falling further while overseas holds; FY26 OCF below net income; global EV share <35% or domestic <35%; new equity raise while net cash >¥150B",
+      "source": "Deep-Dive 2026-10-29 (supersedes 2026-09-15)",
+      "dcf_judgement_8.5pct": {
+        "bear": 270.0,
+        "base": 475.0,
+        "bull": 654.0
+      },
+      "warnings": [
+        "Gross margin down 3Q: 28.2%→24.8%→23.2%→20.7%",
+        "9M-26 OCF −23.6% vs NI +31.6%",
+        "FY27 EPS −6.7% in 30 days"
+      ],
+      "previous_dcf_2026_09_15": {
+        "bear": 321.98,
+        "base": 748.79,
+        "bull": 1597.97,
+        "wacc": "6.70% (below house floor)"
+      }
     }
   ]
 }

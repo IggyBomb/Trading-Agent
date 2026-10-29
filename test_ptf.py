@@ -27,6 +27,7 @@ Usage:
     python3 test_ptf.py set-stop TICKER PRICE [--target T] --reason "..."
     python3 test_ptf.py cancel ORDER_ID
     python3 test_ptf.py fill-now ORDER_ID     # fill a pending order now at the live price (intraday, user request)
+    python3 test_ptf.py sync-db               # rebuild the SQLite mirror (ptf_* tables) from the JSON, no prices fetched
 """
 
 import argparse
@@ -38,6 +39,7 @@ import yfinance as yf
 
 sys.path.insert(0, ".")
 from test_portfolio import ticker_currency  # same suffix -> currency map
+import ptf_db  # SQLite mirror of the book (data/scan_tracking.db)
 
 DATA_PATH = "./data/test_ptf.json"
 
@@ -53,6 +55,13 @@ def load_book():
 def save_book(book):
     with open(DATA_PATH, "w", encoding="utf-8") as f:
         json.dump(book, f, indent=2, ensure_ascii=False)
+    # Mirror into SQLite (data/scan_tracking.db, ptf_* tables). The JSON above is
+    # the source of truth and is already saved, so a DB error never loses data.
+    try:
+        n_pos, n_ord = ptf_db.sync(book, positions(book))
+        print(f"[ptf_db] synced {n_pos} open positions, {n_ord} orders -> {ptf_db.DB_PATH}")
+    except Exception as e:
+        print(f"[ptf_db] WARNING: SQLite sync failed ({e}); JSON saved. Re-run: python3 test_ptf.py sync-db")
 
 
 def history(ticker, start):
@@ -344,10 +353,13 @@ def main():
     p.add_argument("--target", type=float); p.add_argument("--reason", required=True)
     p = sub.add_parser("cancel"); p.add_argument("order_id", type=int)
     p = sub.add_parser("fill-now"); p.add_argument("order_id", type=int)
+    sub.add_parser("sync-db")
     a = ap.parse_args()
 
     book = load_book()
-    if a.cmd:
+    if a.cmd == "sync-db":
+        pass  # save_book() below does the sync; nothing else touched
+    elif a.cmd:
         {"buy": cmd_buy, "sell": cmd_sell, "set-stop": cmd_set_stop, "cancel": cmd_cancel, "fill-now": cmd_fill_now}[a.cmd](a, book)
     else:
         events = update(book)

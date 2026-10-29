@@ -74,6 +74,13 @@ Monitor and cross-reference activity across all tiers. Never rely on a single in
 
 ## Data Sources
 
+**Wired in (2026-10-27):** `python3 institutional_data.py TICKERS...` → `data/institutional.json`.
+Read it before scoring: it already applies this file's rubric, the 13F lag adjustment, the
+2-elevated-weeks dark pool rule and the options-corroboration rule, and marks each component
+OK / PROXY / UNAVAILABLE. ETF flow is a relative-strength PROXY (no free flow feed); dry powder
+comes from `data/institutional_market.json` (manual, refresh from BofA FMS / GS prime book).
+The sources below remain the reference for anything the script does not cover.
+
 ### Source 1 — SEC 13F Filings (Primary for US)
 - All institutional investment managers with >$100M AUM must file within 45 calendar days after each quarter end
 - Q4 → filed by mid-February | Q1 → mid-May | Q2 → mid-August | Q3 → mid-November
