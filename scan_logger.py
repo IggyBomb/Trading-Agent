@@ -145,8 +145,11 @@ import json, sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from config import SCAN_TRACKING_TABLE
+
 DB_PATH   = "data/scan_tracking.db"
 JSON_PATH = "data/scan_test_group.json"
+TABLE     = SCAN_TRACKING_TABLE  # new table; scan_test_group is the frozen old one
 
 # strategy-analyst.md's own time-stop table (trading days)
 STRATEGY_TIME_STOP = {
@@ -157,6 +160,15 @@ STRATEGY_TIME_STOP = {
     "EVENT":      3,
 }
 DEFAULT_TIME_STOP = 15  # SWING fallback if strategy_type is missing/unrecognized
+
+# Minimum distance for the TRACKED target, in R (R = entry - stop). The
+# pipeline's consolidation targets are often just nearby resistance, 0.1-2%
+# above entry, so any ordinary day 'hits' them and the row closes and gets
+# re-picked on the next scan. RISK.md's floor is 1.2:1, so a row is tracked
+# against max(pipeline target, entry + 1.2R); the pipeline's own target is
+# kept in target_pipeline (rr_planned stays the pipeline's R:R, i.e. it
+# pairs with target_pipeline). Added 2026-10-10.
+TARGET_FLOOR_R = 1.2
 
 # Verdict ladder for the reselection rule: a ticker that already has an open
 # row is only re-inserted when today's verdict is a step UP from that row.
@@ -295,6 +307,64 @@ DESIRED_COLUMNS = [
     ("resolved_at",               "TEXT"),
 ]
 
+# Columns for the new TABLE: every DESIRED_COLUMNS column, in the same order,
+# plus the selection group and the bubble-watch rescue fields. Derived from
+# DESIRED_COLUMNS (not a hand-copied list) so the two tables can never drift
+# apart on their shared core columns.
+#   selection_group  -> right after conviction: HIGH / MEDIUM_POOL / BUBBLE_RESCUED
+#   bubble_* fields  -> right after research_summary; NULL for non-rescued rows,
+#                       copied from data/rescued_bw.json for BUBBLE_RESCUED rows
+SELECTION_GROUP_COLUMN = ("selection_group", "TEXT")
+BUBBLE_RESCUE_COLUMNS = [
+    ("bubble_etf",                "TEXT"),
+    ("bubble_stage",              "INTEGER"),
+    ("bubble_theme",              "TEXT"),
+    ("normal_rank",               "INTEGER"),
+    ("rescue_score",              "REAL"),
+]
+
+# conviction -> selection_group for quality-pool rows (rescued rows are
+# tagged BUBBLE_RESCUED in main() regardless of conviction).
+SELECTION_GROUPS = {"High": "HIGH", "Medium": "MEDIUM_POOL"}
+
+TRACKING_COLUMNS = []
+for _col in DESIRED_COLUMNS:
+    TRACKING_COLUMNS.append(_col)
+    if _col[0] == "target":
+        TRACKING_COLUMNS.append(("target_pipeline", "REAL"))  # see TARGET_FLOOR_R
+    elif _col[0] == "conviction":
+        TRACKING_COLUMNS.append(SELECTION_GROUP_COLUMN)
+    elif _col[0] == "research_summary":
+        TRACKING_COLUMNS.extend(BUBBLE_RESCUE_COLUMNS)
+
+# CREATE / INSERT for the new TABLE, both generated from TRACKING_COLUMNS so
+# the table shape and the insert can't disagree. Same contract as the old
+# table: id primary key, one row per (scan_date, ticker), and the insert only
+# writes the columns /scan itself produces (scan_date .. expected_close_date)
+# -- everything after that (outcome, exit_*, max_high, gain_pct, ...) is
+# filled in later by scan_daily_update.py.
+_tracking_names = [c for c, _ in TRACKING_COLUMNS]
+TRACKING_INSERT_COLUMNS = _tracking_names[: _tracking_names.index("expected_close_date") + 1]
+
+TRACKING_CREATE_SQL = (
+    f"CREATE TABLE IF NOT EXISTS {TABLE} (\n"
+    "    id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
+    + "".join(
+        f"    {c} {t}{' NOT NULL' if c in ('scan_date', 'ticker') else ''},\n"
+        for c, t in TRACKING_COLUMNS
+    )
+    + "    UNIQUE(scan_date, ticker)\n"
+    ");"
+)
+
+TRACKING_INSERT_SQL = (
+    f"INSERT OR IGNORE INTO {TABLE} (\n    "
+    + ", ".join(TRACKING_INSERT_COLUMNS)
+    + "\n) VALUES (\n    "
+    + ", ".join(f":{c}" for c in TRACKING_INSERT_COLUMNS)
+    + "\n);"
+)
+
 
 def migrate_schema(conn):
     """Idempotent: brings an existing scan_test_group table's column SET and
@@ -348,50 +418,85 @@ def main():
     scan_date     = data["scan_date"]
     scan_date_obj = datetime.strptime(scan_date, "%Y-%m-%d").date()
     candidates    = data["candidates"]
+    # Step 12b (bubble watch rescue) rows; absent in files written before it
+    # existed, so default to none rather than failing on an older JSON.
+    rescued       = data.get("rescued_candidates", [])
+
+    # Tag every row with its selection group. Quality-pool rows get theirs
+    # from conviction (that's how they qualified); rescued rows are always
+    # BUBBLE_RESCUED, whatever their technical conviction. Pool rows come
+    # first, so if a ticker is in both lists on the same day the pool row
+    # wins and the rescued one is dropped by UNIQUE(scan_date, ticker).
+    for c in candidates:
+        c["selection_group"] = SELECTION_GROUPS.get(c.get("conviction"))
+    for c in rescued:
+        c["selection_group"] = "BUBBLE_RESCUED"
 
     conn = sqlite3.connect(DB_PATH)
-    conn.execute(CREATE_TABLE_SQL)
-    migrate_schema(conn)
+    # Only the new TABLE is written from here on; scan_test_group is the
+    # frozen old-rules table (CREATE_TABLE_SQL / migrate_schema() are kept
+    # for it but no longer run).
+    conn.execute(TRACKING_CREATE_SQL)
 
     # Open (unresolved) rows from prior days, keyed by ticker, with the
     # final_verdict they were logged with. ORDER BY id so that if a ticker
     # has more than one open row (after an upgrade insert), the newest
-    # verdict is the one kept in the dict.
+    # verdict is the one kept in the dict. Only the new TABLE counts -- a
+    # ticker still open in scan_test_group doesn't block a new row here.
     open_tickers = {row[0]: row[1] for row in conn.execute(
-        "SELECT ticker, final_verdict FROM scan_test_group "
+        f"SELECT ticker, final_verdict FROM {TABLE} "
         "WHERE outcome IS NULL ORDER BY id"
     )}
 
-    inserted, skipped_open, skipped_duplicate = 0, 0, 0
-    for c in candidates:
+    # Per-group counters: [in JSON, inserted, skipped open, skipped duplicate]
+    # -- the groups are what the new table exists to compare, so report each.
+    counts = {}
+    for c in candidates + rescued:
+        n = counts.setdefault(c["selection_group"], [0, 0, 0, 0])
+        n[0] += 1
         c.setdefault("risk_manager_reason", None)
         c.setdefault("final_verdict", None)
         c.setdefault("final_verdict_reason", None)
+        for col, _ in BUBBLE_RESCUE_COLUMNS:  # NULL for non-rescued rows
+            c.setdefault(col, None)
 
         # Reselection rule: skip unless today's verdict outranks the open row's.
         if c["ticker"] in open_tickers:
             if verdict_rank(c["final_verdict"]) <= verdict_rank(open_tickers[c["ticker"]]):
-                skipped_open += 1
+                n[2] += 1
                 continue
 
         c["scan_date"] = scan_date
+        # Tracked target floor (see TARGET_FLOOR_R): keep the pipeline target in
+        # target_pipeline, raise target to entry + 1.2R when it sits closer.
+        c["target_pipeline"] = c["target"]
+        risk = (c["entry"] - c["stop"]) if c["entry"] is not None and c["stop"] is not None else None
+        if risk and risk > 0 and c["target"] is not None:
+            c["target"] = round(max(c["target"], c["entry"] + TARGET_FLOOR_R * risk), 4)
         time_stop = STRATEGY_TIME_STOP.get(c.get("strategy_type"), DEFAULT_TIME_STOP)
         c["expected_close_date"] = add_trading_days(scan_date_obj, time_stop).isoformat()
 
-        cur = conn.execute(INSERT_SQL, c)
+        cur = conn.execute(TRACKING_INSERT_SQL, c)
         if cur.rowcount:
-            inserted += 1
+            n[1] += 1
         else:
-            skipped_duplicate += 1
+            n[3] += 1
 
     conn.commit()
     conn.close()
 
     print(f"  Scan date: {scan_date}")
-    print(f"  Candidates in JSON: {len(candidates)}")
-    print(f"  Inserted: {inserted}")
-    print(f"  Skipped (open from a prior day, verdict not upgraded): {skipped_open}")
-    print(f"  Skipped (duplicate same-day row, rare): {skipped_duplicate}")
+    print(f"  Candidates in JSON: {len(candidates)} pool + {len(rescued)} bubble-rescued")
+    print(f"  Table: {TABLE}")
+    print(f"  {'GROUP':<16} {'IN JSON':>7} {'INSERTED':>8} {'SKIP OPEN':>9} {'SKIP DUP':>8}")
+    for group, (in_json, ins, sk_open, sk_dup) in counts.items():
+        print(f"  {str(group):<16} {in_json:>7} {ins:>8} {sk_open:>9} {sk_dup:>8}")
+    totals = [sum(col) for col in zip(*counts.values())] or [0, 0, 0, 0]
+    print(f"  {'TOTAL':<16} {totals[0]:>7} {totals[1]:>8} {totals[2]:>9} {totals[3]:>8}")
+    print("  SKIP OPEN = ticker already open in this table (from a prior day or an")
+    print("              earlier run today), verdict not upgraded")
+    print("  SKIP DUP  = same-day row already present (e.g. a rescued ticker that")
+    print("              was also in the quality pool -- the pool row wins)")
 
 
 if __name__ == "__main__":
