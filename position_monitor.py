@@ -21,7 +21,9 @@ except ImportError:
     os.system(f"{sys.executable} -m pip install yfinance --quiet")
     import yfinance as yf
 
-from config import ACCOUNT_SIZE, TRADES_PATH, EARNINGS_PATH
+from config import (ACCOUNT_SIZE, TRADES_PATH, EARNINGS_PATH,
+                    EARNINGS_EXIT_SESSIONS, EARNINGS_TRIM_STRATEGIES, EARNINGS_TRIM_FRACTION)
+from watchlist_ranker import sessions_to_earnings
 
 LOGS_PATH = TRADES_PATH
 
@@ -209,11 +211,21 @@ def main():
             flags.append(("⚠ ", f"TIME STOP — day {days}/{time_limit} ({prog})"))
             action_required.append(f"⚠  {ticker}: time stop (day {days}/{time_limit})")
 
-        if dte is not None and dte <= 3:
-            flags.append(("⚠ ", f"EARNINGS IN {dte}d — decide: hold or exit"))
-            action_required.append(f"⚠  {ticker}: earnings in {dte}d")
+        # Earnings rule (2026-10-30): SWING/MOMENTUM are halved, not sold, at the
+        # latest EARNINGS_EXIT_SESSIONS before the report; other strategies keep
+        # exit-analyst.md Section 7 (POSITION/TURNAROUND decide, EVENT holds).
+        se = sessions_to_earnings(ticker, earnings)
+        if se is not None and se[0] <= EARNINGS_EXIT_SESSIONS:
+            if strategy in EARNINGS_TRIM_STRATEGIES:
+                trim_qty = int(qty * EARNINGS_TRIM_FRACTION)
+                flags.append(("✂ ", f"EARNINGS TRIM — report {se[1]} in {se[0]} session(s): "
+                                    f"sell {trim_qty} of {qty} (once per report)"))
+                action_required.append(f"✂  {ticker}: halve before earnings ({trim_qty} sh, report {se[1]})")
+            else:
+                flags.append(("⚠ ", f"Earnings {se[1]} in {se[0]} session(s) — {strategy}: "
+                                    f"decide per exit-analyst §7"))
         elif dte is not None and dte <= 7:
-            flags.append(("ℹ ", f"Earnings in {dte}d — monitor"))
+            flags.append(("ℹ ", f"Earnings in {dte}d — hold"))
 
         if r_val is not None and r_val >= 1.0 and (stop_dist or 0) > 10:
             flags.append(("✦ ", f"TRAIL SIGNAL — at +{r_val:.1f}R, move stop to break-even"))

@@ -553,7 +553,8 @@ benchmark IWDA.AS (MSCI World, EUR). Every `/scan` run manages it:
 2. Review each open position against today's full stack (macro verdict, fundamentals,
    alt data, technicals, news, earnings dates) using the SWING / strategy-analyst exit
    rules: target hit → trim 50–100%; +1R → move stop to breakeven (`set-stop`); 10 trading
-   days without progress → exit; earnings inside the hold → exit or halve; thesis broken
+   days without progress → exit; earnings → SWING/MOMENTUM halve at the latest 2 sessions before the report
+   (✂ EARNINGS TRIM, other strategies per exit-analyst §7); thesis broken
    → exit. Act with `sell TICKER QTY|all`, `buy` (adds), or `set-stop`, always with
    `--reason`.
 3. Enter today's Step 12 verdicts: `BUY` at the risk-manager size (tier % of €100,000),

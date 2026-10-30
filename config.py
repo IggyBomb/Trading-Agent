@@ -152,6 +152,16 @@ RESCUE_BW_TOP_CUTOFF = 0
 # not the whole tail -- anything below #100 is too far down to rescue.
 RESCUE_BW_POOL_END = 100
 
+# -- Earnings rule (watchlist_ranker + position_monitor) -- added 2026-10-30 --
+# No ranking penalty before earnings any more (a stock 7 sessions out can
+# still run). Instead, for SWING / MOMENTUM only:
+#  - held positions are HALVED at the latest EARNINGS_EXIT_SESSIONS before the report
+#  - no new entry within EARNINGS_EXIT_SESSIONS of the report (final-analyst -> WAIT)
+# POSITION / TURNAROUND / EVENT and the long-term track are NOT affected.
+EARNINGS_EXIT_SESSIONS   = 2
+EARNINGS_TRIM_STRATEGIES = {"SWING", "MOMENTUM"}
+EARNINGS_TRIM_FRACTION   = 0.5
+
 # -- Composite score weights (watchlist_ranker.composite) --------------------
 # Single source of truth: edit here, not inside composite(), and every
 # consumer (watchlist_ranker.py's main rank, rescue_bw.py's Rescued_BW, or

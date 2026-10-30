@@ -13,8 +13,10 @@ Usage:
 """
 
 import json, os, sys, argparse
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from pathlib import Path
+
+import numpy as np
 
 from config import (
     EU_SUFFIXES, MARKET_DATA_PATH, FUNDAMENTAL_PATH,
@@ -22,6 +24,7 @@ from config import (
     MACRO_REGIME_PATH, SECTOR_ROTATION_PATH, BUBBLE_WATCH_PATH,
     SECTOR_RET_1M_THRESHOLD, SECTOR_RET_3M_THRESHOLD, SECTOR_THRESHOLD_TOLERANCE,
     BUBBLE_WATCH_MAX_AGE_HOURS, RESCUE_BW_TOP_CUTOFF, COMPOSITE_WEIGHTS,
+    EARNINGS_EXIT_SESSIONS,
 )
 
 MARKET_PATH   = MARKET_DATA_PATH
@@ -84,6 +87,23 @@ def earnings_days_out(ticker: str, earnings: list) -> int | None:
                 delta = (ed - today).days
                 if 0 <= delta <= 14:
                     return delta
+            except Exception:
+                pass
+    return None
+
+
+def sessions_to_earnings(ticker: str, earnings: list) -> tuple[int, str] | None:
+    """(trading sessions AFTER today and BEFORE the earnings day, earnings date).
+    Mon-Fri count, exchange holidays not excluded. Scans run after the close and
+    orders fill at the next open, so <= EARNINGS_EXIT_SESSIONS means "act now".
+    Shared with position_monitor.py."""
+    for e in earnings:
+        if e.get("ticker", "").upper() == ticker.upper():
+            try:
+                ed = datetime.strptime(e["earnings_date"], "%Y-%m-%d").date()
+                if ed < date.today():
+                    return None
+                return int(np.busday_count(date.today() + timedelta(days=1), ed)), ed.isoformat()
             except Exception:
                 pass
     return None
@@ -324,9 +344,9 @@ def composite(tech: float, fund: float | None, alt: float | None,
              alt_val  * weights["alt"]  +
              volatility_val  * weights["volatility"])
 
-    # Penalties
-    if dte is not None and dte <= 3:    score -= 20  # earnings in 2-3 days
-    elif dte is not None and dte <= 7:  score -= 10
+    # Penalties. (No pre-earnings penalty since 2026-10-30 -- earnings is handled
+    # as an exit/no-entry rule instead, see config EARNINGS_EXIT_SESSIONS; `dte`
+    # is kept in the signature so callers don't change.)
     if short_pct and short_pct > 30:    score -= 10
     if short_pct and short_pct > 50:    score -= 10
     score += regime_pen   # crowded-sector / macro-fragility penalty, see regime_penalty()
@@ -424,6 +444,7 @@ def build_scored_universe(args, weights: dict | None = None) -> tuple[list, dict
                           volatility=vol_score, regime_pen=regime_pen, weights=weights)
 
         conv = (t_data.get("conviction") or "").upper()
+        se   = sessions_to_earnings(ticker, earnings)
         scored.append({
             "ticker":         ticker,
             "score":          comp,
@@ -434,6 +455,11 @@ def build_scored_universe(args, weights: dict | None = None) -> tuple[list, dict
             "rsi":            t_data.get("rsi"),
             "atr_pct":        t_data.get("atr_pct"),
             "dte":            dte,
+            "earnings_sessions": se[0] if se else None,
+            "earnings_date":     se[1] if se else None,
+            # label only, no score effect: final-analyst turns this into WAIT
+            # for SWING/MOMENTUM candidates (POSITION/EVENT/long-term unaffected)
+            "no_entry_earnings": bool(se and se[0] <= EARNINGS_EXIT_SESSIONS),
             "is_eu":          is_eu(ticker),
             "regime_flags":   regime_notes,
             "sector":         sector,
@@ -473,7 +499,12 @@ def main():
         alt_s   = f"{s['alt_score']:.0f}"  if s["alt_score"]  else "—"
         rsi_s   = f"{s['rsi']:.0f}"        if s["rsi"]        else "—"
         atr_s   = f"{s['atr_pct']:.1f}"    if s["atr_pct"]    else "—"
-        notes   = f"⚠ EARN {s['dte']}d" if s["dte"] is not None and s["dte"] <= 7 else ""
+        if s.get("no_entry_earnings"):
+            notes = f"⛔ NO ENTRY (swing/momentum): earnings in {s['earnings_sessions']} session(s)"
+        elif s["dte"] is not None and s["dte"] <= 7:
+            notes = f"ℹ EARN {s['dte']}d"
+        else:
+            notes = ""
         if s.get("regime_flags"):
             notes = (notes + "  " if notes else "") + "⚠ " + "; ".join(s["regime_flags"])
         eu_flag = " [EU]" if s["is_eu"] else ""

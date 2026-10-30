@@ -127,10 +127,13 @@ Read `data/sentiment_data.json` before every exit session:
 
 Check `data/earnings_calendar.json` for each open position.
 
-If earnings are ≤ 3 trading days away:
-- POSITION / TURNAROUND: decide before earnings — HOLD or EXIT
-- SWING / MOMENTUM: default = EXIT before earnings (avoid binary event)
-- EVENT (earnings-driven entry): this IS the event — hold as planned, stop mandatory
+Earnings rule (changed 2026-10-30 — `config.EARNINGS_EXIT_SESSIONS` = 2; `position_monitor.py` flags it):
+- SWING / MOMENTUM: **halve** the position so the trim is done at the latest 2 sessions
+  before the report (✂ EARNINGS TRIM). The other half rides through with its stop. Halve
+  once per report, not again the next day. No pre-earnings penalty on the ranking any more.
+- POSITION / TURNAROUND: unchanged — decide before earnings, HOLD or EXIT
+- EVENT (earnings-driven entry): unchanged — this IS the event, hold as planned, stop mandatory
+- Long-term track: not affected
 
 Pre-earnings exit checklist:
 1. Is the original thesis earnings-dependent?
