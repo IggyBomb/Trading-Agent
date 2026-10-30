@@ -25,6 +25,7 @@ from config import (
     SECTOR_RET_1M_THRESHOLD, SECTOR_RET_3M_THRESHOLD, SECTOR_THRESHOLD_TOLERANCE,
     BUBBLE_WATCH_MAX_AGE_HOURS, RESCUE_BW_TOP_CUTOFF, COMPOSITE_WEIGHTS,
     EARNINGS_EXIT_SESSIONS,
+    GOLD_REGIME_PATH, GOLD_INDUSTRIES, GOLD_REGIME_MAX_AGE_HOURS,
 )
 
 MARKET_PATH   = MARKET_DATA_PATH
@@ -71,6 +72,24 @@ def load_bubble_watch(path: str, max_age_hours: float) -> dict:
         return {}
     entries = raw.get("entries")
     return entries if isinstance(entries, dict) else {}
+
+
+def load_gold_regime(path: str, max_age_hours: float) -> dict:
+    """data/gold_regime.json, or {} when missing / unreadable / stale.
+    Fail-closed like load_bubble_watch(): no fresh data = no adjustment."""
+    raw = load_json(path)
+    if not isinstance(raw, dict) or not raw.get("generated_at"):
+        return {}
+    try:
+        from datetime import timezone
+        ts = datetime.fromisoformat(raw["generated_at"].replace("Z", "+00:00"))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        if (datetime.now(timezone.utc) - ts).total_seconds() / 3600 > max_age_hours:
+            return {}
+    except Exception:
+        return {}
+    return raw
 
 
 def is_eu(ticker: str) -> bool:
@@ -258,9 +277,19 @@ def resolve_bubble_etf(sector: str | None, industry: str | None,
 # part of what was asked to be gated.
 def regime_penalty(sector: str | None, industry: str | None,
                     sector_rotation: dict | None, macro: dict | None,
-                    bubble_watch: dict | None = None) -> tuple[float, list]:
+                    bubble_watch: dict | None = None,
+                    gold_regime: dict | None = None) -> tuple[float, list]:
     penalty = 0.0
     notes: list = []
+
+    # Precious-metal miners only: real-yield / dollar regime from gold_regime.py
+    # (2026-10-30). Negative = headwind, positive = tailwind, see config GOLD_*.
+    if industry in GOLD_INDUSTRIES and gold_regime:
+        adj = gold_regime.get("adjustment") or 0
+        if adj:
+            penalty += adj
+            notes.append(f"gold regime {gold_regime.get('regime')} ({adj:+d}): "
+                         + "; ".join(gold_regime.get("notes") or []))
 
     etf, granularity, label = resolve_bubble_etf(sector, industry, sector_rotation)
     us_industries = (sector_rotation or {}).get("us_industries", {})
@@ -374,6 +403,7 @@ def build_scored_universe(args, weights: dict | None = None) -> tuple[list, dict
     sector_rotation_raw = load_json(SECTOR_PATH)
     macro_raw            = load_json(MACRO_PATH)
     bubble_watch_raw     = load_bubble_watch(BUBBLE_PATH, BUBBLE_WATCH_MAX_AGE_HOURS)
+    gold_regime_raw      = load_gold_regime(GOLD_REGIME_PATH, GOLD_REGIME_MAX_AGE_HOURS)
 
     if market_raw is None:
         return None
@@ -438,7 +468,8 @@ def build_scored_universe(args, weights: dict | None = None) -> tuple[list, dict
         sector     = fund_entry.get("sector")   if fund_entry else None
         industry   = fund_entry.get("industry") if fund_entry else None
         regime_pen, regime_notes = regime_penalty(sector, industry, sector_rotation_raw,
-                                                    macro_raw, bubble_watch_raw)
+                                                    macro_raw, bubble_watch_raw,
+                                                    gold_regime_raw)
 
         comp = composite(tech_score, fund_score, alt_score, dte=dte, short_pct=short_pct,
                           volatility=vol_score, regime_pen=regime_pen, weights=weights)

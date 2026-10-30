@@ -174,6 +174,21 @@ GAP_VOL_MULT             = 2.5
 GAP_HOLD_SESSIONS        = 10   # = SR_WINDOW: label lasts while the gap bar sits in the S/R window
 GAP_EARNINGS_WINDOW_DAYS = 1    # report on the gap day or the session before (after-close reports)
 
+# -- Gold regime (gold_regime.py -> watchlist_ranker.regime_penalty) -- 2026-10-30
+# Only for yfinance industries in GOLD_INDUSTRIES. Gold has no cash flow: its
+# opportunity cost is the REAL yield, and it is priced in dollars. Rising real
+# yields or a strengthening dollar = headwind, but only once gold's own trend
+# confirms it (GLD < MA200): in 2022-25 real yields were at 15y highs and gold
+# still doubled on central-bank buying. Copper / uranium / everything else and
+# the long-term track are not affected.
+GOLD_INDUSTRIES           = {"Gold", "Silver", "Other Precious Metals & Mining"}
+GOLD_REAL_YIELD_UP_BP     = 50    # 10Y TIPS real yield rise over ~3 months
+GOLD_DOLLAR_UP_PCT        = 3.0   # dollar index rise over ~3 months, and still > its MA50
+GOLD_2Y_OFF_PEAK_BP       = 50    # 2Y yield this far below its 6M high = market pricing the rate peak
+GOLD_HEADWIND_PEN         = -10
+GOLD_TAILWIND_BONUS       = 5     # also needs GDX/GLD > its MA50 (miners leading gold)
+GOLD_REGIME_MAX_AGE_HOURS = 36    # older file = ignored (neutral)
+
 # -- Composite score weights (watchlist_ranker.composite) --------------------
 # Single source of truth: edit here, not inside composite(), and every
 # consumer (watchlist_ranker.py's main rank, rescue_bw.py's Rescued_BW, or
@@ -206,6 +221,7 @@ MACRO_REGIME_PATH    = str(DATA_DIR / "macro_regime.json")
 MACRO_FRED_PATH      = str(DATA_DIR / "macro_fred.json")
 SECTOR_ROTATION_PATH = str(DATA_DIR / "sector_rotation.json")
 BUBBLE_WATCH_PATH    = str(DATA_DIR / "bubble_watch.json")
+GOLD_REGIME_PATH     = str(DATA_DIR / "gold_regime.json")
 RESCUED_BW_PATH      = str(DATA_DIR / "rescued_bw.json")
 WATCHLIST_RANKED_PATH= str(DATA_DIR / "watchlist_ranked.json")
 PREMARKET_GAPS_PATH  = str(DATA_DIR / "premarket_gaps.json")
