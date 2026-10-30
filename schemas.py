@@ -46,6 +46,12 @@ class TickerSignal(BaseModel):
     short_setup: str | None = None
     short_conviction: str | None = None
 
+    # gap / news shock (fetch_data.detect_gap, 2026-10-30) -- optional
+    gap_event: Literal["earnings", "news", "unverified"] | None = None
+    gap_days_ago: int | None = None
+    gap_direction: Literal["up", "down"] | None = None
+    gap_size_atr: float | None = None
+
 
 class FundamentalRecord(BaseModel):
     """One record in fundamental_data.json 'fundamentals' — the fundamental_agent.py contract.

@@ -11,6 +11,10 @@ whatever fetch_data.py / watchlist_ranker.py / config.py currently say):
                        liquidity + ATR% tradability filters
   watchlist_ranker.py: score_technical(), volatility(), composite()
 
+GAP DETECTOR: gap_event / gap_days_ago / gap_up / gap_size_atr columns come
+from fetch_data.detect_gap(). Historical earnings dates are not fetched, so all
+panel gaps are treated as "unverified" (scored normally), the same as live.
+
 WHAT IT DELIBERATELY LEAVES OUT (cannot be rebuilt point-in-time):
   - fund / alt scores   -> composite_px uses composite()'s neutral 50 for both
   - earnings, short %, regime_penalty (sector rotation / Minsky / bubble watch)
@@ -142,6 +146,11 @@ def score_at(ticker, region, o, h, l, c, v):
     dist_sup, dist_res  = fd.distance_from_sr(price, support, resistance)
     setup      = fd.setup_type(c, v, support, resistance)
     bounce     = dist_sup is not None and 0 <= dist_sup < 2 and price > prev_close
+    # Gap detector (2026-10-30): price-only here. Live, only gaps confirmed as
+    # EARNINGS change scoring; historical earnings dates aren't fetched, so every
+    # gap in the panel is "unverified" -> scored normally, exactly as live does
+    # for unverified gaps. The columns let the regression compare gap vs no-gap.
+    gap        = fd.detect_gap(o, h, l, c, v)
     conv       = fd.conviction(setup, vol_ratio, dist_res, dist_sup, trend, bounce)
 
     stop   = price - ATR_STOP_MULT * atr14
@@ -176,6 +185,10 @@ def score_at(ticker, region, o, h, l, c, v):
         "tech_score": tech, "vol_score": volsc, "composite_px": comp,
         "pass_liquidity": int(pass_liq), "pass_atr": int(pass_atr),
         "tradable": int(pass_liq and pass_atr and pass_price),
+        "gap_event": int(gap is not None),
+        "gap_days_ago": gap["days_ago"] if gap else np.nan,
+        "gap_up": (1 if gap["direction"] == "up" else 0) if gap else np.nan,
+        "gap_size_atr": gap["size_atr"] if gap else np.nan,
     }
 
 

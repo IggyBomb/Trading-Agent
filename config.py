@@ -162,6 +162,18 @@ EARNINGS_EXIT_SESSIONS   = 2
 EARNINGS_TRIM_STRATEGIES = {"SWING", "MOMENTUM"}
 EARNINGS_TRIM_FRACTION   = 0.5
 
+# -- Gap / news-shock detector (fetch_data.detect_gap) -- added 2026-10-30 --
+# Price-only detection: an opening gap > GAP_ATR_MULT x ATR14 on volume >
+# GAP_VOL_MULT x the 20d average (both measured on the bars BEFORE the gap).
+# Only a gap that coincides with an EARNINGS report changes scoring (label
+# "earnings_gap": 0 setup points, conviction capped at Medium, gap bar removed
+# from ATR / volume average, no measured-move target). News / M&A gaps and
+# gaps whose earnings date is unknown are scored normally and only labelled.
+GAP_ATR_MULT             = 2.0
+GAP_VOL_MULT             = 2.5
+GAP_HOLD_SESSIONS        = 10   # = SR_WINDOW: label lasts while the gap bar sits in the S/R window
+GAP_EARNINGS_WINDOW_DAYS = 1    # report on the gap day or the session before (after-close reports)
+
 # -- Composite score weights (watchlist_ranker.composite) --------------------
 # Single source of truth: edit here, not inside composite(), and every
 # consumer (watchlist_ranker.py's main rank, rescue_bw.py's Rescued_BW, or
