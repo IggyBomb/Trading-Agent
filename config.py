@@ -280,3 +280,9 @@ NET_LENDER_COVERAGE     = 99.0  # interest income >= expense, EBIT > 0: stored a
 MINSKY_HY_OAS_TIGHT    = 3.5    # % -- ICE BofA US HY OAS below this = complacent credit
 MINSKY_REAL_YIELD_JUMP = 0.50   # pct points rise in 10Y TIPS yield over ~3M (63 obs)
 MINSKY_DEBT_GDP_PCTILE = 0.80   # nonfin. corporate debt/GDP in top 20% of its history
+
+# ── Inflation level guard (macro_regime_classifier.apply_inflation_level_guard)
+# The market score reads inflation DIRECTION only. With CPI at 8% and easing
+# (Jun/Sep 2022) it said DEFLATION and favoured long bonds while TLT fell
+# ~30%. Above this CPI YoY, weak growth + easing inflation = STAGFLATION.
+INFLATION_HIGH_CPI_YOY = 3.0    # % -- Fed 2% target + 1pt tolerance
