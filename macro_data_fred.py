@@ -56,6 +56,9 @@ DAILY_SERIES = {
     "T10Y2Y": "10Y-2Y Treasury spread",
     "T5YIE":  "5Y breakeven inflation",
     "T10YIE": "10Y breakeven inflation",
+    "DFII10": "10Y real yield (TIPS)",
+    "DFF":    "Effective fed funds rate",
+    "BAMLH0A0HYM2": "HY credit spread (ICE BofA OAS)",
 }
 
 # Monthly / quarterly official series — slow confirmation layer
@@ -63,6 +66,7 @@ SLOW_SERIES = {
     "CPIAUCSL": "CPI, headline (all items)",
     "CPILFESL": "CPI, core (ex food & energy)",
     "PCEPI":    "PCE price index (Fed's preferred gauge)",
+    "PCEPILFE": "Core PCE price index (ex food & energy)",
     "PAYEMS":   "Nonfarm payrolls",
     "UNRATE":   "Unemployment rate",
     "INDPRO":   "Industrial production index",
@@ -225,6 +229,14 @@ def classify_inflation_fred(data: dict) -> tuple[str, str]:
             signals.append(1 if yoy > 2.5 else (-1 if yoy < 1.5 else 0))
             notes.append(f"PCE YoY: {yoy:+.1f}%")
 
+    core_pce = data.get("PCEPILFE")
+    if core_pce:
+        yoy = yoy_change(core_pce)
+        if yoy is not None:
+            # same Fed-target band as headline PCE — this is the series the 2% target is actually set on
+            signals.append(1 if yoy > 2.5 else (-1 if yoy < 1.5 else 0))
+            notes.append(f"core PCE YoY: {yoy:+.1f}%")
+
     t5yie = data.get("T5YIE")
     if t5yie:
         chg = level_diff(t5yie, 21)  # ~1 trading month, percentage points
@@ -335,6 +347,23 @@ def main():
     t5yie = data.get("T5YIE")
     if t5yie:
         print(f"  Inflazione attesa 5Y (breakeven): {t5yie[-1][1]:.2f}%")
+    dfii10 = data.get("DFII10")
+    if dfii10:
+        real = dfii10[-1][1]
+        # >2% real is historically restrictive (headwind for gold and long-duration growth)
+        print(f"  10Y reale (TIPS): {real:.2f}%  " +
+              ("(restrittivo)" if real > 2 else ("(accomodante)" if real < 0 else "(neutrale)")))
+    dff = data.get("DFF")
+    if dff:
+        print(f"  Fed funds effettivo: {dff[-1][1]:.2f}%")
+    hy = data.get("BAMLH0A0HYM2")
+    if hy:
+        oas = hy[-1][1]
+        chg = level_diff(hy, 21)
+        chg_txt = f", 1m {chg * 100:+.0f}bp" if chg is not None else ""
+        # <3.5% = historically tight, >5% = credit stress
+        print(f"  HY spread (OAS): {oas * 100:.0f}bp{chg_txt}  " +
+              ("(stretto)" if oas < 3.5 else ("(STRESS)" if oas > 5 else "(normale)")))
 
     output = {
         "generated_at":    datetime.utcnow().isoformat() + "Z",

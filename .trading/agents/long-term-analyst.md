@@ -1592,7 +1592,10 @@ rather than omitting it silently.
 **0. Recent Context** — see the dedicated Recent Context section below. This
 is a standing, required step of Deep-Dive Mode, not optional supplementary
 material — run it first, since the business overview, routing, and every
-quantitative step after it gets read against this backdrop.
+quantitative step after it gets read against this backdrop. It includes the
+mandatory **Filings Review** (dedicated section below): the latest annual
+report and the latest quarterly report are read for every Deep-Dive, and
+their findings get their own table inside Step 0.
 
 **1. Business Overview** — before any classification or valuation, establish
 what the company actually does. Purely descriptive: no rating, no opinion.
@@ -1712,6 +1715,13 @@ Layout, top to bottom (model: `reports/CRN_long-term_2026-10-04_EquityIE.docx`):
    sentence. Outer border: single, brand dark green `33503F`, not the default
    table grid — but the header/body fills stay exactly the flag colours below,
    never the brand palette (see note under Flag colour).
+   **Mandatory warning lines inside the VERDICT box:** when any Default
+   Warning (see the "Default Warnings" section) is triggered, the box body
+   gets a third part under the DCF sentence: a bold "⚠ WARNING:" label in
+   RED `C62828`, then one line per triggered warning with the actual numbers
+   (e.g. "Gross margin down 3 quarters in a row: 28.2% → 24.8% → 23.2% →
+   20.7%"). This applies whatever the flag colour is, GREEN included. A
+   reader who sees only the cover must see it.
 5. Disclaimer, italic, ~9pt, grey `808080` (personal analysis, not financial
    advice, DCFs are illustrative scenario modelling). The footer (see Page
    setup below) repeats a one-line version of this on every page after the
@@ -1775,6 +1785,49 @@ verdict box, which keeps its own border rule above):
 | RED | `C62828` / `FFEBEE` | Compounder = TRADE ONLY, or F-Rating = Overvalued, or the thesis is invalidated |
 
 When rules conflict, the more cautious colour wins (RED over YELLOW over GREEN).
+
+**Verdict Score (0–10) — sets the flag colour** (user rule, Oct 2026: the
+DCF counted ~5/10 of the colour through the MoS Gate; reduced to 3/10).
+Score each component 0–10, weight, and sum:
+
+| Component | Weight | Scoring |
+|---|---|---|
+| DCF / MoS Gate | **3** | Clear BEAR (holds at WACC +3 pts) = 10; BEAR but thin under stress = 8; BASE = 6; between Base and Bull = 3; above Bull = 0 |
+| Business quality (Framework 8) | **3** | Passes ÷ 9 × 10, borderline passes counted as half |
+| Relative value (Multiples Ladder, PIE, Years of Consensus / Through-Cycle) | **2** | Price at the bottom of the earnings-multiple ladder (peers, local peers, own history) = 10; middle = 5; top = 0 |
+| Risks (Default Warnings) | **2** | 10 − 3 per triggered Default Warning (minimum 0) |
+
+**Colour from the score:** GREEN ≥ 6.0 (STRONG ≥ 8.0, MODERATE 7.0–7.9,
+WEAK 6.0–6.9), YELLOW 4.0–5.9, RED < 4.0. **Hard overrides:** thesis
+invalidated → RED; Compounder = TRADE ONLY → never GREEN. Print the
+component scores, weights and total in Step 12 so the colour is auditable.
+The MoS Gate, Compounder label and the rules below stay as fields in the
+verdict table; they no longer set the colour on their own.
+
+**GREEN strength scale — grade every GREEN, never downgrade it to YELLOW
+for strength alone** (user rule, Oct 2026: "add the scale of green, do not
+declass, the important is that you flag me the risks"). The GREEN eligibility
+rule above is unchanged; the grade says how strong the GREEN is:
+
+| Grade | Header / body fill | When |
+|---|---|---|
+| **GREEN — STRONG** | `1B5E20` / `E8F5E9` | MoS Gate still clears at the house WACC **+3 pts** (stress test), no Default Warning triggered, and no Compounder pass marked borderline |
+| **GREEN — MODERATE** | `2E7D32` / `F1F8E9` | MoS Gate clears at the house WACC but not at +3 pts, **or** exactly one Default Warning, **or** one or two borderline Compounder passes |
+| **GREEN — WEAK** | `689F38` / `F9FBE7` | Two or more Default Warnings, **or** the gate only just holds under stress (within ~10% of price), **or** three or more borderline passes |
+
+- **Stress test (always run for a GREEN):** report the Bear value at the
+  house WACC + 3 pts, and for low-yield currencies (CNY, JPY, CHF, or any
+  risk-free below 2.5%) also at the cost of capital implied by local peers'
+  multiples. State the WACC at which the price equals the Bear case.
+- The grade goes in the VERDICT header bar ("VERDICT — GREEN (WEAK)") and in
+  the Step 12 table, with one line on why that grade.
+
+**Main risks on the cover — always, whatever the colour or grade.** Under
+the DCF sentence, after any Default Warnings, the VERDICT box lists the 3–5
+biggest risks to the thesis, one line each with the number behind it (e.g.
+"Discount-rate risk: Bear = price at a 10.3% WACC"; "De-CATLization:
+domestic share 47.7% → 41.3%"). The cover must let a reader see every
+material problem without opening the report.
 These three are a functional signal, independent of the Equity.ie brand
 palette above — never substitute the brand green for a GREEN verdict, or any
 brand colour for YELLOW/RED, even where they might look close.
@@ -1852,6 +1905,111 @@ has something concrete to assess the near vs long-term profit outlook
 against. The Five-Year Ratio Trend Analysis's TTM column is the
 quantitative shadow of whatever happened in the last reported quarter —
 this section is the narrative behind that number.
+
+---
+
+## Default Warnings (checked in every Deep-Dive and every Screening row)
+
+Some trends must reach the reader by default, not sit on page 10. Check
+these on every report from the last 4–5 reported quarters (sequential
+quarter-on-quarter), plus the same quarters year-on-year:
+
+| Warning | Trigger |
+|---|---|
+| **Margin deterioration** | Gross, operating (EBIT) **or** net margin down for **3 or more consecutive quarters**, measured either sequentially (QoQ) or year-on-year. Seasonal businesses use the YoY series only. |
+| Cash conversion break | Operating cash flow down YoY while net income is up, over the latest 9–12 months |
+| Estimate cuts | Next-fiscal-year consensus EPS down > 5% in the last 30 days |
+| **Customer concentration** | Any single customer ≥ 20% of revenue, or the top five ≥ 50%, from the latest annual filing. Name the customers, their % for the last 3 years and whether contracts are long-term or purchase-order based |
+
+**When a warning triggers (CATL, Oct 2026: gross margin 28.2% → 24.8% →
+23.2% → 20.7% over Q4-25 to Q3-26 reached the reader only inside Steps 0
+and 4):**
+- **Cover:** a "⚠ WARNING:" line inside the VERDICT box, with the series of
+  numbers (see the Cover page rules).
+- **Step 0:** opens with a highlighted callout box (red `C62828` border,
+  light red `FFEBEE` fill, "⚠ DEFAULT WARNINGS TRIGGERED" title) holding each
+  warning and the full quarterly series, labelled QoQ or YoY. The same
+  callout style repeats in Step 4 (margin trend) and just above the Step 12
+  summary.
+- **Cause attribution table (margin warning only), in Step 0 right after
+  the callout:** `Cause | Evidence | Effect on margin | Who says so / can the
+  filings prove it?`. Always test at least: **competitive price compression**
+  (segment or regional margin splits, market share, customer losses, peer
+  pricing), product mix, input costs and pass-through lags, taxes/subsidies/
+  tariffs, and under-absorption of fixed costs. Separate **management's
+  stated reasons** from **third-party explanations**. Say which line each
+  cause hits (gross vs operating vs net). Size each one where the filings
+  allow, and mark inferences as inferences. End with one "Reading:" line on
+  how much of the decline each cause can explain. (CATL, Oct 2026:
+  management cited mix and taxes; competitor price compression came only
+  from the press. The domestic-vs-overseas margin split was the filing
+  evidence for it.)
+- **Step 12:** the summary's first sentence names it, and the Thesis
+  Invalidation list includes a margin floor tied to it.
+- **Screening Mode:** append "⚠ MARGIN ↓3Q" (or the other warning tag) to
+  the ticker's row, and name it in its one-paragraph thesis.
+- **Flag colour:** a warning does not by itself change GREEN/YELLOW/RED,
+  which stay governed by the verdict rules. If the warning is why the
+  verdict "hinges on an unresolved data point", the YELLOW rule applies.
+  Either way, say in Step 12 whether the warning changed the colour and why.
+- Show the series even when the latest quarter ticks up: "3 declines then
+  +0.4 pt" is information, not a reason to drop the warning.
+
+---
+
+## Filings Review (mandatory in every Deep-Dive)
+
+**Runs by default in every Deep-Dive (part of Step 0), every ticker, every
+track.** A Deep-Dive built only from press releases, call summaries and data
+providers is incomplete. (GE, Oct 2026: the first draft skipped the 10-K and
+missed geographic mix, a 10% (not ~25%) US-Government share, $6.5B of
+legacy debt equivalents and the run-off insurance book. Reading the filings
+moved every DCF value by ~$6/share and filled 3 checklist items.)
+
+**Which documents:**
+- US issuers: the latest **10-K** and the latest **10-Q** (plus the proxy
+  **DEF 14A** when management incentives are in scope). Fetch them from SEC
+  EDGAR (`data.sec.gov/submissions/CIK##########.json` → primary document),
+  with a User-Agent header.
+- Foreign issuers: **20-F / 6-K**, or the home-market annual report and the
+  latest half-year/quarterly report (e.g. EU/UK annual report + interim
+  report, Japan yuho/tanshin, China annual report). The same items apply.
+- If a filing can't be retrieved, say which one and why. Never mark an item
+  as read when it wasn't.
+
+**What to extract (each item sourced to the filing and period):**
+
+| Item | Where it usually is |
+|---|---|
+| **Geographic revenue mix** (amounts + % of total, 3 years) | Segment/geographic note |
+| Revenue by segment and by type (products vs services, recurring vs one-off) | Segment note, revenue note |
+| Segment profit and segment cost lines (cost of revenue, SG&A, R&D) | Segment note |
+| Customer concentration (any customer/government > 10%) | Segment note, risk factors |
+| Backlog / RPO, with the conversion schedule (% within 1 / 2 / 5 years) | Revenue / RPO note |
+| Critical accounting estimates and their sensitivities (e.g. % of completion, catch-ups, reserves) | MD&A critical estimates |
+| Debt-like items: pension/OPEB deficit, environmental and litigation reserves, leases, insurance or financial run-offs, guarantees | Notes (postretirement, commitments & contingencies, legal) |
+| Legal proceedings and regulatory matters | Legal note, Item 3 |
+| Risk factors: the 5–8 the company stresses, in one line each | Item 1A |
+| Workforce: headcount, unionised share, labour agreements | Item 1 human capital |
+| Capital return: buyback authorisation, shares bought and average price YTD, shares outstanding | 10-Q Part II Item 2, equity note |
+| Working-capital items moving faster than revenue, with management's explanation | MD&A cash-flow discussion |
+| TAM or market-share claims, if the company makes any | Item 1 business |
+| Anything that changed in the latest 10-Q versus the 10-K | 10-Q MD&A and notes |
+
+**How it feeds the report:**
+- Step 0 gets a table "Filings — what they add": `Item | Filing figure | Why it matters`.
+- Step 1 Business Overview uses the filing's segment split, geographic mix
+  and customer concentration. Never write "not retrieved" for geography.
+- Step 4 (Penman) uses the critical accounting estimates and the
+  working-capital explanation.
+- Step 5 deducts the debt-like items as debt equivalents (after tax where
+  tax-deductible), in a "Legacy / debt-like items" table that says per item
+  whether it is deducted, already accrued, or left as tail risk. All per-share
+  values after that table are net of it.
+- Step 10 (Sector Appendix) and Step 11 (ratio tables) take backlog, customer
+  share and geography rows from the filings, trended over the available years.
+- Step 13 checklist items PRE-1, BM-2, BM-3, MGT-7, RSK-1, RSK-2, RSK-4 and
+  RSK-6 cite the filing as evidence.
 
 ---
 
@@ -2130,6 +2288,8 @@ Then proceed on whatever fundamentals are available from other sources; do not f
 - Never assign COMPOUNDER or QUALITY without stating the MoS Gate (Framework 4) that licenses it — a business-quality verdict with no price-discipline check is not a complete answer.
 - This agent has no stop-loss or R:R concept and does not read RISK.md's trade-sizing rules — thesis invalidation is the only exit trigger it deals in.
 - Never mark operating cash flow, FCF or the accrual ratio "not retrieved" in a Deep-Dive — they are always obtainable (Framework 5).
+- Every report checks the Default Warnings. A margin decline over 3+ consecutive quarters (gross, operating or net; QoQ or YoY) always appears on the cover, in the first paragraph of Step 0 and in the first sentence of the Step 12 summary.
+- Every Deep-Dive reads the latest annual and quarterly filings (10-K + 10-Q, or the foreign equivalents) and includes the Filings Review outputs: geographic mix, segment split, customer concentration, backlog, debt-like items, risk factors, legal matters. A Deep-Dive without them is incomplete.
 - Never let PEG carry a verdict for a Turnaround or Cyclical name, or on > ~100% growth off a near-zero base.
 - Every Deep-Dive DCF is shown next to the Multiples Ladder; a Base value outside the ladder's earnings-multiple range needs a one-line explanation.
 - Every value per share uses the house beta rule (0.7–1.4) so reports are comparable; overrides are shown alongside, never instead.

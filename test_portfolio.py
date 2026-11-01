@@ -79,7 +79,7 @@ def fx_to_eur(currency: str) -> float:
     if currency in _fx_cache:
         return _fx_cache[currency]
     pair = f"EUR{currency}=X"
-    h = yf.Ticker(pair).history(period="5d")
+    h = yf.Ticker(pair).history(period="5d").dropna(subset=["Close"])
     rate = float(h["Close"].iloc[-1])  # EURUSD=X style: units of `currency` per 1 EUR
     eur_per_unit = 1 / rate
     _fx_cache[currency] = eur_per_unit
@@ -97,7 +97,8 @@ def save_book(book):
 
 
 def fetch_price(ticker):
-    h = yf.Ticker(ticker).history(period="5d")
+    # Asian tickers get a NaN placeholder bar for today before/after their session -- skip it
+    h = yf.Ticker(ticker).history(period="5d").dropna(subset=["Close"])
     if h.empty:
         return None
     return float(h["Close"].iloc[-1])

@@ -13,8 +13,10 @@ Usage:
 """
 
 import json, os, sys, argparse
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from pathlib import Path
+
+import numpy as np
 
 from config import (
     EU_SUFFIXES, MARKET_DATA_PATH, FUNDAMENTAL_PATH,
@@ -22,6 +24,8 @@ from config import (
     MACRO_REGIME_PATH, SECTOR_ROTATION_PATH, BUBBLE_WATCH_PATH,
     SECTOR_RET_1M_THRESHOLD, SECTOR_RET_3M_THRESHOLD, SECTOR_THRESHOLD_TOLERANCE,
     BUBBLE_WATCH_MAX_AGE_HOURS, RESCUE_BW_TOP_CUTOFF, COMPOSITE_WEIGHTS,
+    EARNINGS_EXIT_SESSIONS,
+    GOLD_REGIME_PATH, GOLD_INDUSTRIES, GOLD_REGIME_MAX_AGE_HOURS,
 )
 
 MARKET_PATH   = MARKET_DATA_PATH
@@ -70,6 +74,24 @@ def load_bubble_watch(path: str, max_age_hours: float) -> dict:
     return entries if isinstance(entries, dict) else {}
 
 
+def load_gold_regime(path: str, max_age_hours: float) -> dict:
+    """data/gold_regime.json, or {} when missing / unreadable / stale.
+    Fail-closed like load_bubble_watch(): no fresh data = no adjustment."""
+    raw = load_json(path)
+    if not isinstance(raw, dict) or not raw.get("generated_at"):
+        return {}
+    try:
+        from datetime import timezone
+        ts = datetime.fromisoformat(raw["generated_at"].replace("Z", "+00:00"))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        if (datetime.now(timezone.utc) - ts).total_seconds() / 3600 > max_age_hours:
+            return {}
+    except Exception:
+        return {}
+    return raw
+
+
 def is_eu(ticker: str) -> bool:
     dot = ticker.rfind(".")
     return dot != -1 and ticker[dot:].upper() in EU_SUFFIXES
@@ -84,6 +106,23 @@ def earnings_days_out(ticker: str, earnings: list) -> int | None:
                 delta = (ed - today).days
                 if 0 <= delta <= 14:
                     return delta
+            except Exception:
+                pass
+    return None
+
+
+def sessions_to_earnings(ticker: str, earnings: list) -> tuple[int, str] | None:
+    """(trading sessions AFTER today and BEFORE the earnings day, earnings date).
+    Mon-Fri count, exchange holidays not excluded. Scans run after the close and
+    orders fill at the next open, so <= EARNINGS_EXIT_SESSIONS means "act now".
+    Shared with position_monitor.py."""
+    for e in earnings:
+        if e.get("ticker", "").upper() == ticker.upper():
+            try:
+                ed = datetime.strptime(e["earnings_date"], "%Y-%m-%d").date()
+                if ed < date.today():
+                    return None
+                return int(np.busday_count(date.today() + timedelta(days=1), ed)), ed.isoformat()
             except Exception:
                 pass
     return None
@@ -238,9 +277,19 @@ def resolve_bubble_etf(sector: str | None, industry: str | None,
 # part of what was asked to be gated.
 def regime_penalty(sector: str | None, industry: str | None,
                     sector_rotation: dict | None, macro: dict | None,
-                    bubble_watch: dict | None = None) -> tuple[float, list]:
+                    bubble_watch: dict | None = None,
+                    gold_regime: dict | None = None) -> tuple[float, list]:
     penalty = 0.0
     notes: list = []
+
+    # Precious-metal miners only: real-yield / dollar regime from gold_regime.py
+    # (2026-10-30). Negative = headwind, positive = tailwind, see config GOLD_*.
+    if industry in GOLD_INDUSTRIES and gold_regime:
+        adj = gold_regime.get("adjustment") or 0
+        if adj:
+            penalty += adj
+            notes.append(f"gold regime {gold_regime.get('regime')} ({adj:+d}): "
+                         + "; ".join(gold_regime.get("notes") or []))
 
     etf, granularity, label = resolve_bubble_etf(sector, industry, sector_rotation)
     us_industries = (sector_rotation or {}).get("us_industries", {})
@@ -324,9 +373,9 @@ def composite(tech: float, fund: float | None, alt: float | None,
              alt_val  * weights["alt"]  +
              volatility_val  * weights["volatility"])
 
-    # Penalties
-    if dte is not None and dte <= 3:    score -= 20  # earnings in 2-3 days
-    elif dte is not None and dte <= 7:  score -= 10
+    # Penalties. (No pre-earnings penalty since 2026-10-30 -- earnings is handled
+    # as an exit/no-entry rule instead, see config EARNINGS_EXIT_SESSIONS; `dte`
+    # is kept in the signature so callers don't change.)
     if short_pct and short_pct > 30:    score -= 10
     if short_pct and short_pct > 50:    score -= 10
     score += regime_pen   # crowded-sector / macro-fragility penalty, see regime_penalty()
@@ -354,6 +403,7 @@ def build_scored_universe(args, weights: dict | None = None) -> tuple[list, dict
     sector_rotation_raw = load_json(SECTOR_PATH)
     macro_raw            = load_json(MACRO_PATH)
     bubble_watch_raw     = load_bubble_watch(BUBBLE_PATH, BUBBLE_WATCH_MAX_AGE_HOURS)
+    gold_regime_raw      = load_gold_regime(GOLD_REGIME_PATH, GOLD_REGIME_MAX_AGE_HOURS)
 
     if market_raw is None:
         return None
@@ -418,12 +468,14 @@ def build_scored_universe(args, weights: dict | None = None) -> tuple[list, dict
         sector     = fund_entry.get("sector")   if fund_entry else None
         industry   = fund_entry.get("industry") if fund_entry else None
         regime_pen, regime_notes = regime_penalty(sector, industry, sector_rotation_raw,
-                                                    macro_raw, bubble_watch_raw)
+                                                    macro_raw, bubble_watch_raw,
+                                                    gold_regime_raw)
 
         comp = composite(tech_score, fund_score, alt_score, dte=dte, short_pct=short_pct,
                           volatility=vol_score, regime_pen=regime_pen, weights=weights)
 
         conv = (t_data.get("conviction") or "").upper()
+        se   = sessions_to_earnings(ticker, earnings)
         scored.append({
             "ticker":         ticker,
             "score":          comp,
@@ -434,6 +486,11 @@ def build_scored_universe(args, weights: dict | None = None) -> tuple[list, dict
             "rsi":            t_data.get("rsi"),
             "atr_pct":        t_data.get("atr_pct"),
             "dte":            dte,
+            "earnings_sessions": se[0] if se else None,
+            "earnings_date":     se[1] if se else None,
+            # label only, no score effect: final-analyst turns this into WAIT
+            # for SWING/MOMENTUM candidates (POSITION/EVENT/long-term unaffected)
+            "no_entry_earnings": bool(se and se[0] <= EARNINGS_EXIT_SESSIONS),
             "is_eu":          is_eu(ticker),
             "regime_flags":   regime_notes,
             "sector":         sector,
@@ -473,7 +530,12 @@ def main():
         alt_s   = f"{s['alt_score']:.0f}"  if s["alt_score"]  else "—"
         rsi_s   = f"{s['rsi']:.0f}"        if s["rsi"]        else "—"
         atr_s   = f"{s['atr_pct']:.1f}"    if s["atr_pct"]    else "—"
-        notes   = f"⚠ EARN {s['dte']}d" if s["dte"] is not None and s["dte"] <= 7 else ""
+        if s.get("no_entry_earnings"):
+            notes = f"⛔ NO ENTRY (swing/momentum): earnings in {s['earnings_sessions']} session(s)"
+        elif s["dte"] is not None and s["dte"] <= 7:
+            notes = f"ℹ EARN {s['dte']}d"
+        else:
+            notes = ""
         if s.get("regime_flags"):
             notes = (notes + "  " if notes else "") + "⚠ " + "; ".join(s["regime_flags"])
         eu_flag = " [EU]" if s["is_eu"] else ""

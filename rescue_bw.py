@@ -15,10 +15,10 @@ pipeline-1 rank #1 -- RESCUE_BW_TOP_CUTOFF = 0 -- not #21 as originally.)
 Mirrors watchlist_ranker.regime_penalty()'s bubble-watch gate from the other
 side: that function penalizes a sector once Kindleberger Stage 4 is CONFIRMED
 (too late, distribution phase). This script rescues the opposite case -- Stage
-2 (Boom), Stage 3 (Euphoria), or Stage 4 not yet confirmed -- as names worth a
-second look, whether or not their composite score made the main cut.
-Confirmed Stage 4 is never rescued here: same signal, already handled as a
-penalty elsewhere, not an opportunity.
+2 (Boom) or Stage 3 (Euphoria) only -- as names worth a second look, whether
+or not their composite score made the main cut (pool = ranks 1-100 since
+2026-10-10). Stage 4 is never rescued here, confirmed or not (2026-10-29: an
+unconfirmed Stage 4 is already late-stage, not an early rally).
 
 Usage:
   python3 rescue_bw.py              — full universe (pool = pipeline-1 ranks 1-100)
@@ -93,18 +93,15 @@ def main():
         if not bubble_entry:
             continue
         stage = bubble_entry.get("stage")
-        confirmed = bubble_entry.get("confirmed") is True
-        if stage not in (2, 3, 4):
-            continue
-        if stage == 4 and confirmed:
-            continue  # already flagged at risk in watchlist_ranker's regime_penalty() -- never rescued
+        if stage not in (2, 3):
+            continue  # Stage 4 (confirmed or initial) is never rescued
         rescued.append({
             **row,
             "bubble_stage": stage,
             "bubble_theme": bubble_entry.get("theme"),
             "bubble_etf":   etf,
-            "normal_rank":  pool_ranks[row["ticker"]],
-            "rescue_flag":  "late-stage, not yet confirmed — watch for distribution" if stage == 4 else None,
+            "normal_rank":  pool_ranks[row["ticker"]],   # name read by scan.md / scan_logger / print below
+            "rescue_flag":  None,                         # Stage 4 never rescued -> no late-stage flag
         })
     rescued.sort(key=lambda x: -x["score"])
 

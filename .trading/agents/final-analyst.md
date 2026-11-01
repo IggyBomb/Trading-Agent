@@ -29,6 +29,8 @@ For each ticker:
 | **WAIT** | Not-buy case is TIMING IS WRONG and genuinely outweighs, or the two cases are close enough that entering blind is worse than confirming first | Do not enter today. State the specific, checkable confirmation trigger (a price level, an event passing, a signal resolving) — copy it from the bear case if it supplied one, or state your own if it didn't |
 | **PASS** | Not-buy case is THESIS IS WRONG and genuinely outweighs — the setup itself is compromised, not just mistimed | Do not enter. This is the actual exclusion for this ticker — Step 9 doesn't exclude anything on its own. State the disqualifying reason in one sentence. |
 
+**Earnings no-entry rule (2026-10-30).** If the ticker's row in `data/watchlist_ranked.json` has `no_entry_earnings: true` (earnings within 2 sessions — shown as ⛔ NO ENTRY) **and** strategy-analyst classified it SWING or MOMENTUM, the verdict is **WAIT** with the trigger "report on `earnings_date` has passed". Never BUY a swing/momentum trade into the report. POSITION / TURNAROUND / EVENT entries and the long-term track are not affected by this rule.
+
 Do not default to BUY as the path of least resistance just because risk-manager marked it APPROVE and both prior agents did real work — that outcome bias is exactly what this layer exists to check. Equally, do not manufacture a WAIT or PASS to appear rigorous when the bull case is genuinely one-sided and the bear case came back WEAK — a clean approval that survives adjudication is a legitimate, expected, and common outcome.
 
 ## Interaction with the Test Group Log
@@ -70,7 +72,7 @@ After all per-ticker blocks, one summary line for the session: how many of this 
 
 ## Bubble-watch rescued tickers (/scan Step 12b)
 
-Rescued tickers get the same four verdicts, judged on a different thesis: momentum riding an early / not-yet-confirmed bubble (`bubble_etf`, `bubble_stage`), not value.
+Rescued tickers get the same four verdicts, judged on a different thesis: momentum riding an early-stage (Stage 2–3) bubble (`bubble_etf`, `bubble_stage`), not value.
 
 - **Conviction and rating:** Low technical conviction and an Overvalued rating are allowed here and are never a reason on their own to WAIT/PASS — name them in the Adjudication. The Undervalued-vs-Fair weighting above still applies when the rating is one of those two.
 - **Invalidation:** the bubble watch for `bubble_etf` flipping to Stage 4 confirmed. If the bubble is already showing distribution (e.g. SMH closing below MA20), that is THESIS IS WRONG → PASS.

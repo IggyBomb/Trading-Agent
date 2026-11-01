@@ -155,6 +155,22 @@ Outputs full STRATEGY VERDICT block per ticker.
 
 After strategy-analyst output is complete, invoke `institutional-flow.md` for every ticker in the **quality pool**.
 
+First run the data step, with every quality-pool ticker on one line:
+
+```bash
+python3 institutional_data.py TICKER1 TICKER2 ...   # writes data/institutional.json
+```
+
+It scores the agent's five components from the free sources that exist: 13F top holders
+(yfinance, US only), FINRA weekly ATS + non-ATS volume (US only, ~3-week lag), option
+chains ≤45 DTE (directional only when 13F or dark pool agrees), sector ETF relative
+strength (a PROXY for ETF flows), and `data/institutional_market.json` for dry powder
+(fill `as_of`, `fms_cash_pct`, `hf_net_leverage_pct` from the latest BofA FMS / GS prime
+book via WebSearch when it is missing or >45 days old). Start from its `score` /
+`alignment` per ticker; the agent may override per its own rules (e.g. Berkshire + Citadel
+consensus exit) but must state why. Tickers where 13F, dark pool and options are all
+unavailable (EU-only names) keep the 50 / CAUTIOUS DATA UNAVAILABLE fallback.
+
 This is the final analysis layer before risk. It runs once all other agents have produced their output — never before.
 Outputs market-wide Institutional Flow Overview (once per session) + per-ticker Institutional Verdict with Smart Money Score.
 
@@ -216,7 +232,8 @@ Step 12's verdict. Step 9's risk summary is context for that verdict, not a prio
 
 Added 2026-10-10. A second, separate candidate group alongside the quality pool: tickers in
 the top 100 of `watchlist_ranker.py`'s composite ranking whose sector/industry sits at an
-early, not-yet-confirmed bubble-watch stage (Stage 2, 3, or 4 not confirmed) — names that
+early bubble-watch stage (Stage 2 Boom or Stage 3 Euphoria only; Stage 4 is never rescued,
+confirmed or not — changed 2026-10-29) — names that
 may keep running *because* they are in a bubble. They get the same full analyst treatment
 and the same verdict ladder, and are logged as their own group (`BUBBLE_RESCUED`) so their
 performance can be compared against the quality pool.
@@ -385,10 +402,12 @@ Field notes:
   composite ranking; `rescue_score` = that row's `score`). Only on `rescued_candidates`
   rows — do not add them to `candidates` (the logger fills them with NULL there).
 - `strategy_type`: the real strategy-analyst.md classification, not a mechanical proxy.
-- `institutional_score` / `institutional_alignment`: from Step 8. With no real 13F /
-  dark-pool / options-flow source wired into this pipeline, this will typically be
-  `50` / `"CAUTIOUS"` (`DATA UNAVAILABLE`) per institutional-flow.md's own fallback rule —
-  write that honestly rather than fabricating a more specific score.
+- `institutional_score` / `institutional_alignment`: from Step 8 — the
+  `institutional_data.py` score (or the agent's documented override). Since 2026-10-27
+  US names get a real score; EU-only names stay `50` / `"CAUTIOUS"` (`DATA UNAVAILABLE`)
+  per institutional-flow.md's fallback rule — write that honestly rather than
+  fabricating a more specific score. Scans before 2026-10-23 have 50 everywhere because
+  no source was wired yet.
 - `risk_manager_verdict`: exactly Step 9's conclusion (APPROVE / CAUTION / REJECT),
   including a REJECT driven purely by portfolio exposure (no open slots) — do not filter
   those out of the file just because the setup itself was sound. Kept as-is even when
@@ -534,7 +553,8 @@ benchmark IWDA.AS (MSCI World, EUR). Every `/scan` run manages it:
 2. Review each open position against today's full stack (macro verdict, fundamentals,
    alt data, technicals, news, earnings dates) using the SWING / strategy-analyst exit
    rules: target hit → trim 50–100%; +1R → move stop to breakeven (`set-stop`); 10 trading
-   days without progress → exit; earnings inside the hold → exit or halve; thesis broken
+   days without progress → exit; earnings → SWING/MOMENTUM halve at the latest 2 sessions before the report
+   (✂ EARNINGS TRIM, other strategies per exit-analyst §7); thesis broken
    → exit. Act with `sell TICKER QTY|all`, `buy` (adds), or `set-stop`, always with
    `--reason`.
 3. Enter today's Step 12 verdicts: `BUY` at the risk-manager size (tier % of €100,000),
@@ -545,6 +565,11 @@ benchmark IWDA.AS (MSCI World, EUR). Every `/scan` run manages it:
    entry on its own. Step 12b's rescued BUYs are entered under the same rules and count
    toward the same 5-BUY limit; their `--reason` starts with `BUBBLE WATCH RESCUED` and
    names the invalidation (bubble watch for `bubble_etf` flipping to Stage 4 confirmed).
+
+Every `test_ptf.py` command also mirrors the book into SQLite (`data/scan_tracking.db`,
+`ptf_orders` / `ptf_positions` / `ptf_history` tables, plus view `v_ptf_tickers` linking each
+holding to the `scan_test_group` row that selected it) via `ptf_db.py` — automatic, no extra
+step. If its output shows `[ptf_db] WARNING`, run `python3 test_ptf.py sync-db`.
 
 Orders always fill at the next session's open (no same-close fills — the scan runs
 after the close). Never edit `data/test_ptf.json` by hand to change history — the alpha

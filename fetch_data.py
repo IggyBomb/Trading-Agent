@@ -53,6 +53,7 @@ from config import (
     JP_BATCH_SIZE, JP_BATCH_PAUSE, CA_BATCH_SIZE, CA_BATCH_PAUSE,
     BR_BATCH_SIZE, BR_BATCH_PAUSE,
     WATCHLIST_PATH, MARKET_DATA_PATH,
+    GAP_ATR_MULT, GAP_VOL_MULT, GAP_HOLD_SESSIONS, GAP_EARNINGS_WINDOW_DAYS,
 )
 
 OUTPUT_PATH = MARKET_DATA_PATH
@@ -256,7 +257,8 @@ def short_conviction(short_setup, vol_ratio, dist_resistance, trend):
     elif dist_resistance is not None and dist_resistance < 5:
         score += 1
 
-    if score >= 6:
+    # earnings_gap: 0 setup points (not matched above), capped at Medium
+    if score >= 6 and short_setup != "earnings_gap":
         return "High"
     if score >= 3:
         return "Medium"
@@ -311,7 +313,9 @@ def conviction(setup, vol_ratio, dist_resistance, dist_support, trend, support_b
     if trend == "down" and setup == "reversal":
         score += 1
 
-    if score >= 6:
+    # Earnings gap (2026-10-30): earns 0 setup points (not in any list above)
+    # and is capped at Medium -- the gap distorts S/R and volume for ~10 sessions.
+    if score >= 6 and setup != "earnings_gap":
         return "High"
     if score >= 3:
         return "Medium"
@@ -463,6 +467,71 @@ def backfill_daily(ticker, hist, daily_volume=None):
 # which tickers survive at all (MIN_PRICE, region min avg volume, region min ATR% —
 # values in config.py), then computes every metric plus long/short setup and
 # conviction, and assembles the JSON record.
+# ═══════════════════════════════════════════════════════════════════════════
+#  GAP / NEWS-SHOCK DETECTOR  (added 2026-10-30)   [search: GAP]
+# ═══════════════════════════════════════════════════════════════════════════
+
+def detect_gap(opens, highs, lows, closes, volumes, lookback=GAP_HOLD_SESSIONS):
+    """Most recent price shock in the last `lookback` bars (newest first):
+    |open - prev close| > GAP_ATR_MULT x ATR14 AND volume > GAP_VOL_MULT x 20d
+    average. Both yardsticks use only the bars BEFORE the gap, so the shock
+    can't inflate its own threshold. Returns None or a dict."""
+    opens, highs, lows, closes = (np.asarray(a, dtype=float) for a in (opens, highs, lows, closes))
+    volumes = np.asarray(volumes, dtype=float)
+    n = len(closes)
+    for j in range(n - 1, max(n - 1 - lookback, 20), -1):
+        pre_atr = atr(highs[:j], lows[:j], closes[:j], 14)
+        pre_vol = avg_volume(volumes[:j + 1])          # the 20 days before bar j
+        if not pre_atr or not pre_vol or np.isnan(opens[j]) or np.isnan(volumes[j]):
+            continue
+        gap = opens[j] - closes[j - 1]
+        if abs(gap) > GAP_ATR_MULT * pre_atr and volumes[j] > GAP_VOL_MULT * pre_vol:
+            return {"index": j, "days_ago": n - 1 - j,
+                    "direction": "up" if gap > 0 else "down",
+                    "size_atr": round(float(abs(gap) / pre_atr), 2),
+                    "vol_mult": round(float(volumes[j] / pre_vol), 2)}
+    return None
+
+
+def atr_excluding(highs, lows, closes, skip, period=14):
+    """ATR over the last `period` true ranges, leaving out the bar at index `skip`."""
+    trs = []
+    for i in range(1, len(closes)):
+        if i == skip:
+            continue
+        trs.append(max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1])))
+    return float(np.mean(trs[-period:])) if len(trs) >= period else None
+
+
+def volume_ratio_excluding(volumes, skip):
+    """Today's volume vs the 20-day average of the days before today,
+    leaving out the bar at index `skip` (the gap day)."""
+    v = np.asarray(volumes, dtype=float)
+    n = len(v)
+    prior = [v[i] for i in range(n - 1) if i != skip and not np.isnan(v[i])][-20:]
+    if len(prior) < 20 or np.mean(prior) == 0 or np.isnan(v[-1]):
+        return None
+    return round(float(v[-1] / np.mean(prior)), 2)
+
+
+def earnings_near(ticker, gap_date):
+    """True if an earnings report fell on gap_date or up to
+    GAP_EARNINGS_WINDOW_DAYS sessions before it (after-close reports gap the
+    next morning); False if earnings dates are known and none matches; None if
+    yfinance has no earnings dates for this ticker (common for EU names).
+    Called only for tickers where detect_gap() found something."""
+    try:
+        df = yf.Ticker(ticker).get_earnings_dates(limit=12)
+        if df is None or df.empty:
+            return None
+        lo = np.busday_offset(np.datetime64(gap_date), -GAP_EARNINGS_WINDOW_DAYS, roll="backward")
+        hi = np.datetime64(gap_date)
+        return any(lo <= np.datetime64(ts.date()) <= hi for ts in df.index)
+    except Exception as e:
+        log.debug(f"{ticker}: earnings dates unavailable — {e}")
+        return None
+
+
 def process_ticker(ticker, hist):
     """Extract all metrics for one ticker."""
     # Yahoo sometimes returns a trailing row for the most recent session with
@@ -548,6 +617,19 @@ def process_ticker(ticker, hist):
         dist_sup is not None and 0 <= dist_sup < 2
         and price > prev_close
     )
+
+    # Gap / news shock (2026-10-30). Only an EARNINGS gap changes scoring;
+    # news/M&A gaps and unknown-date gaps are scored normally, labelled only.
+    gap, gap_kind = None, None
+    if "Open" in hist.columns:
+        gap = detect_gap(hist["Open"].values, highs, lows, closes, volumes)
+    if gap:
+        is_earn  = earnings_near(ticker, hist.index[gap["index"]].date())
+        gap_kind = "earnings" if is_earn else ("news" if is_earn is False else "unverified")
+        if is_earn:
+            atr14     = atr_excluding(highs, lows, closes, skip=gap["index"]) or atr14
+            vol_ratio = volume_ratio_excluding(volumes, skip=gap["index"])
+            setup     = "earnings_gap"     # not breakout -> no measured-move target below
     conv         = conviction(setup, vol_ratio, dist_res, dist_sup, trend, support_bounce)
 
     # Long: ATR-based stop below entry. Target is a REAL chart level, not a
@@ -575,6 +657,8 @@ def process_ticker(ticker, hist):
     # gets the measured-move projection; other short setups target the
     # window support directly.
     s_setup = short_setup_type(closes, volumes, support, resistance)
+    if gap_kind == "earnings":
+        s_setup = "earnings_gap"           # not breakdown -> no measured-move short target
     s_conv  = short_conviction(s_setup, vol_ratio, dist_res, trend)
     short_stop  = round(price + ATR_STOP_MULT * atr14, 4)
     short_risk  = short_stop - price
@@ -613,6 +697,11 @@ def process_ticker(ticker, hist):
         # Short-side fields
         "short_setup":      s_setup,
         "short_conviction": s_conv,
+        # Gap / news shock (2026-10-30): "earnings" | "news" | "unverified" | None
+        "gap_event":        gap_kind,
+        "gap_days_ago":     gap["days_ago"]  if gap else None,
+        "gap_direction":    gap["direction"] if gap else None,
+        "gap_size_atr":     gap["size_atr"]  if gap else None,
     }
 
     if s_conv in ("High", "Medium"):
