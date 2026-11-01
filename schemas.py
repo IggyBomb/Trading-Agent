@@ -81,12 +81,16 @@ class FundamentalRecord(BaseModel):
 
     # raw profitability/growth metrics — computed with `or 0` / default-0
     # fallbacks, so always a number
-    roe: float
-    profit_margin: float
-    debt_equity: float
+    roe: float | None = None
+    profit_margin: float | None = None
+    # Nullable on purpose: compute_ratios() returns None for negative/zero
+    # equity (buyback-heavy names) and fcf_positive is None when FCF is
+    # unknown. Requiring them dropped ~14% of the universe at validation.
+    debt_equity: float | None = None
+    interest_coverage: float | None = None
     revenue_growth: float
     earnings_growth: float
-    fcf_positive: bool
+    fcf_positive: bool | None = None
 
     market_cap: int | None = None
     sector: str    # _safe() defaults to "Unknown", never null

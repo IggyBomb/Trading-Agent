@@ -81,8 +81,44 @@ def _fetch_info(ticker: str) -> dict | None:
 
     return info
 
+
+# RAW(yfinance): .info has no interest expense, so coverage needs the annual
+# income statement -- a second call per ticker (cached with the rest of the
+# record for FUNDAMENTAL_MAX_AGE_DAYS). EBIT is always the latest fiscal year;
+# interest expense/income come from the latest year that reports interest
+# expense, up to INTEREST_LOOKBACK_YEARS back (AAPL stopped disclosing it in
+# FY2024). Any failure returns Nones: coverage then simply isn't scored, the
+# ticker isn't dropped.
+def _fetch_interest(ticker: str) -> dict:
+    empty = {"ebit": None, "interest_expense": None, "interest_income": None,
+             "interest_fy": None}
+    try:
+        inc = yf.Ticker(ticker).income_stmt
+        if inc is None or inc.empty:
+            return empty
+        def row(name, col):
+            if name not in inc.index:
+                return None
+            v = inc.at[name, col]
+            return None if v is None or v != v else float(v)   # NaN -> None
+        out = dict(empty, ebit=row("EBIT", inc.columns[0]))   # most recent fiscal year
+        for col in inc.columns[:INTEREST_LOOKBACK_YEARS + 1]:
+            ie = row("Interest Expense", col)
+            if ie is not None:
+                out.update(interest_expense=ie,
+                           interest_income=row("Interest Income", col),
+                           interest_fy=str(col.date()) if hasattr(col, "date") else str(col))
+                break
+        return out
+    except Exception as e:
+        log.debug(f"{ticker}: income_stmt failed ({e})")
+        return empty
+
 # ── Config ───────────────────────────────────────────────────────────────────
 from config import MARKET_DATA_PATH, FUNDAMENTAL_PATH, FUNDAMENTAL_MAX_AGE_DAYS, FUNDAMENTAL_MAX_NEW_PER_RUN
+from config import (SECTOR_DE_MEDIAN, DE_FALLBACK_MEDIAN, DE_NO_SCORE_SECTORS,
+                    COVERAGE_HEDGE, COVERAGE_COMFORT, COVERAGE_SPECULATIVE, DEBT_FREE_DE,
+                    INTEREST_LOOKBACK_YEARS, NET_INTEREST_OFFSET_PCT, NET_LENDER_COVERAGE)
 
 REQUEST_PAUSE = 0.3   # seconds between yfinance .info calls
 
@@ -191,10 +227,31 @@ def compute_ratios(raw: dict) -> dict:
     peg = round(pe / (growth_for_peg * 100), 2) \
           if pe and pe > 0 and growth_for_peg and growth_for_peg > 0 else None
 
+    # Interest coverage = EBIT / |interest expense|. Yahoo's sign convention
+    # for interest expense varies, hence abs(). None if either is missing or
+    # interest is zero (debt-free handling is in score_quality).
+    # When interest income offsets > NET_INTEREST_OFFSET_PCT of the gross
+    # figure, the gross line is mostly IFRS finance-cost noise (FX/derivatives)
+    # and NET interest is used. Net lenders (income >= expense) with positive
+    # EBIT get NET_LENDER_COVERAGE -- no interest burden at all. Netting only
+    # applies when EBIT > 0: a loss-maker's interest income comes from a cash
+    # pile it is burning (RIVN), so it keeps gross coverage and the Ponzi flag.
+    ebit, ie = raw.get("ebit"), raw.get("interest_expense")
+    ii = abs(raw.get("interest_income") or 0)
+    coverage = None
+    if ebit is not None and ie:
+        cost = abs(ie)
+        if ebit > 0 and ii > NET_INTEREST_OFFSET_PCT * cost:
+            cost -= ii
+            if cost <= 0:
+                cost, coverage = None, NET_LENDER_COVERAGE
+        if cost:
+            coverage = round(ebit / cost, 2)
+
     return {
         "pe": pe, "forward_pe": fwd_pe, "pb": pb, "ev_ebitda": ev_ebitda,
         "roe": roe, "profit_margin": margin, "debt_equity": de,
-        "fcf": fcf, "peg": peg,
+        "fcf": fcf, "peg": peg, "interest_coverage": coverage,
     }
 
 
@@ -248,8 +305,41 @@ def score_value(ratios: dict) -> float:
 # NOTE: debt/equity here is a plain ratio (total debt / equity), not a
 # percentage — no /100 conversion needed since we compute it ourselves now
 # instead of reading yfinance's debtToEquity (which comes back as a percent).
-def score_quality(ratios: dict) -> float:
-    """Score business quality: ROE, margins, debt, FCF. Returns 0-10."""
+# Leverage block, 2.5 pts max (same as the old D/E-only block, so the 0-10
+# scale is unchanged): D/E relative to its SECTOR median up to 1.0, interest
+# coverage up to 1.5. Both skipped for DE_NO_SCORE_SECTORS (Financial Services).
+def _de_points(de, sector: str) -> float:
+    if de is None or sector in DE_NO_SCORE_SECTORS:
+        return 0.0
+    rel = de / SECTOR_DE_MEDIAN.get(sector, DE_FALLBACK_MEDIAN)   # 1.0 = in line with sector
+    if rel < 0.5:
+        return 1.0
+    elif rel < 1.0:
+        return 0.6
+    elif rel < 2.0:
+        return 0.2
+    return -0.5                       # more than double the sector's typical leverage
+
+
+def _coverage_points(cov, de, sector: str) -> float:
+    if sector in DE_NO_SCORE_SECTORS:
+        return 0.0
+    if cov is None:
+        # no interest line: full marks only if the balance sheet confirms it
+        return 1.5 if de is not None and de < DEBT_FREE_DE else 0.0
+    if cov > COVERAGE_HEDGE:
+        return 1.5                    # hedge finance
+    elif cov > COVERAGE_COMFORT:
+        return 1.0
+    elif cov > COVERAGE_SPECULATIVE:
+        return 0.3                    # speculative
+    elif cov < 1:
+        return -1.5                   # Ponzi: EBIT doesn't cover interest
+    return 0.0
+
+
+def score_quality(ratios: dict, sector: str = "Unknown") -> float:
+    """Score business quality: ROE, margins, leverage, FCF. Returns 0-10."""
     score = 0.0
 
     roe = ratios["roe"]
@@ -271,15 +361,8 @@ def score_quality(ratios: dict) -> float:
             score += 1
 
     de_ratio = ratios["debt_equity"]
-    if de_ratio is not None:
-        if de_ratio < 0.7:
-            score += 2.5
-        elif de_ratio < 1:
-            score += 1.5
-        elif de_ratio < 2:
-            score += 0.5
-        else:
-            score -= 1
+    score += _de_points(de_ratio, sector)
+    score += _coverage_points(ratios.get("interest_coverage"), de_ratio, sector)
 
     fcf = ratios["fcf"]
     if fcf is not None:
@@ -357,10 +440,12 @@ def fetch_fundamentals(ticker):
             return None
 
         raw    = _raw(info)
+        raw.update(_fetch_interest(ticker))
+        time.sleep(REQUEST_PAUSE)
         ratios = compute_ratios(raw)
 
         value   = score_value(ratios)
-        quality = score_quality(ratios)
+        quality = score_quality(ratios, raw["sector"])
         growth  = score_growth(raw, ratios)
         log.debug(f"{ticker}: value={value} quality={quality} growth={growth}")
 
@@ -383,6 +468,7 @@ def fetch_fundamentals(ticker):
             "roe":             round(ratios["roe"] * 100, 1) if ratios["roe"] is not None else None,
             "profit_margin":   round(ratios["profit_margin"] * 100, 1) if ratios["profit_margin"] is not None else None,
             "debt_equity":     ratios["debt_equity"],
+            "interest_coverage": ratios["interest_coverage"],
             # Still Yahoo's own pre-computed growth figures — see header note
             "revenue_growth":  round((raw["revenue_growth_yahoo"] or 0) * 100, 1),
             "earnings_growth": round((raw["earnings_growth_yahoo"] or 0) * 100, 1),
@@ -405,6 +491,8 @@ def fetch_fundamentals(ticker):
                 "operating_cashflow": raw["operating_cashflow"],
                 "capital_expenditures": raw["capital_expenditures"],
                 "equity": raw["equity"],
+                "ebit": raw.get("ebit"), "interest_expense": raw.get("interest_expense"),
+                "interest_income": raw.get("interest_income"), "interest_fy": raw.get("interest_fy"),
                 # Was missing before — this is the field that actually drives
                 # fcf/fcf_positive. Kept here so a run-to-run score jump is
                 # visible without patching in debug code.

@@ -30,6 +30,19 @@ except ImportError:
 
 OUTPUT_PATH = "./data/macro_regime.json"
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from config import MINSKY_HY_OAS_TIGHT, MINSKY_REAL_YIELD_JUMP, MINSKY_DEBT_GDP_PCTILE  # noqa: E402
+from gold_regime import fetch_fred  # noqa: E402  (public FRED CSV, no key)
+
+# FRED series for minsky_score(): series id -> start date. Debt/GDP needs the
+# long history for its percentile; the daily ones only need ~3 months.
+MINSKY_FRED_SERIES = {
+    "BAMLH0A0HYM2": None,          # ICE BofA US High Yield OAS, %, daily
+    "DFII10":       None,          # 10Y TIPS real yield, %, daily
+    "BCNSDODNS":    "1980-01-01",  # nonfinancial corporate debt, MILLIONS $, quarterly
+    "GDP":          "1980-01-01",  # nominal GDP, BILLIONS $ SAAR, quarterly
+}
+
 INDICATORS = {
     # Yields
     "^TNX":    "US 10Y yield",
@@ -249,26 +262,71 @@ def cross_check_favored_sectors(favored_sectors: list, us_sectors: dict) -> list
     return results
 
 
-def minsky_score(data: dict) -> tuple[int, list]:
-    score  = 0
-    checks = []
+def fetch_minsky_fred() -> dict:
+    """Fetch the FRED inputs for minsky_score(). Missing series are omitted --
+    each check then falls back to its old yfinance proxy."""
+    default_start = (datetime.today() - timedelta(days=FETCH_DAYS)).strftime("%Y-%m-%d")
+    out = {}
+    for sid, start in MINSKY_FRED_SERIES.items():
+        ser = fetch_fred(sid, start or default_start)
+        if ser is not None:
+            out[sid] = ser
+    return out
 
-    hyg  = data.get("HYG")
-    lqd  = data.get("LQD")
-    vix  = data.get("^VIX")
-    spy  = data.get("SPY")
-    tlt  = data.get("TLT")
 
-    if hyg and hyg.get("ret_3m") is not None and hyg["ret_3m"] > 3:
-        score += 1; checks.append("Credit spreads tight — HYG strong (complacency signal)")
+def _debt_gdp(debt, gdp):
+    """Corporate debt/GDP aligned on quarter dates (debt in millions, GDP in
+    billions). Returns (latest ratio, percentile of latest in its history)."""
+    if debt is None or gdp is None:
+        return None, None
+    df = pd.concat({"debt": debt / 1000.0, "gdp": gdp}, axis=1, join="inner").dropna()
+    if len(df) < 20:
+        return None, None
+    r = df["debt"] / df["gdp"]
+    return float(r.iloc[-1]), float((r <= r.iloc[-1]).mean())
+
+
+# Five checks, one point each, /5 -- the ranker's >= 4 threshold is unchanged.
+# Changed 2026-10-31: the score measured market euphoria only (HYG, VIX, SPY
+# twice, TLT) and nothing about debt. Now: credit spread (1), volatility (2),
+# rally (3), cost of debt service (4), stock of corporate leverage (5).
+# "SPY above MA50+MA200" was dropped -- it duplicated check 3, so any bull
+# market scored 2/5 for free. Checks 1 and 4 fall back to the old HYG / TLT
+# proxies when FRED is unavailable; check 5 has no market proxy and scores 0.
+def minsky_score(data: dict, fred: dict | None = None) -> tuple[int, list]:
+    fred = fred or {}
+    score, checks = 0, []
+    hyg, vix, spy, tlt = (data.get(k) for k in ("HYG", "^VIX", "SPY", "TLT"))
+
+    # 1. Credit complacency -- HY spread, fallback HYG 3M return
+    oas = fred.get("BAMLH0A0HYM2")
+    if oas is not None and len(oas):
+        if oas.iloc[-1] < MINSKY_HY_OAS_TIGHT:
+            score += 1; checks.append(f"HY spread {oas.iloc[-1]:.2f}% — credit priced for perfection")
+    elif hyg and hyg.get("ret_3m") is not None and hyg["ret_3m"] > 3:
+        score += 1; checks.append("Credit spreads tight — HYG strong (fallback: FRED spread unavailable)")
+
+    # 2. Euphoria -- VIX
     if vix and vix.get("last") and vix["last"] < 15:
         score += 1; checks.append(f"VIX {vix['last']:.1f} — low volatility (euphoria zone)")
+
+    # 3. Extended rally -- SPY 6M
     if spy and spy.get("ret_6m") and spy["ret_6m"] > 20:
         score += 1; checks.append(f"SPY +{spy['ret_6m']:.0f}% in 6M — extended rally")
-    if spy and spy.get("above_ma200") and spy and spy.get("above_ma50"):
-        score += 1; checks.append("SPY above MA50 + MA200 — uptrend intact (leverage building)")
-    if tlt and tlt.get("ret_3m") and tlt["ret_3m"] < -5:
-        score += 1; checks.append("TLT falling — yield curve pressure (debt service stress)")
+
+    # 4. Debt service cost rising -- 10Y real yield over ~3M, fallback TLT
+    ry = fred.get("DFII10")
+    if ry is not None and len(ry) > 63:
+        d = float(ry.iloc[-1] - ry.iloc[-64])
+        if d >= MINSKY_REAL_YIELD_JUMP:
+            score += 1; checks.append(f"10Y real yield +{d*100:.0f}bp in 3M — debt service stress")
+    elif tlt and tlt.get("ret_3m") and tlt["ret_3m"] < -5:
+        score += 1; checks.append("TLT falling — yield pressure (fallback: FRED real yield unavailable)")
+
+    # 5. Stock of leverage -- nonfinancial corporate debt / GDP vs its history
+    ratio, pct = _debt_gdp(fred.get("BCNSDODNS"), fred.get("GDP"))
+    if pct is not None and pct >= MINSKY_DEBT_GDP_PCTILE:
+        score += 1; checks.append(f"Corp debt/GDP {ratio:.0%} — top {1 - pct:.0%} of history since 1980")
 
     return score, checks
 
@@ -312,7 +370,7 @@ def main():
     growth_state,    growth_detail    = classify_growth(data)
     inflation_state, inflation_detail = classify_inflation(data)
     regime, favored_sectors           = classify_regime(growth_state, inflation_state)
-    minsky_pts, minsky_checks         = minsky_score(data)
+    minsky_pts, minsky_checks         = minsky_score(data, fetch_minsky_fred())
 
     us_sectors   = load_sector_rotation()
     sector_check = cross_check_favored_sectors(favored_sectors, us_sectors)
@@ -392,6 +450,7 @@ def main():
         "favored_sectors": favored_sectors,
         "sector_cross_check": sector_check,
         "minsky_score":    minsky_pts,
+        "minsky_checks":   minsky_checks,
         "dalio_cycle":     dalio_pos,
         "indicators":      data,
     }
