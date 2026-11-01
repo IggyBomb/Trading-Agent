@@ -195,8 +195,14 @@ def main():
         if data is None:
             continue   # no bar for this ticker today — leave the row untouched
         if data["date"] <= row["scan_date"]:
-            continue   # scan-day bar (or older): it includes prices from before the
-                       # scan's intraday snapshot -- tracking starts the next session
+            # Scan-day bar (or older): it includes prices from before the scan's
+            # intraday snapshot, so it must not trigger target/stop or set
+            # max_high/min_low -- tracking starts the next session. Record the
+            # close and the S&P baseline only, for information.
+            update_row(conn, row["id"], {"day_close_price": data["close"],
+                                         **calculate_metrics(row, data, data["close"])})
+            benchmark_daily_tracking(conn, row, sp500_today_value)
+            continue
         update_daily_tracking(conn, row, data)
         benchmark_daily_tracking(conn, row, sp500_today_value)
         if not check_high_low(conn, row, data):
