@@ -212,6 +212,7 @@ DATA_DIR = ROOT_DIR / "data"
 LOGS_DIR = ROOT_DIR / "logs"
 
 WATCHLIST_PATH       = str(DATA_DIR / "watchlist.txt")
+QUANT_DB_PATH        = str(DATA_DIR / "quant.db")
 MARKET_DATA_PATH     = str(DATA_DIR / "market_data.json")
 FUNDAMENTAL_PATH     = str(DATA_DIR / "fundamental_data.json")
 ALT_DATA_PATH        = str(DATA_DIR / "alt_data.json")

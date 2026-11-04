@@ -500,7 +500,7 @@ def main(argv=None):
     log_dir.mkdir(exist_ok=True)
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s | %(levelname)-7s | %(name)-18s | %(filename)s:%(funcName)-14s:%(lineno)-4d | %(message)s",
+        format="%(asctime)s | %(levelname)-7s | %(name)s | %(filename)s:%(funcName)s:%(lineno)d  %(message)s",
         datefmt="%H:%M:%S",
         handlers=[
             logging.StreamHandler(sys.stderr),
