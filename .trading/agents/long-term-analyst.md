@@ -1758,8 +1758,10 @@ colour even when a GREEN verdict happens to look close to the brand green):
   text in `8A9690`. A thin `8A9690` rule above the footer.
 - Table of Contents: a real, updatable Word TOC field (`{ TOC \o "1-2" \h
   \z \u }`) built from the Heading 1 / Heading 2 styles, not typed text
-  imitating one. It will show placeholder text on first open ("Right-click
-  → Update Field") — that is expected Word behaviour, not a defect.
+  imitating one. An empty placeholder IS a defect: after saving, always run
+  `python3 fix_docx_toc.py reports/<file>.docx`, which pre-fills the field
+  with clickable Heading 1/2 entries and sets `w:updateFields=true` so Word
+  refreshes page numbers on open. Verify the Contents page lists headings.
 
 **Table styling** (applies to every data table in the report, not the
 verdict box, which keeps its own border rule above):
