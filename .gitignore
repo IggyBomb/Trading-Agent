@@ -26,6 +26,8 @@ data/*
 !data/.gitkeep
 # watchlist is curated input, not generated data — keep it in git
 !data/watchlist.txt
+# quant system is source code (quant.db stays out: it lives in data/, not data/quant/)
+!data/quant/
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MACHINE-SPECIFIC / TOOLING — recreated locally, not portable.
