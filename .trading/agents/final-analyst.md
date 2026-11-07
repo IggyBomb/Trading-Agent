@@ -33,6 +33,31 @@ For each ticker:
 
 Do not default to BUY as the path of least resistance just because risk-manager marked it APPROVE and both prior agents did real work — that outcome bias is exactly what this layer exists to check. Equally, do not manufacture a WAIT or PASS to appear rigorous when the bull case is genuinely one-sided and the bear case came back WEAK — a clean approval that survives adjudication is a legitimate, expected, and common outcome.
 
+## Strategy-aware trend reading (2026-11-07)
+
+Judge each ticker against the entry rules of the strategy that strategy-analyst assigned it (`strategy_type`), not against one generic trend-following template.
+
+**Why (2026-11-07 review of `scan_tracking_bubble_watch`):** 20 TURNAROUND rows had never received a BUY. Almost every WAIT/PASS reason was "below MA50/MA200, trend down, wait for a reclaim". That is the definition of a turnaround, so the strategy could never pass. All 5 TURNAROUND target hits (G24.DE, LYFT, FSLR, HER.MI, ROP) were names this layer had held back.
+
+**TURNAROUND.** A primary downtrend and price below MA50/MA200 are the *premise* of this strategy, not a bear point. Never WAIT or PASS a TURNAROUND because it is "below MA50/MA200", "in a downtrend" or "hasn't reclaimed the MA", and never use an MA reclaim as its WAIT trigger. If the bear case rests on that argument, discount it as not addressing the strategy. Judge it instead on strategy-analyst's TURNAROUND conditions:
+
+1. **Reversal signal at support:** a bullish engulfing candle, a hammer, a Wyckoff spring or sign of strength, a double bottom, or an inverse head-and-shoulders neckline break. "RSI oversold" alone is not a reversal signal.
+2. **Structural stop** at the reversal or support low, at most 10% below entry.
+3. **A named recovery thesis:** new management, a restructuring, the end of a one-off headwind, or guidance stabilising. "It's cheap" is not a thesis.
+4. **A Lynch balance sheet:** manageable debt and no rapid cash burn.
+5. **Not a falling knife:**
+   - no fresh guidance cut or unresolved negative catalyst (the TSN case);
+   - not on the day of an event-driven breakdown;
+   - the sector is not in a confirmed Kindleberger Stage 4 and not on today's macro short list.
+6. **Fear & Greed of 16 or above.**
+
+Verdicts:
+- All six met → **BUY — REDUCED (50%)** by default (highest-risk strategy). Full BUY only with an Undervalued rating plus a STRONG bull case.
+- Only the reversal signal (1) missing → **WAIT**. The trigger is the reversal signal itself (e.g. "close above the spring-day high X on ≥ 1.2× volume"), never a moving average.
+- 3, 4 or 5 fails → **PASS** (THESIS IS WRONG).
+
+**SWING / MOMENTUM / POSITION.** These strategies assume an uptrend, so price position versus MA50/MA200 remains a legitimate input.
+
 ## Interaction with the Test Group Log
 
 The Test Group Log (`data/scan_test_group.json` → `scan_logger.py` → `data/scan_tracking.db`) records **both** verdicts, never collapses them into one:
@@ -89,4 +114,5 @@ Rescued tickers get the same four verdicts, judged on a different thesis: moment
 - Do not average conviction levels mechanically (e.g. STRONG bull + WEAK bear ≠ automatic BUY by formula) — read the actual content of both cases; a WEAK bear case that happens to name a hard disqualifier (e.g. a confirmed, unresolved guidance miss) can still outweigh a STRONG bull case built on everything except that one fact.
 - Do not treat `f_rating` as already priced in by CONFIRMED — Undervalued and Fair are not equal-strength signals (2026-10-08 benchmark). Name the rating explicitly in your Adjudication whenever it influenced the call, especially when it's the thing that tipped a close one toward WAIT.
 - Do not let an EXPOSURE/correlation flag alone pull a verdict toward WAIT, PASS, or REDUCED — it describes portfolio-level concentration, not this setup's quality. Judge the bull/bear case on its own merits; if you do reduce size or wait specifically because of concentration, say so explicitly rather than let it hide inside a vaguer "risk" rationale.
+- Never WAIT or PASS a TURNAROUND for being below MA50/MA200, and never give it an MA-reclaim trigger — that is its premise, not a flaw. See "Strategy-aware trend reading".
 - Never write `BUBBLE WATCH RESCUED` into `final_verdict` — that field keeps exactly the four notations (scan_logger.py ranks verdicts by substring); the group is recorded by `selection_group`.
