@@ -30,7 +30,7 @@ class QuantParameter(ABC):
         # `stock` = an already-created yfinance.Ticker, so each parameter object of the quant system can reuse it
         self.ticker = ticker
         self.stock = stock if stock is not None else yfinance.Ticker(ticker)
-        self.info = self.stock.info
+        self.info = self.stock.info or {}   # Yahoo can return nothing (unknown ticker, network down)
         self.name   = self.info.get("longName") or self.info.get("shortName")
         self.sector = self.info.get("sector")
         self.price  = self.info.get("currentPrice")

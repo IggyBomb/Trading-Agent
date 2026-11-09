@@ -56,6 +56,15 @@ def quarter(table, row, back=0):
     return to_number(values.iloc[back]) if len(values) > back else None
 
 
+def adjusted_eps_ttm(earnings_history):
+    # Adjusted (non-GAAP) EPS of the last 4 reported quarters, as reported to analysts.
+    # Some tickers (many in Europe) have no "epsActual" column at all: then no number
+    if earnings_history is None or earnings_history.empty or "epsActual" not in earnings_history.columns:
+        return None
+    actual = earnings_history["epsActual"].dropna().sort_index()
+    return float(actual.tail(4).sum()) if len(actual) >= 4 else None
+
+
 def estimate(table, period, column="avg"):
     # Analyst figure for a period: "0y" = this fiscal year, "+1y" = next one
     if table is None or period not in table.index or column not in table.columns:

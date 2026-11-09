@@ -1,17 +1,32 @@
 [
   {
-    "ticker": "WEIR.L",
-    "setup": "breakdown",
-    "score": 5,
+    "ticker": "CPR.MI",
+    "setup": "distribution",
+    "score": 6,
     "conviction": "MEDIUM",
-    "atr_pct": 4.019,
-    "vol_ratio": 2.44,
-    "dist_resist_pct": 14.69,
+    "atr_pct": 2.785,
+    "vol_ratio": 0.27,
+    "dist_resist_pct": 1.35,
     "short_pct_float": null,
     "dtc": null,
-    "fscore": 38.1,
-    "sector": "Industrials",
+    "fscore": 23.9,
+    "sector": "Consumer Defensive",
     "macro_note": "not authorised",
+    "squeeze_data_missing": false
+  },
+  {
+    "ticker": "MPWR",
+    "setup": "distribution",
+    "score": 5,
+    "conviction": "MEDIUM",
+    "atr_pct": 6.44,
+    "vol_ratio": 0.25,
+    "dist_resist_pct": 1.21,
+    "short_pct_float": 4.43,
+    "dtc": 2.1,
+    "fscore": 58.6,
+    "sector": "Technology",
+    "macro_note": "high-multiple Tech (authorised)",
     "squeeze_data_missing": false
   }
 ]

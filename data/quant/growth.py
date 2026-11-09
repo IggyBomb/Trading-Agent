@@ -9,7 +9,7 @@ Every metric is a % change (e.g. 50.0 = +50%).
 import pandas as pd
 
 from quant_parameter_class import QuantParameter
-from quant_utils import estimate, forecast_lags, growth, percent, ratio, to_number, yearly
+from quant_utils import adjusted_eps_ttm, estimate, forecast_lags, growth, percent, ratio, to_number, yearly
 
 
 # Math that gives "no number" when one side is missing
@@ -113,10 +113,8 @@ class Growth(QuantParameter):
         else:
             # Lagging: Yahoo's "next year" (+1y) is really this year. Compare it with
             # last year's actual: revenue from the statements, adjusted EPS = the 4 quarters just reported
-            history = self.stock.earnings_history
-            actual = history["epsActual"].dropna() if history is not None and not history.empty else []
             self.eps_nongaap_fwd       = estimate(eps_est, "+1y")
-            self.eps_nongaap_last_year = float(actual.sort_index().tail(4).sum()) if len(actual) >= 4 else None
+            self.eps_nongaap_last_year = adjusted_eps_ttm(self.stock.earnings_history)
             self.eps_nongaap_next      = None   # Yahoo has no forecast further out
             self.revenue_growth_forward = growth(estimate(revenue_est, "+1y"), self.revenue[0])
             self.earnings_per_share_diluted_growth_forward = growth(self.eps_nongaap_fwd, self.eps_nongaap_last_year)
@@ -176,7 +174,8 @@ class Growth(QuantParameter):
         # year's actual to next year's forecast (2 years)
         if self.earnings_per_share_long_term_growth is None:
             two_years = ratio(self.eps_nongaap_next, self.eps_nongaap_last_year)
-            self.earnings_per_share_long_term_growth = (two_years ** 0.5 - 1) * 100 if two_years else None
+            # A loss forecast gives a negative ratio: no yearly rate (its square root isn't a real number)
+            self.earnings_per_share_long_term_growth = (two_years ** 0.5 - 1) * 100 if two_years and two_years > 0 else None
 
     def calc_dividends(self):
         self.dividend_growth_rate_one_year_trailing = None

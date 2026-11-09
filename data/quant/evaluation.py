@@ -2,7 +2,7 @@ import pandas as pd
 import logging
 log = logging.getLogger("evaluation")
 from quant_parameter_class import QuantParameter
-from quant_utils import ratio, last4, estimate, forecast_lags
+from quant_utils import ratio, last4, estimate, forecast_lags, adjusted_eps_ttm
 
 
 class Valuation(QuantParameter):
@@ -56,9 +56,7 @@ class Valuation(QuantParameter):
         self.ebit_ttm         = last4(self.stock.quarterly_income_stmt, "EBIT")
 
         # Adjusted (non-GAAP) EPS of the last 4 quarters, as reported to analysts
-        history = self.stock.earnings_history
-        actual = history["epsActual"].dropna() if history is not None and not history.empty else []
-        self.eps_nongaap_ttm = float(actual.sort_index().tail(4).sum()) if len(actual) >= 4 else None
+        self.eps_nongaap_ttm = adjusted_eps_ttm(self.stock.earnings_history)
 
         # Analyst forecasts for this fiscal year. If Yahoo still lags on a year just
         # closed, its "+1y" is this year and there's nothing further out
@@ -117,10 +115,11 @@ class Valuation(QuantParameter):
                 self.price_earnings_to_growth_gaap_trailing = ratio(self.price_to_earnings_gaap_trailing, (self.eps_gaap_ttm / prev_eps - 1) * 100)
         # Non-GAAP: forward P/E vs yearly growth from now to next year's forecast
         # (only 1 year of forecast when Yahoo lags: then the growth to this year's forecast)
+        # (a loss forecast gives a negative ratio: no yearly rate, its square root isn't a real number)
         growth_2y = ratio(self.eps_nongaap_next, self.eps_nongaap_ttm)
         growth_1y = ratio(self.eps_nongaap_fwd, self.eps_nongaap_ttm)
-        if growth_2y:
-            yearly = (growth_2y ** 0.5 - 1) * 100
+        if self.eps_nongaap_next is not None:
+            yearly = (growth_2y ** 0.5 - 1) * 100 if growth_2y and growth_2y > 0 else None
         else:
             yearly = (growth_1y - 1) * 100 if growth_1y else None
         self.price_earnings_to_growth_non_gaap_forward = ratio(self.price_to_earnings_non_gaap_forward, yearly)
