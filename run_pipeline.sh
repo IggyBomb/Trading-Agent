@@ -20,6 +20,13 @@ if [ -f "$BUNDLE" ]; then
     export CURL_CA_BUNDLE="$BUNDLE"
 fi
 
+# Keep the PC awake for the whole pipeline, cooldown pauses included: a small
+# background Python process holds the "don't sleep" request (common_utils.keep_awake)
+# and is stopped when this script ends. 3 h cap in case it is ever left behind.
+"$PYTHON" -c "import time, common_utils; common_utils.keep_awake(); time.sleep(3 * 3600)" &
+KEEP_AWAKE_PID=$!
+trap 'kill $KEEP_AWAKE_PID 2>/dev/null' EXIT
+
 START=$(date '+%Y-%m-%d %H:%M:%S')
 PASS=0
 FAIL=0

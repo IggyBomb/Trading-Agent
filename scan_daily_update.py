@@ -32,6 +32,7 @@ import yfinance as yf
 import pandas as pd
 from config import SCAN_TRACKING_TABLE
 from scan_logger import TRACKING_CREATE_SQL
+from common_utils import keep_awake
 
 DB_PATH = "data/scan_tracking.db"
 TABLE   = SCAN_TRACKING_TABLE   # scan_tracking_bubble_watch; scan_test_group is the frozen old table
@@ -218,4 +219,5 @@ def main():
 
 
 if __name__ == "__main__":
+    keep_awake()   # scheduled at 22:45: don't let the PC fall back asleep mid-run
     main()

@@ -14,7 +14,7 @@ import yfinance
 
 # common_utils.py and config.py live in the repo root, two levels up from data/quant
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from common_utils import load_watchlist
+from common_utils import keep_awake, load_watchlist
 from DB_logger import DBLogger
 from evaluation import Valuation
 from growth import Growth
@@ -87,18 +87,9 @@ def main(tickers=None):
     log.info(f"Run finished: {saved} tickers saved, {skipped} skipped (no data), {failed} no answer")
 
 
-def keep_awake():
-    # Tell Windows not to sleep while this script runs (a sleeping PC broke the
-    # first full run). Released automatically when the script ends.
-    if sys.platform == "win32":
-        import ctypes
-        ES_CONTINUOUS, ES_SYSTEM_REQUIRED = 0x80000000, 0x00000001
-        ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)
-
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     logging.getLogger("DB_logger").setLevel(logging.WARNING)    # no line per saved row (817 x 5)
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)    # its own errors are reported by main
-    keep_awake()
+    keep_awake()   # a sleeping PC broke the first full run
     main(sys.argv[1:])
