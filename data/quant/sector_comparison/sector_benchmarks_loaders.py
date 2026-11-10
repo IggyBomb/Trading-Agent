@@ -37,12 +37,12 @@ VALUATION_METRICS = [
 
 
 # ── Loaders ──
+# This file is read once per run, not per ticker. It returns a dict of tickers and their
+# model code (like SM for semiconductors) + region, and a DataFrame of all tickers and their metrics. The metrics are used to compare a ticker to its peers in the same model code + region.
 def load_sector_lookup(path=BENCHMARK_FILE):
-    # {ticker: (model code, region)} from the Constituents sheet. Read ONCE per run, not per ticker
-    # header=3 -> the column names are on row 4 of the sheet (pandas counts from 0)
     table = pd.read_excel(path, sheet_name="Constituents", header=3,
                           usecols=["Ticker", "Model code", "Region"])
-    table = table.dropna(subset=["Ticker"])          # skip empty rows at the bottom
+    table = table.dropna(subset=["Ticker"])
     return dict(zip(table["Ticker"], zip(table["Model code"], table["Region"])))
 
 #this functions loads all the tickers form the bechmark file + their model code and region + the metrics passed in parameter.
