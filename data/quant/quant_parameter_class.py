@@ -10,7 +10,7 @@ Usage in a subclass:
 
     class Valuation(QuantParameter):
         METRICS = [...]
-        TABLE_NAME = "valuation_history"
+        TABLE_NAME = "valuation"
         def get_metrics(self): ...
 """
 

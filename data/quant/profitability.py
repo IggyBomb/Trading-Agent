@@ -42,7 +42,7 @@ class Profitability(QuantParameter):
         "net_income_per_employee_trailing",
     ]
     # table in the DB
-    TABLE_NAME = "profitability_history"
+    TABLE_NAME = "profitability"
 
     # The constructor of the class
     def __init__(self, ticker, stock=None):

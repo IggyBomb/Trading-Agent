@@ -29,7 +29,7 @@ class Valuation(QuantParameter):
         "dividend_yield_trailing",
     ]
     # table in the DB
-    TABLE_NAME = "valuation_history"
+    TABLE_NAME = "valuation"
 
     # The constructor of the class
     def __init__(self, ticker, stock=None):

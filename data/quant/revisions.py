@@ -65,7 +65,7 @@ class Revisions(QuantParameter):
         "revenue_estimate_change_six_months_next_year",
     ]
     # table in the DB
-    TABLE_NAME = "revisions_history"
+    TABLE_NAME = "revisions"
 
     # The constructor of the class
     def __init__(self, ticker, stock=None, db_path=QUANT_DB_PATH):

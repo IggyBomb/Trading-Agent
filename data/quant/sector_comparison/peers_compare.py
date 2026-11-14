@@ -1,10 +1,10 @@
 """
-valuation_compare.py — compares the Valuation metrics of each ticker (from
-evaluation.py, run by main.py) against the sector values in Sector_Benchmarks.xlsx.
+peers_compare.py — compares each ticker's metrics (its TickerCard, values from quant.db)
+against its model-sector peers in Sector_Benchmarks_quant.xlsx.
 
 Inputs:
-    - Valuation(ticker) results           -> data/quant/evaluation.py
-    - Sector benchmarks, "Valuation" sheet -> data/quant/sector_comparison/Sector_Benchmarks.xlsx
+    - Ticker cards                          -> ticker_card.py (download_all_latest_tickers_data + build_cards)
+    - Sector benchmarks, Constituents sheet -> sector_benchmarks_loaders.py
 
 Output:
     - (to be decided)
@@ -14,7 +14,7 @@ Run from the repo root:
 """
 
 # ── Imports ──
-import load_sector_lookup, load_peer_values from sector_benchmarks_loaders
+from sector_benchmarks_loaders import load_sector_lookup, load_peer_values, VALUATION_METRICS
 
 
 

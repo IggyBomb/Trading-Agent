@@ -57,7 +57,7 @@ class Growth(QuantParameter):
         "dividend_growth_rate_one_year_trailing",
     ]
     # table in the DB
-    TABLE_NAME = "growth_history"
+    TABLE_NAME = "growth"
 
     # The constructor of the class
     def __init__(self, ticker, stock=None):

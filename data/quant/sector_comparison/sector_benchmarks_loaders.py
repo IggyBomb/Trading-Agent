@@ -1,13 +1,12 @@
 """
-sector_benchmarks.py — reads Sector_Benchmarks.xlsx once per run and hands the data
-to every sector comparison (valuation_compare.py, and later growth / profitability /
-momentum).
+sector_benchmarks_loaders.py — reads Sector_Benchmarks_quant.xlsx once per run and hands
+the data to the sector comparison (peers_compare.py) and to the ticker cards (ticker_card.py).
 
 It is the only file that knows the workbook layout (sheet names, columns). If the
 workbook changes, only this file changes.
 
 Usage:
-    from sector_benchmarks import load_sector_lookup
+    from sector_benchmarks_loaders import load_sector_lookup
     sector_lookup = load_sector_lookup()        # once, before the ticker loop
 """
 
@@ -19,7 +18,7 @@ import pandas as pd
 
 # ── Settings ──
 # The workbook sits next to this file
-BENCHMARK_FILE = os.path.join(os.path.dirname(__file__), "Sector_Benchmarks.xlsx")
+BENCHMARK_FILE = os.path.join(os.path.dirname(__file__), "Sector_Benchmarks_quant.xlsx")
 
 # Valuation metrics, named as in the Constituents sheet header (columns S–AB)
 VALUATION_METRICS = [

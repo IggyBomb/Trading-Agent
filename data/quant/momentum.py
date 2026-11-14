@@ -20,7 +20,7 @@ class Momentum(QuantParameter):
         "price_performance_one_year",
     ]
     # table in the DB
-    TABLE_NAME = "momentum_history"
+    TABLE_NAME = "momentum"
 
     # The constructor of the class
     def __init__(self, ticker, stock=None):
