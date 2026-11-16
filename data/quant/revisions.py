@@ -13,9 +13,7 @@ Revenue up/down revision counts are not available from any free source.
 Changes are in % (e.g. 5.0 = the forecast rose 5%).
 """
 
-import os
 import sqlite3
-import sys
 from pathlib import Path
 
 import pandas as pd
@@ -23,9 +21,7 @@ import pandas as pd
 from quant_parameter_class import QuantParameter
 from quant_utils import estimate, forecast_lags, growth, to_number
 
-# config.py lives in the repo root, two levels up from data/quant
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from config import QUANT_DB_PATH
+from quant_settings import QUANT_DB_PATH
 
 # Months back for each trend, and how far an older saved row may be from the exact
 # date (weekends, days the script didn't run)

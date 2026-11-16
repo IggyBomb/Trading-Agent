@@ -13,14 +13,10 @@ Usage from another script:
 """
 
 import logging
-import os
 import sqlite3
-import sys
 from datetime import date
 
-# config.py lives in the repo root, two levels up from data/quant
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from config import QUANT_DB_PATH
+from quant_settings import QUANT_DB_PATH
 log = logging.getLogger("DB_logger")
 
 

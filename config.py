@@ -212,7 +212,7 @@ DATA_DIR = ROOT_DIR / "data"
 LOGS_DIR = ROOT_DIR / "logs"
 
 WATCHLIST_PATH       = str(DATA_DIR / "watchlist.txt")
-QUANT_DB_PATH        = str(DATA_DIR / "quant.db")
+# quant.db path: see data/quant/quant_settings.py (the quant model keeps its own settings)
 MARKET_DATA_PATH     = str(DATA_DIR / "market_data.json")
 FUNDAMENTAL_PATH     = str(DATA_DIR / "fundamental_data.json")
 ALT_DATA_PATH        = str(DATA_DIR / "alt_data.json")
